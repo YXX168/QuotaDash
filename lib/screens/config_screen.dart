@@ -31,6 +31,7 @@ class _ConfigScreenState extends State<ConfigScreen>
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _urlController;
   late final TextEditingController _keyController;
+  late final TextEditingController _opencodeKeyController;
   late final AnimationController _entryController;
   bool _obscureKey = true;
   bool _saving = false;
@@ -45,6 +46,9 @@ class _ConfigScreenState extends State<ConfigScreen>
     _keyController = TextEditingController(
       text: widget.initialConfig?.key ?? '',
     );
+    _opencodeKeyController = TextEditingController(
+      text: widget.initialConfig?.opencodeKey ?? '',
+    );
     _entryController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 480),
@@ -56,6 +60,7 @@ class _ConfigScreenState extends State<ConfigScreen>
     _entryController.dispose();
     _urlController.dispose();
     _keyController.dispose();
+    _opencodeKeyController.dispose();
     super.dispose();
   }
 
@@ -70,6 +75,7 @@ class _ConfigScreenState extends State<ConfigScreen>
     final config = AppConfig(
       baseUrl: _managementUrl(_urlController.text),
       key: _keyController.text.trim(),
+      opencodeKey: _opencodeKeyController.text.trim(),
     );
 
     try {
@@ -167,7 +173,7 @@ class _ConfigScreenState extends State<ConfigScreen>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              '连接你的 CLIProxyAPI 实例，仅保存在设备安全存储中',
+                              '连接你的 CLIProxyAPI 实例；可选填入 OpenCode API Key 查看其额度',
                               style: Theme.of(
                                 context,
                               ).textTheme.bodySmall?.copyWith(fontSize: 13),
@@ -228,6 +234,19 @@ class _ConfigScreenState extends State<ConfigScreen>
                                           value == null || value.trim().isEmpty
                                           ? '请输入管理密码'
                                           : null,
+                                    ),
+                                    const SizedBox(height: 14),
+                                    TextFormField(
+                                      key: const Key('opencode-key-field'),
+                                      controller: _opencodeKeyController,
+                                      obscureText: true,
+                                      textInputAction: TextInputAction.done,
+                                      autocorrect: false,
+                                      enableSuggestions: false,
+                                      decoration: const InputDecoration(
+                                        labelText: 'OpenCode API Key（可选）',
+                                        prefixIcon: Icon(Icons.bolt_rounded),
+                                      ),
                                     ),
                                     const SizedBox(height: 12),
                                     const Row(

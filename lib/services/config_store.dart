@@ -19,6 +19,7 @@ class PluginConfigStore implements ConfigStore {
   static const _baseUrlKey = 'management_base_url';
   static const _secureBaseUrlKey = 'management_base_url_secure';
   static const _managementKey = 'management_key';
+  static const _opencodeKey = 'opencode_api_key';
 
   final FlutterSecureStorage _secureStorage;
   final Future<SharedPreferences> Function() _preferencesFactory;
@@ -37,7 +38,9 @@ class PluginConfigStore implements ConfigStore {
       }
     }
     if (key == null || key.trim().isEmpty || baseUrl.isEmpty) return null;
-    return AppConfig(baseUrl: baseUrl, key: key);
+    final opencodeKey =
+        (await _secureStorage.read(key: _opencodeKey))?.trim() ?? '';
+    return AppConfig(baseUrl: baseUrl, key: key, opencodeKey: opencodeKey);
   }
 
   @override
@@ -45,6 +48,12 @@ class PluginConfigStore implements ConfigStore {
     final preferences = await _preferencesFactory();
     await _secureStorage.write(key: _secureBaseUrlKey, value: config.baseUrl);
     await _secureStorage.write(key: _managementKey, value: config.key);
+    if (config.opencodeKey.trim().isNotEmpty) {
+      await _secureStorage.write(
+        key: _opencodeKey,
+        value: config.opencodeKey.trim(),
+      );
+    }
     await preferences.remove(_baseUrlKey);
   }
 }

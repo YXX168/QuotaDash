@@ -1,5 +1,9 @@
 class AppConfig {
-  const AppConfig({required this.baseUrl, required this.key});
+  const AppConfig({
+    required this.baseUrl,
+    required this.key,
+    this.opencodeKey = '',
+  });
 
   static const defaultBaseUrl = '';
 
@@ -8,10 +12,17 @@ class AppConfig {
 
   final String baseUrl;
   final String key;
+  final String opencodeKey;
 
   Uri get baseUri => Uri.parse(baseUrl);
 
-  AppConfig copyWith({String? baseUrl, String? key}) {
-    return AppConfig(baseUrl: baseUrl ?? this.baseUrl, key: key ?? this.key);
+  bool get hasOpencodeKey => opencodeKey.trim().isNotEmpty;
+
+  AppConfig copyWith({String? baseUrl, String? key, String? opencodeKey}) {
+    return AppConfig(
+      baseUrl: baseUrl ?? this.baseUrl,
+      key: key ?? this.key,
+      opencodeKey: opencodeKey ?? this.opencodeKey,
+    );
   }
 }

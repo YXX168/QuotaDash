@@ -18,7 +18,12 @@ class QuotaWindow {
     if (json == null) {
       throw const FormatException('Quota window is missing');
     }
-    final used = _asDouble(json['used_percent'] ?? json['usedPercent']);
+    final used = _asDouble(
+      json['used_percent'] ??
+          json['usedPercent'] ??
+          // OpenCode usage endpoint reports plain "percent".
+          json['percent'],
+    );
     final limitWindowSeconds = _asInt(
       json['limit_window_seconds'] ??
           json['limitWindowSeconds'] ??
@@ -28,7 +33,9 @@ class QuotaWindow {
     return QuotaWindow(
       usedPercent: used,
       remainingPercent: used == null ? null : (100 - used).clamp(0, 100),
-      resetAt: parseResetTime(json['reset_at'] ?? json['resetAt']),
+      resetAt: parseResetTime(
+        json['reset_at'] ?? json['resetAt'] ?? json['resetsAt'],
+      ),
       limitWindowSeconds: _positiveInt(limitWindowSeconds),
     );
   }

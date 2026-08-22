@@ -6,12 +6,15 @@ import 'package:intl/intl.dart';
 
 import '../models/app_config.dart';
 import '../models/dashboard_snapshot.dart';
+import '../models/opencode_quota.dart';
 import '../models/visual_mode.dart';
+import '../services/opencode_service.dart';
 import '../services/quota_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/account_card.dart';
 import '../widgets/energy_core.dart';
 import '../widgets/glass_widgets.dart';
+import '../widgets/opencode_quota_card.dart';
 import '../widgets/quantum_emblem.dart';
 import '../widgets/request_activity.dart';
 import '../widgets/sync_flow_loader.dart';
@@ -42,6 +45,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   DashboardSnapshot? _snapshot;
+  OpencodeQuota? _opencodeQuota;
+  Object? _opencodeError;
   Object? _error;
   bool _loading = true;
   bool _refreshing = false;
@@ -89,10 +94,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _error = null;
     });
     try {
-      final snapshot = await widget.repository.fetchDashboard();
+      final results = await Future.wait<dynamic>([
+        widget.repository.fetchDashboard(),
+        _fetchOpencode(),
+      ]);
       if (!mounted) return;
       setState(() {
-        _snapshot = snapshot;
+        _snapshot = results[0] as DashboardSnapshot?;
+        _opencodeQuota = results[1] is OpencodeQuota
+            ? results[1] as OpencodeQuota
+            : null;
+        _opencodeError = (results[1] is Exception || results[1] is Error)
+            ? results[1]
+            : null;
         _loading = false;
         _error = null;
       });
@@ -104,6 +118,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     } finally {
       if (mounted) setState(() => _refreshing = false);
+    }
+  }
+
+  Future<dynamic> _fetchOpencode() async {
+    final apiKey = widget.config.opencodeKey.trim();
+    if (apiKey.isEmpty) return null;
+    final service = OpencodeService(apiKey: apiKey);
+    try {
+      return await service.fetchQuota();
+    } catch (error) {
+      // A failed OpenCode probe must not take down the Codex dashboard.
+      return error;
+    } finally {
+      service.dispose();
     }
   }
 
@@ -231,6 +259,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     key: const Key('summary-stats-grid'),
                                     snapshot: _snapshot!,
                                   ),
+                                  if (widget.config.hasOpencodeKey) ...[
+                                    const SizedBox(height: 18),
+                                    SectionTitle(
+                                      title: 'OpenCode 额度',
+                                      subtitle: '独立 API Key 数据源',
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (_opencodeQuota != null)
+                                      OpencodeQuotaCard(quota: _opencodeQuota!)
+                                    else if (_opencodeError != null)
+                                      GlassCard(
+                                        child: Text(
+                                          '无法获取 OpenCode 用量：$_opencodeError',
+                                        ),
+                                      ),
+                                  ],
                                   const SizedBox(height: 10),
                                   _TrafficPulsePanel(snapshot: _snapshot!),
                                   const SizedBox(height: 18),

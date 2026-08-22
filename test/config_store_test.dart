@@ -37,6 +37,7 @@ void main() {
       const AppConfig(
         baseUrl: 'https://proxy.example/v0/management',
         key: 'test-secret',
+        opencodeKey: 'opencode-secret',
       ),
     );
 
@@ -46,7 +47,27 @@ void main() {
       'https://proxy.example/v0/management',
     );
     expect(await secureStorage.read(key: 'management_key'), 'test-secret');
+    expect(
+      await secureStorage.read(key: 'opencode_api_key'),
+      'opencode-secret',
+    );
     final preferences = await SharedPreferences.getInstance();
     expect(preferences.containsKey('management_base_url'), isFalse);
+  });
+
+  test('loads saved opencode key alongside management config', () async {
+    FlutterSecureStorage.setMockInitialValues({
+      'management_base_url_secure': 'https://proxy.example/v0/management',
+      'management_key': 'test-secret',
+      'opencode_api_key': 'opencode-secret',
+    });
+    SharedPreferences.setMockInitialValues({});
+
+    final store = PluginConfigStore();
+    final config = await store.load();
+
+    expect(config?.baseUrl, 'https://proxy.example/v0/management');
+    expect(config?.key, 'test-secret');
+    expect(config?.opencodeKey, 'opencode-secret');
   });
 }
