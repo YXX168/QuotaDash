@@ -81,7 +81,7 @@ void main() {
         of: find.byKey(const Key('energy-account-0')),
         matching: find.text('80%'),
       ),
-      findsNWidgets(2),
+      findsNWidgets(3),
     );
   });
 

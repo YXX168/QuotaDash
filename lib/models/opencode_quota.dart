@@ -22,8 +22,8 @@ class OpencodeQuota {
 
   List<OpencodeWindow> get windows => [
     OpencodeWindow('滚动额度', rolling),
-    OpencodeWindow('周额度', weekly),
-    OpencodeWindow('月度额度', monthly),
+    OpencodeWindow('周限额度', weekly),
+    OpencodeWindow('月限额度', monthly),
   ];
 
   double? get averageRemainingPercent {

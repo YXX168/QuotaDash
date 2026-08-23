@@ -259,27 +259,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     key: const Key('summary-stats-grid'),
                                     snapshot: _snapshot!,
                                   ),
-                                  if (widget.config.hasOpencodeKey) ...[
-                                    const SizedBox(height: 18),
-                                    SectionTitle(
-                                      title: 'OpenCode 额度',
-                                      subtitle: '独立 API Key 数据源',
-                                    ),
-                                    const SizedBox(height: 10),
-                                    if (_opencodeQuota != null)
-                                      OpencodeQuotaCard(quota: _opencodeQuota!)
-                                    else if (_opencodeError != null)
-                                      GlassCard(
-                                        child: Text(
-                                          '无法获取 OpenCode 用量：$_opencodeError',
-                                        ),
-                                      ),
-                                  ],
                                   const SizedBox(height: 10),
                                   _TrafficPulsePanel(snapshot: _snapshot!),
                                   const SizedBox(height: 18),
                                   SectionTitle(
-                                    title: 'Codex 账号',
+                                    title: 'Codex',
                                     subtitle: _snapshot!.accounts.isEmpty
                                         ? '未找到启用的 Codex 认证文件'
                                         : '${_snapshot!.totalAccounts} 个账号',
@@ -299,6 +283,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       snapshot: _snapshot!,
                                       onTap: _openAccount,
                                     ),
+                                  if (widget.config.hasOpencodeKey) ...[
+                                    const SizedBox(height: 18),
+                                    SectionTitle(
+                                      title: 'OpenCode',
+                                      subtitle: '独立 API Key · 官方用量',
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (_opencodeQuota != null)
+                                      OpencodeQuotaCard(
+                                        key: const Key('opencode-quota-card'),
+                                        quota: _opencodeQuota!,
+                                      )
+                                    else if (_opencodeError != null)
+                                      GlassCard(
+                                        key: const Key('opencode-quota-error'),
+                                        padding: const EdgeInsets.all(14),
+                                        child: Text(
+                                          '无法获取 OpenCode 用量：$_opencodeError',
+                                        ),
+                                      ),
+                                  ],
                                 ],
                               ),
                       ),
@@ -1212,6 +1217,7 @@ class _EnergyAccountGrid extends StatelessWidget {
         final width =
             (constraints.maxWidth - (columns - 1) * spacing) / columns;
         return Wrap(
+          alignment: WrapAlignment.center,
           spacing: spacing,
           runSpacing: spacing,
           children: [
