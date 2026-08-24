@@ -8,7 +8,7 @@ class AppConfig {
   static const defaultBaseUrl = '';
 
   /// App version string — keep in sync with `pubspec.yaml`.
-  static const appVersion = '1.0.0';
+  static const appVersion = '1.1.0';
 
   final String baseUrl;
   final String key;

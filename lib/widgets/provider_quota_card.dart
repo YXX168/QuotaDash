@@ -1,24 +1,39 @@
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
 
-import '../models/opencode_quota.dart';
+import '../models/provider_quota.dart';
 import '../theme/app_theme.dart';
 import 'glass_widgets.dart';
 
-class OpencodeQuotaCard extends StatelessWidget {
-  const OpencodeQuotaCard({required this.quota, super.key});
+/// Generic quota panel card for any provider module.
+/// Shows a header (icon + name + average badge) and one bar per window.
+class ProviderQuotaCard extends StatelessWidget {
+  const ProviderQuotaCard({required this.quota, super.key});
 
-  final OpencodeQuota quota;
+  final ProviderQuota quota;
+
+  static const _accentByProvider = {
+    QuotaProviderId.cliProxyApi: AppTheme.cyan,
+    QuotaProviderId.openCode: AppTheme.orange,
+  };
+
+  static const _iconByProvider = {
+    QuotaProviderId.cliProxyApi: Icons.dns_rounded,
+    QuotaProviderId.openCode: Icons.bolt_rounded,
+  };
+
+  Color get _accent => _accentByProvider[quota.provider] ?? AppTheme.cyan;
+
+  IconData get _icon => _iconByProvider[quota.provider] ?? Icons.apps_rounded;
 
   @override
   Widget build(BuildContext context) {
-    final windows = quota.windows
-        .where((entry) => entry.window != null)
-        .toList(growable: false);
     final average = quota.averageRemainingPercent;
-
+    final accent = _accent;
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 15),
-      borderColor: AppTheme.magenta.withValues(alpha: 0.22),
+      borderColor: accent.withValues(alpha: 0.22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -28,33 +43,27 @@ class OpencodeQuotaCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppTheme.magenta.withValues(alpha: 0.14),
+                  color: accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(11),
-                  border: Border.all(
-                    color: AppTheme.magenta.withValues(alpha: 0.28),
-                  ),
+                  border: Border.all(color: accent.withValues(alpha: 0.28)),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.magenta.withValues(alpha: 0.16),
+                      color: accent.withValues(alpha: 0.16),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.bolt_rounded,
-                  size: 20,
-                  color: AppTheme.magenta,
-                ),
+                child: Icon(_icon, size: 20, color: accent),
               ),
               const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'OpenCode Go',
-                      style: TextStyle(
+                    Text(
+                      quota.provider.displayName,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                       ),
@@ -66,18 +75,20 @@ class OpencodeQuotaCard extends StatelessWidget {
                           width: 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: AppTheme.success,
+                            color: quota.hasError ? AppTheme.warning : AppTheme.success,
                             shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(color: AppTheme.success, blurRadius: 6),
+                            boxShadow: [
+                              BoxShadow(
+                                color: quota.hasError ? AppTheme.warning : AppTheme.success,
+                                blurRadius: 6,
+                              ),
                             ],
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '官方用量实时同步',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(fontSize: 10, height: 1.2),
+                          quota.hasError ? '同步失败' : '实时同步',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10, height: 1.2),
                         ),
                       ],
                     ),
@@ -86,21 +97,16 @@ class OpencodeQuotaCard extends StatelessWidget {
               ),
               if (average != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppTheme.magenta.withValues(alpha: 0.12),
+                    color: accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: AppTheme.magenta.withValues(alpha: 0.3),
-                    ),
+                    border: Border.all(color: accent.withValues(alpha: 0.3)),
                   ),
                   child: Text(
-                    average.toStringAsFixed(0) + '% 剩余',
-                    style: const TextStyle(
-                      color: AppTheme.magenta,
+                    average!.toStringAsFixed(0) + '% 剩余',
+                    style: TextStyle(
+                      color: accent,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w800,
                     ),
@@ -108,21 +114,27 @@ class OpencodeQuotaCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 15),
-          _OpenCodeEnergyBar(remaining: average),
-          if (windows.isNotEmpty) ...[
+          if (!quota.hasError) ...[
+            const SizedBox(height: 15),
+            _EnergyBar(remaining: average, healthyColor: accent),
+          ],
+          if (quota.windows.isNotEmpty) ...[
             const SizedBox(height: 13),
-            for (var index = 0; index < windows.length; index++) ...[
+            for (var index = 0; index < quota.windows.length; index++) ...[
               if (index > 0) const SizedBox(height: 11),
-              _QuotaRow(entry: windows[index]),
+              _QuotaRow(entry: quota.windows[index]),
             ],
-          ] else
+          ] else if (!quota.hasError)
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                '暂无可用额度窗口',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              child: Text('暂无可用额度窗口',
+                  style: Theme.of(context).textTheme.bodySmall),
+            ),
+          if (quota.hasError)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text('错误：${quota.error}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.danger)),
             ),
         ],
       ),
@@ -130,10 +142,11 @@ class OpencodeQuotaCard extends StatelessWidget {
   }
 }
 
-class _OpenCodeEnergyBar extends StatelessWidget {
-  const _OpenCodeEnergyBar({required this.remaining});
+class _EnergyBar extends StatelessWidget {
+  const _EnergyBar({required this.remaining, required this.healthyColor});
 
   final double? remaining;
+  final Color healthyColor;
 
   @override
   Widget build(BuildContext context) {
@@ -141,10 +154,10 @@ class _OpenCodeEnergyBar extends StatelessWidget {
     final color = r == null
         ? const Color(0xFF75829B)
         : r <= 15
-        ? AppTheme.danger
+        ? const Color(0xFFE8455F)
         : r <= 35
-        ? AppTheme.warning
-        : AppTheme.magenta;
+        ? const Color(0xFFE8A825)
+        : healthyColor;
     final value = ((r ?? 0) / 100).clamp(0.0, 1.0).toDouble();
     return Container(
       height: 14,
@@ -165,25 +178,8 @@ class _OpenCodeEnergyBar extends StatelessWidget {
               end: Alignment.centerRight,
             ),
             boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.5),
-                blurRadius: 10,
-              ),
+              BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10),
             ],
-          ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FractionallySizedBox(
-              widthFactor: 0.16,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(99),
-                  gradient: LinearGradient(
-                    colors: [Colors.white.withValues(alpha: 0.5), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
           ),
         ),
       ),
@@ -194,18 +190,18 @@ class _OpenCodeEnergyBar extends StatelessWidget {
 class _QuotaRow extends StatelessWidget {
   const _QuotaRow({required this.entry});
 
-  final OpencodeWindow entry;
+  final ProviderQuotaWindow entry;
 
   @override
   Widget build(BuildContext context) {
-    final remaining = entry.window?.remainingPercent;
+    final remaining = entry.remainingPercent;
     final color = remaining == null
         ? const Color(0xFF75829B)
         : remaining <= 15
-        ? AppTheme.danger
+        ? const Color(0xFFE8455F)
         : remaining <= 35
-        ? AppTheme.warning
-        : AppTheme.success;
+        ? const Color(0xFFE8A825)
+        : const Color(0xFF00D98A);
     final progress = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
 
     return Row(
@@ -240,10 +236,7 @@ class _QuotaRow extends StatelessWidget {
                     colors: [color.withValues(alpha: 0.8), color],
                   ),
                   boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.25),
-                      blurRadius: 6,
-                    ),
+                    BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 6),
                   ],
                 ),
               ),

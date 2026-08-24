@@ -12,6 +12,7 @@ class AppTheme {
   static const success = Color(0xFF4DFFB8);
   static const warning = Color(0xFFFFD166);
   static const danger = Color(0xFFFF668A);
+  static const orange = Color(0xFFFF8C42);
 
   static const backgroundGradient = LinearGradient(
     begin: Alignment.topLeft,

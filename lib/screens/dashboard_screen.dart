@@ -6,15 +6,17 @@ import 'package:intl/intl.dart';
 
 import '../models/app_config.dart';
 import '../models/dashboard_snapshot.dart';
-import '../models/opencode_quota.dart';
+import '../models/provider_quota.dart';
 import '../models/visual_mode.dart';
-import '../services/opencode_service.dart';
+import '../services/cliproxyapi_module.dart';
+import '../services/opencode_module.dart';
+import '../services/quota_module.dart';
 import '../services/quota_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/account_card.dart';
 import '../widgets/energy_core.dart';
 import '../widgets/glass_widgets.dart';
-import '../widgets/opencode_quota_card.dart';
+import '../widgets/provider_quota_card.dart';
 import '../widgets/quantum_emblem.dart';
 import '../widgets/request_activity.dart';
 import '../widgets/sync_flow_loader.dart';
@@ -45,8 +47,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   DashboardSnapshot? _snapshot;
-  OpencodeQuota? _opencodeQuota;
-  Object? _opencodeError;
+  final Map<QuotaProviderId, ProviderQuota> _providerQuotas = {};
   Object? _error;
   bool _loading = true;
   bool _refreshing = false;
@@ -95,18 +96,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
     try {
       final results = await Future.wait<dynamic>([
-        widget.repository.fetchDashboard(),
-        _fetchOpencode(),
+        _fetchModule(CliProxyApiModule(repository: widget.repository)),
+        _fetchModule(OpenCodeModule(apiKey: widget.config.opencodeKey)),
       ]);
       if (!mounted) return;
       setState(() {
-        _snapshot = results[0] as DashboardSnapshot?;
-        _opencodeQuota = results[1] is OpencodeQuota
-            ? results[1] as OpencodeQuota
-            : null;
-        _opencodeError = (results[1] is Exception || results[1] is Error)
-            ? results[1]
-            : null;
+        _providerQuotas.clear();
+        for (final result in results) {
+          if (result is CodexModuleResult) {
+            _snapshot = result.snapshot;
+          } else if (result is ProviderModuleResult) {
+            final quota = result.quota;
+            if (quota != null) _providerQuotas[quota.provider] = quota;
+          }
+        }
         _loading = false;
         _error = null;
       });
@@ -121,17 +124,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<dynamic> _fetchOpencode() async {
-    final apiKey = widget.config.opencodeKey.trim();
-    if (apiKey.isEmpty) return null;
-    final service = OpencodeService(apiKey: apiKey);
+  Future<ModuleResult> _fetchModule(QuotaModule<dynamic> module) async {
+    if (!module.isEnabled) {
+      return const ProviderModuleResult(null);
+    }
     try {
-      return await service.fetchQuota();
+      return await module.fetch();
     } catch (error) {
-      // A failed OpenCode probe must not take down the Codex dashboard.
-      return error;
-    } finally {
-      service.dispose();
+      // A failed module must not take down other providers.
+      if (module.displayName == QuotaProviderId.cliProxyApi.displayName) {
+        return CodexModuleResult(null);
+      }
+      return ProviderModuleResult(null);
     }
   }
 
@@ -283,27 +287,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       snapshot: _snapshot!,
                                       onTap: _openAccount,
                                     ),
-                                  if (widget.config.hasOpencodeKey) ...[
-                                    const SizedBox(height: 18),
-                                    SectionTitle(
-                                      title: 'OpenCode',
-                                      subtitle: '独立 API Key · 官方用量',
-                                    ),
-                                    const SizedBox(height: 10),
-                                    if (_opencodeQuota != null)
-                                      OpencodeQuotaCard(
-                                        key: const Key('opencode-quota-card'),
-                                        quota: _opencodeQuota!,
-                                      )
-                                    else if (_opencodeError != null)
-                                      GlassCard(
-                                        key: const Key('opencode-quota-error'),
-                                        padding: const EdgeInsets.all(14),
-                                        child: Text(
-                                          '无法获取 OpenCode 用量：$_opencodeError',
-                                        ),
+                                  for (final provider in QuotaProviderId.values)
+                                    if (_providerQuotas.containsKey(provider)) ...[
+                                      const SizedBox(height: 18),
+                                      SectionTitle(
+                                        title: provider.displayName,
+                                        subtitle: '额度模块',
                                       ),
-                                  ],
+                                      const SizedBox(height: 10),
+                                      ProviderQuotaCard(
+                                        key: Key('quota-card-${provider.name}'),
+                                        quota: _providerQuotas[provider]!,
+                                      ),
+                                    ],
                                 ],
                               ),
                       ),
@@ -354,13 +350,13 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'CLIProxy',
+                  'Quota Dash',
                   style: Theme.of(
                     context,
                   ).textTheme.titleMedium?.copyWith(letterSpacing: -0.25),
                 ),
                 const Text(
-                  'CODEX QUOTA CONSOLE',
+                  'MULTI-PROVIDER QUOTA',
                   style: TextStyle(
                     color: Color(0xFF748198),
                     fontSize: 9,
@@ -645,7 +641,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             const SizedBox(height: 14),
             const Center(
               child: Text(
-                'CLIProxy Dash · v' + AppConfig.appVersion,
+                'Quota Dash · v' + AppConfig.appVersion,
                 style: TextStyle(
                   color: Color(0xFF657289),
                   fontSize: 10,

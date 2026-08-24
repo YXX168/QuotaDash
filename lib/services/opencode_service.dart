@@ -5,8 +5,11 @@ import 'package:http/http.dart' as http;
 import '../models/opencode_quota.dart';
 
 class OpencodeService {
+  /// Optional test hook; production code leaves this null.
+  static http.Client? clientOverride;
+
   OpencodeService({required this.apiKey, http.Client? client})
-    : _client = client ?? http.Client();
+    : _client = client ?? clientOverride ?? http.Client();
 
   static const usageUrl = 'https://opencode.ai/zen/go/v1/usage';
 

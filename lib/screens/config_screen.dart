@@ -173,7 +173,7 @@ class _ConfigScreenState extends State<ConfigScreen>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              '连接你的 CLIProxyAPI 实例；可选填入 OpenCode API Key 查看其额度',
+                              '连接你的 CLIProxyAPI 实例；可选填入其他供应商 API Key（如 OpenCode）',
                               style: Theme.of(
                                 context,
                               ).textTheme.bodySmall?.copyWith(fontSize: 13),
