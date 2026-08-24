@@ -1,4 +1,3 @@
-
 /// Identifies a supported quota provider module.
 enum QuotaProviderId { cliProxyApi, openCode }
 

@@ -135,8 +135,10 @@ class ProviderQuotaCard extends StatelessWidget {
           ] else if (!quota.hasError)
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: Text('暂无可用额度窗口',
-                  style: Theme.of(context).textTheme.bodySmall),
+              child: Text(
+                '暂无可用额度窗口',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ),
           if (quota.hasError)
             Padding(

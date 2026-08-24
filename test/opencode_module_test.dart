@@ -43,7 +43,6 @@ void main() {
       expect(quota.windows[0].remainingPercent, 80);
       expect(quota.windows[1].remainingPercent, 60);
       expect(quota.windows[2].remainingPercent, 40);
-
     });
   });
 }
