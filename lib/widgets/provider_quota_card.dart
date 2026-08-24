@@ -75,11 +75,15 @@ class ProviderQuotaCard extends StatelessWidget {
                           width: 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: quota.hasError ? AppTheme.warning : AppTheme.success,
+                            color: quota.hasError
+                                ? AppTheme.warning
+                                : AppTheme.success,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: quota.hasError ? AppTheme.warning : AppTheme.success,
+                                color: quota.hasError
+                                    ? AppTheme.warning
+                                    : AppTheme.success,
                                 blurRadius: 6,
                               ),
                             ],
@@ -88,7 +92,8 @@ class ProviderQuotaCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           quota.hasError ? '同步失败' : '实时同步',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10, height: 1.2),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(fontSize: 10, height: 1.2),
                         ),
                       ],
                     ),
@@ -97,7 +102,10 @@ class ProviderQuotaCard extends StatelessWidget {
               ),
               if (average != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
@@ -133,8 +141,11 @@ class ProviderQuotaCard extends StatelessWidget {
           if (quota.hasError)
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: Text('错误：${quota.error}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.danger)),
+              child: Text(
+                '错误：${quota.error}',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppTheme.danger),
+              ),
             ),
         ],
       ),
@@ -236,7 +247,10 @@ class _QuotaRow extends StatelessWidget {
                     colors: [color.withValues(alpha: 0.8), color],
                   ),
                   boxShadow: [
-                    BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 6),
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                    ),
                   ],
                 ),
               ),
