@@ -1,4 +1,5 @@
 @Tags(['golden'])
+library;
 import 'dart:async';
 
 import 'package:cliproxy_dash/models/app_config.dart';

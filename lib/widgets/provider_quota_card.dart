@@ -110,7 +110,7 @@ class ProviderQuotaCard extends StatelessWidget {
                     border: Border.all(color: accent.withValues(alpha: 0.3)),
                   ),
                   child: Text(
-                    '${average!.toStringAsFixed(0)}% 剩余',
+                    '${average.toStringAsFixed(0)}% 剩余',
                     style: TextStyle(
                       color: accent,
                       fontSize: 11.5,
