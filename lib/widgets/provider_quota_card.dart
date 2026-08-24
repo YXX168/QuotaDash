@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 
 import '../models/provider_quota.dart';
@@ -112,7 +110,7 @@ class ProviderQuotaCard extends StatelessWidget {
                     border: Border.all(color: accent.withValues(alpha: 0.3)),
                   ),
                   child: Text(
-                    average!.toStringAsFixed(0) + '% 剩余',
+                    '${average!.toStringAsFixed(0)}% 剩余',
                     style: TextStyle(
                       color: accent,
                       fontSize: 11.5,
@@ -264,7 +262,7 @@ class _QuotaRow extends StatelessWidget {
         SizedBox(
           width: 38,
           child: Text(
-            remaining == null ? '--' : remaining.toStringAsFixed(0) + '%',
+            remaining == null ? '--' : '${remaining.toStringAsFixed(0)}%',
             textAlign: TextAlign.right,
             style: TextStyle(
               color: color,

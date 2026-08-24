@@ -1,5 +1,4 @@
 @Tags(['golden'])
-library visual_review_test;
 
 import 'dart:async';
 

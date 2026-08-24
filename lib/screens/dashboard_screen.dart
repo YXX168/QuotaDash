@@ -642,7 +642,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             const SizedBox(height: 14),
             const Center(
               child: Text(
-                'Quota Dash · v' + AppConfig.appVersion,
+                'Quota Dash · v${AppConfig.appVersion}',
                 style: TextStyle(
                   color: Color(0xFF657289),
                   fontSize: 10,
