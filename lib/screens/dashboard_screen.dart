@@ -140,20 +140,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<Widget> _providerSections() => [
-      for (final provider in QuotaProviderId.values)
-        if (_providerQuotas.containsKey(provider)) ...[
-          const SizedBox(height: 18),
-          SectionTitle(
-            title: provider.displayName,
-            subtitle: '额度模块',
-          ),
-          const SizedBox(height: 10),
-          ProviderQuotaCard(
-            key: Key('quota-card-${provider.name}'),
-            quota: _providerQuotas[provider]!,
-          ),
-        ],
-    ];
+    for (final provider in QuotaProviderId.values)
+      if (_providerQuotas.containsKey(provider)) ...[
+        const SizedBox(height: 18),
+        SectionTitle(title: provider.displayName, subtitle: '额度模块'),
+        const SizedBox(height: 10),
+        ProviderQuotaCard(
+          key: Key('quota-card-${provider.name}'),
+          quota: _providerQuotas[provider]!,
+        ),
+      ],
+  ];
 
   Future<void> _refreshWithFeedback() async {
     await HapticFeedback.mediumImpact();

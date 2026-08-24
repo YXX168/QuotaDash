@@ -145,8 +145,9 @@ class ProviderQuotaCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: 12),
               child: Text(
                 '错误：${quota.error}',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: AppTheme.danger),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.danger),
               ),
             ),
         ],
