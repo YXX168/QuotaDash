@@ -336,7 +336,7 @@ class _QuotaLine extends StatelessWidget {
               ),
             ),
             Text(
-              remaining == null ? '--' : '${r.toStringAsFixed(0)}%',
+              r == null ? '--' : '${r.toStringAsFixed(0)}%',
               style: TextStyle(
                 color: color,
                 fontSize: 10.5,
