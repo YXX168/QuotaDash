@@ -25,10 +25,6 @@ class _ToolsScreenState extends State<ToolsScreen> {
   String? _latestVersion;
   bool _checkingVersion = false;
 
-  bool get _cliProxyConfigured =>
-      widget.config.isConfigured('baseUrl') &&
-      widget.config.isConfigured('managementKey');
-
   bool get _openCodeConfigured => widget.config.isConfigured('openCodeApiKey');
 
   @override

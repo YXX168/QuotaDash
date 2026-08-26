@@ -162,11 +162,12 @@ class _WindowProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = remaining == null
+    final r = remaining;
+    final color = r == null
         ? const Color(0xFF75829B)
-        : remaining <= 15
+        : r <= 15
         ? AppTheme.danger
-        : remaining <= 35
+        : r <= 35
         ? AppTheme.warning
         : AppTheme.magenta;
     final target = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
