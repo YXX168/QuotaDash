@@ -50,7 +50,9 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   DashboardSnapshot? _snapshot;
   final Map<QuotaProviderId, ProviderQuota> _providerQuotas = {};
+  final Map<QuotaProviderId, QuotaModule> _providerModules = {};
   final Map<QuotaProviderId, Object> _fetchErrors = {};
+  bool _cliProxyEnabled = false;
   Object? _error;
   bool _loading = true;
   bool _refreshing = false;
@@ -91,7 +93,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _refresh({bool silent = false}) async {
-    if (_refreshing) return;
+    if (_refreshing || !mounted) return;
     setState(() {
       _refreshing = true;
       if (_snapshot == null && !silent) _loading = true;
@@ -103,18 +105,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
         widget.config,
         cliProxyRepository: widget.repository,
       );
+      final previousQuotas = Map<QuotaProviderId, ProviderQuota>.from(
+        _providerQuotas,
+      );
       final results = await Future.wait<dynamic>([
         for (final module in modules) _fetchModule(module),
       ]);
       if (!mounted) return;
       setState(() {
+        _providerModules
+          ..clear()
+          ..addEntries(modules.map((module) => MapEntry(module.id, module)));
+        _cliProxyEnabled = modules.any(
+          (module) =>
+              module.id == QuotaProviderId.cliProxyApi &&
+              module.isEnabled(widget.config),
+        );
         _providerQuotas.clear();
         for (final result in results) {
           if (result is CodexModuleResult) {
-            _snapshot = result.snapshot;
+            if (result.snapshot != null) _snapshot = result.snapshot;
           } else if (result is ProviderModuleResult) {
             final quota = result.quota;
-            if (quota != null) _providerQuotas[quota.provider] = quota;
+            if (quota != null) {
+              final previous = previousQuotas[quota.provider];
+              _providerQuotas[quota.provider] =
+                  quota.hasError &&
+                      quota.windows.isEmpty &&
+                      previous != null &&
+                      previous.windows.isNotEmpty
+                  ? ProviderQuota(
+                      provider: quota.provider,
+                      windows: previous.windows,
+                      error: quota.error,
+                      checkedAt: previous.checkedAt,
+                    )
+                  : quota;
+            }
           }
         }
         _loading = false;
@@ -152,15 +179,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (module.id == QuotaProviderId.cliProxyApi) {
         return const CodexModuleResult(null);
       }
-      // A failed module must not take down other providers.
-      return ProviderModuleResult(null);
+      // Keep failures visible in the provider's own section while allowing
+      // every other module to finish independently.
+      return ProviderModuleResult(
+        ProviderQuota(
+          provider: module.id,
+          windows: const [],
+          checkedAt: DateTime.now(),
+          error: error,
+        ),
+      );
     }
   }
 
   List<Widget> _providerSections() => [
     for (final entry in _providerQuotas.entries) ...[
+      if (_providerModules[entry.key] case final module?) ...[
       const SizedBox(height: 18),
-      SectionTitle(title: entry.key.displayName, subtitle: '额度模块'),
+      SectionTitle(title: module.displayName, subtitle: '额度模块'),
       const SizedBox(height: 10),
       if (widget.visualMode == VisualMode.energy)
         FractionallySizedBox(
@@ -169,6 +205,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: ProviderEnergyCore(
             key: Key('provider-energy-${entry.key.name}'),
             quota: entry.value,
+            displayName: module.displayName,
+            accentColor: module.accentColor,
             refreshing: _refreshing,
           ),
         )
@@ -176,7 +214,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ProviderQuotaCard(
           key: Key('quota-card-${entry.key.name}'),
           quota: entry.value,
+          displayName: module.displayName,
+          accentColor: module.accentColor,
+          icon: module.icon,
         ),
+      ],
     ],
   ];
 
@@ -291,15 +333,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 key: const ValueKey('dashboard-content'),
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _ServicePanel(
-                                    snapshot:
-                                        _snapshot ??
-                                        DashboardSnapshot(
-                                          accounts: const [],
-                                          checkedAt: DateTime.now(),
-                                        ),
-                                    error: _error,
-                                  ),
+                                  if (_cliProxyEnabled || _snapshot != null)
+                                    _ServicePanel(
+                                      snapshot:
+                                          _snapshot ??
+                                          DashboardSnapshot(
+                                            accounts: const [],
+                                            checkedAt: DateTime.now(),
+                                          ),
+                                      error: _error,
+                                    ),
                                   if (_error != null) ...[
                                     const SizedBox(height: 10),
                                     _StaleDataBanner(

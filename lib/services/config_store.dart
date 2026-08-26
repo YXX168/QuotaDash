@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,6 +28,7 @@ class PluginConfigStore implements ConfigStore {
   static const _legacySecureBaseUrlKey = 'management_base_url_secure';
   static const _legacyManagementKey = 'management_key';
   static const _legacyOpencodeKey = 'opencode_api_key';
+  static const _configBlobKey = 'provider_config_v1';
 
   final FlutterSecureStorage _secureStorage;
   final Future<SharedPreferences> Function() _preferencesFactory;
@@ -50,8 +53,26 @@ class PluginConfigStore implements ConfigStore {
     final legacyKey = await _secureStorage.read(key: _legacyManagementKey);
     final legacyOpencode = await _secureStorage.read(key: _legacyOpencodeKey);
 
-    // ---- Current per-provider values ---------------------------------
+    // The blob keeps the store extensible when a new provider adds fields.
     final values = <String, String>{};
+    final blob = await _secureStorage.read(key: _configBlobKey);
+    if (blob != null && blob.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(blob);
+        if (decoded is Map) {
+          for (final entry in decoded.entries) {
+            final key = entry.key.toString().trim();
+            final value = entry.value?.toString().trim() ?? '';
+            if (key.isNotEmpty && value.isNotEmpty) values[key] = value;
+          }
+        }
+      } on FormatException {
+        // Recover known values from their dedicated slots below.
+      }
+    }
+
+    // Dedicated slots remain for downgrade compatibility and override the
+    // blob when both representations exist.
     for (final entry in providerConfigKeys.entries) {
       final raw = await _secureStorage.read(key: entry.value);
       if (raw != null && raw.trim().isNotEmpty) {
@@ -82,6 +103,14 @@ class PluginConfigStore implements ConfigStore {
   Future<void> save(AppConfig config) async {
     final preferences = await _preferencesFactory();
     await preferences.remove(_legacyBaseUrlKey);
+    if (config.values.isEmpty) {
+      await _secureStorage.delete(key: _configBlobKey);
+    } else {
+      await _secureStorage.write(
+        key: _configBlobKey,
+        value: jsonEncode(config.values),
+      );
+    }
 
     for (final entry in providerConfigKeys.entries) {
       final value = config.value(entry.key);

@@ -11,23 +11,18 @@ import 'glass_widgets.dart';
 /// Clean layout: header (icon + name + monthly balance badge) followed by
 /// one duotone progress row per quota window. No redundant summary bar.
 class ProviderQuotaCard extends StatelessWidget {
-  const ProviderQuotaCard({required this.quota, super.key});
+  const ProviderQuotaCard({
+    required this.quota,
+    required this.displayName,
+    required this.accentColor,
+    required this.icon,
+    super.key,
+  });
 
   final ProviderQuota quota;
-
-  static const _accentByProvider = {
-    QuotaProviderId.cliProxyApi: AppTheme.cyan,
-    QuotaProviderId.openCode: AppTheme.magenta,
-  };
-
-  static const _iconByProvider = {
-    QuotaProviderId.cliProxyApi: Icons.dns_rounded,
-    QuotaProviderId.openCode: Icons.bolt_rounded,
-  };
-
-  Color get _accent => _accentByProvider[quota.provider] ?? AppTheme.magenta;
-
-  IconData get _icon => _iconByProvider[quota.provider] ?? Icons.bolt_rounded;
+  final String displayName;
+  final Color accentColor;
+  final IconData icon;
 
   double? get _monthlyRemaining {
     for (final entry in quota.windows) {
@@ -38,7 +33,7 @@ class ProviderQuotaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = quota.hasError ? AppTheme.warning : _accent;
+    final accent = quota.hasError ? AppTheme.warning : accentColor;
     final monthly = _monthlyRemaining ?? quota.averageRemainingPercent;
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -63,12 +58,12 @@ class ProviderQuotaCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(_icon, size: 20, color: accent),
+                child: Icon(icon, size: 20, color: accent),
               ),
               const SizedBox(width: 11),
               Expanded(
                 child: Text(
-                  quota.provider.displayName,
+                  displayName,
                   style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,

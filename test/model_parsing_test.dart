@@ -1,8 +1,37 @@
+import 'package:cliproxy_dash/models/app_config.dart';
 import 'package:cliproxy_dash/models/codex_account.dart';
 import 'package:cliproxy_dash/models/quota_window.dart';
+import 'package:cliproxy_dash/services/cliproxyapi_module.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('CLIProxyAPI only enables with both required settings', () {
+    const module = CliProxyApiModule();
+    expect(
+      module.isEnabled(
+        const AppConfig(values: {'baseUrl': 'https://proxy.example'}),
+      ),
+      isFalse,
+    );
+    expect(
+      module.isEnabled(
+        const AppConfig(values: {'managementKey': 'secret'}),
+      ),
+      isFalse,
+    );
+    expect(
+      module.isEnabled(
+        const AppConfig(
+          values: {
+            'baseUrl': 'https://proxy.example',
+            'managementKey': 'secret',
+          },
+        ),
+      ),
+      isTrue,
+    );
+  });
+
   test('quota window parses server durations without assuming five hours', () {
     final snake = QuotaWindow.fromJson({
       'used_percent': 125,

@@ -14,11 +14,15 @@ import '../theme/app_theme.dart';
 class ProviderEnergyCore extends StatefulWidget {
   const ProviderEnergyCore({
     required this.quota,
+    required this.displayName,
+    required this.accentColor,
     required this.refreshing,
     super.key,
   });
 
   final ProviderQuota quota;
+  final String displayName;
+  final Color accentColor;
   final bool refreshing;
 
   @override
@@ -53,11 +57,11 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
   Color get _accent {
     final remaining = _headlineRemaining;
     if (widget.quota.hasError) return AppTheme.danger;
-    if (remaining == null) return AppTheme.cyan;
+    if (remaining == null) return widget.accentColor;
     if (remaining <= 15) return AppTheme.danger;
     if (remaining <= 35) return AppTheme.warning;
     if (remaining <= 65) return AppTheme.violet;
-    return AppTheme.magenta;
+    return widget.accentColor;
   }
 
   String get _statusLabel {
@@ -121,7 +125,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    quota.provider.displayName,
+                    widget.displayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

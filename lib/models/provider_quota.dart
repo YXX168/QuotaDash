@@ -1,15 +1,25 @@
-/// Identifies a supported quota provider module.
-enum QuotaProviderId { cliProxyApi, openCode }
+/// Stable, extensible identity for a quota provider module.
+final class QuotaProviderId {
+  const QuotaProviderId(this.value, this.displayName);
 
-extension QuotaProviderIdX on QuotaProviderId {
-  String get displayName {
-    switch (this) {
-      case QuotaProviderId.cliProxyApi:
-        return 'CLIProxyAPI';
-      case QuotaProviderId.openCode:
-        return 'OpenCode Go';
-    }
-  }
+  static const cliProxyApi = QuotaProviderId('cliProxyApi', 'CLIProxyAPI');
+  static const openCode = QuotaProviderId('openCode', 'OpenCode Go');
+
+  final String value;
+  final String displayName;
+
+  String get name => value;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QuotaProviderId && value == other.value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => value;
 }
 
 /// A single quota window exposed by any provider module.

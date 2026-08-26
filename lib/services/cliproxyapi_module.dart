@@ -22,7 +22,8 @@ class CliProxyApiModule implements QuotaModule<CodexModuleResult> {
   QuotaProviderId get id => QuotaProviderId.cliProxyApi;
 
   @override
-  bool isEnabled(AppConfig config) => config.hasAny(cliProxyApiConfigKeys);
+  bool isEnabled(AppConfig config) =>
+      cliProxyApiConfigKeys.every(config.isConfigured);
 
   @override
   String get displayName => QuotaProviderId.cliProxyApi.displayName;
@@ -45,7 +46,12 @@ class CliProxyApiModule implements QuotaModule<CodexModuleResult> {
       required: true,
       keyboardType: TextInputType.url,
     ),
-    ProviderField(key: 'managementKey', label: '管理密码', required: true),
+    ProviderField(
+      key: 'managementKey',
+      label: '管理密码',
+      required: true,
+      obscure: true,
+    ),
   ];
 
   @override

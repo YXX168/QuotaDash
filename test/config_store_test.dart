@@ -49,4 +49,16 @@ void main() {
     final store = PluginConfigStore();
     expect(await store.load(), isNull);
   });
+
+  test('persists settings for an unregistered future provider', () async {
+    FlutterSecureStorage.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({});
+
+    final store = PluginConfigStore();
+    await store.save(
+      const AppConfig(values: {'futureProviderApiKey': 'future-secret'}),
+    );
+
+    expect((await store.load())?.value('futureProviderApiKey'), 'future-secret');
+  });
 }

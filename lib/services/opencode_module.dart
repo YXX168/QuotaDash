@@ -32,7 +32,7 @@ class OpenCodeModule implements QuotaModule<ProviderModuleResult> {
   String get description => '滚动、周与月度额度窗口';
 
   @override
-  Color get accentColor => AppTheme.orange;
+  Color get accentColor => AppTheme.magenta;
 
   @override
   IconData get icon => Icons.bolt_rounded;
@@ -43,6 +43,7 @@ class OpenCodeModule implements QuotaModule<ProviderModuleResult> {
       key: 'openCodeApiKey',
       label: 'OpenCode API Key',
       hint: 'sk-...',
+      obscure: true,
     ),
   ];
 

@@ -17,6 +17,11 @@ void main() {
       expect(result.quota, isNull);
     });
 
+    test('declares its API key as a secret field', () {
+      const module = OpenCodeModule();
+      expect(module.fields.single.obscure, isTrue);
+    });
+
     test('converts OpencodeQuota to unified ProviderQuota', () async {
       OpencodeService.clientOverride = MockClient(
         (request) async => http.Response(

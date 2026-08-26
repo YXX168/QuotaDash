@@ -127,7 +127,7 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
           ? ConfigScreen(configStore: _configStore, onSaved: _saveConfig)
           : Builder(
               builder: (homeContext) => DashboardScreen(
-                key: ValueKey(_config!.value('baseUrl')),
+                key: ValueKey(_config!.revision),
                 config: _config!,
                 repository: _repository,
                 visualMode: _visualMode,

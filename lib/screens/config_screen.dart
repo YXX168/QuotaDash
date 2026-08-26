@@ -82,11 +82,15 @@ class _ConfigScreenState extends State<ConfigScreen>
       _saveError = null;
     });
 
-    final values = <String, String>{};
+    final values = {...?widget.initialConfig?.values};
     for (final entry in _fieldControllers.entries) {
       var value = entry.value.text.trim();
       if (entry.key == 'baseUrl') value = _managementUrl(value);
-      if (value.isNotEmpty) values[entry.key] = value;
+      if (value.isEmpty) {
+        values.remove(entry.key);
+      } else {
+        values[entry.key] = value;
+      }
     }
     final config = AppConfig(values: values);
 
@@ -209,6 +213,14 @@ class _ConfigScreenState extends State<ConfigScreen>
                                           const SizedBox(height: 12),
                                         _ProviderFieldInput(
                                           field: module.fields[index],
+                                          isModuleActive: () => module.fields
+                                              .any(
+                                                (field) =>
+                                                    _fieldControllers[field.key]!
+                                                        .text
+                                                        .trim()
+                                                        .isNotEmpty,
+                                              ),
                                           controller:
                                               _fieldControllers[module
                                                   .fields[index]
@@ -494,11 +506,13 @@ class _ProviderFieldInput extends StatefulWidget {
   const _ProviderFieldInput({
     required this.field,
     required this.controller,
+    required this.isModuleActive,
     this.onSubmitted,
   });
 
   final ProviderField field;
   final TextEditingController controller;
+  final bool Function() isModuleActive;
   final ValueChanged<String>? onSubmitted;
 
   @override
@@ -531,7 +545,7 @@ class _ProviderFieldInputState extends State<_ProviderFieldInput> {
       ),
       validator: (value) {
         final trimmed = value?.trim() ?? '';
-        if (field.required && trimmed.isEmpty) {
+        if (field.required && widget.isModuleActive() && trimmed.isEmpty) {
           return '请输入${field.label}';
         }
         if (field.key == 'baseUrl' &&
