@@ -122,9 +122,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(99),
-                      border: Border.all(
-                        color: color.withValues(alpha: 0.28),
-                      ),
+                      border: Border.all(color: color.withValues(alpha: 0.28)),
                     ),
                     child: Text(
                       _statusLabel(remaining),
@@ -167,9 +165,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                                 color: Colors.white,
                                 fontSize: 26,
                                 height: 1,
-                                shadows: [
-                                  Shadow(color: color, blurRadius: 18),
-                                ],
+                                shadows: [Shadow(color: color, blurRadius: 18)],
                               ),
                         ),
                         const SizedBox(height: 5),
@@ -208,9 +204,11 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                       )
                     : Row(
                         children: [
-                          for (var index = 0;
-                              index < math.min(2, quota.windows.length);
-                              index++) ...[
+                          for (
+                            var index = 0;
+                            index < math.min(2, quota.windows.length);
+                            index++
+                          ) ...[
                             if (index > 0)
                               Container(
                                 width: 1,
@@ -385,9 +383,9 @@ class _OrbPainter extends CustomPainter {
     final pulse = (math.sin(phase * math.pi * 2) + 1) / 2;
     final ringRadius = math.min(size.width, size.height) * 0.38;
 
-    final glow =
-        Paint()
-          ..shader = RadialGradient(
+    final glow = Paint()
+      ..shader =
+          RadialGradient(
             colors: [
               color.withValues(alpha: 0.55),
               color.withValues(alpha: 0.18),
@@ -446,9 +444,9 @@ class _OrbPainter extends CustomPainter {
     }
 
     final coreRadius = ringRadius * 0.5 + pulse * 0.7;
-    final corePaint =
-        Paint()
-          ..shader = RadialGradient(
+    final corePaint = Paint()
+      ..shader =
+          RadialGradient(
             colors: [
               Colors.white.withValues(alpha: 0.95),
               color,

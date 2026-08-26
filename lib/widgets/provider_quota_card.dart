@@ -218,9 +218,9 @@ class _WindowProgress extends StatelessWidget {
             const SizedBox(height: 7),
             Text(
               _resetLabel(resetAt!),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 10.5,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontSize: 10.5),
             ),
           ],
         ],

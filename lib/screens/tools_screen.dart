@@ -256,9 +256,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                                   const SizedBox(height: 3),
                                   Text(
                                     '滚动 / 周 / 月度额度实时同步中',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
+                                    style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(fontSize: 12),
                                   ),
                                 ],
