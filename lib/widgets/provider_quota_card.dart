@@ -8,9 +8,9 @@ import 'glass_widgets.dart';
 
 /// Generic quota panel card for any provider module.
 ///
-/// Visual language mirrors the OpenCode energy-bar card from the original
-/// branch: glass card, accent icon tile, live-sync status, corner badge,
-/// glowing 14px energy bar and label/bar/percent rows per window.
+/// Refined magenta-identity design: duotone violet-to-magenta bars, soft
+/// glows, and per-window rows whose color always harmonises with the card
+/// accent instead of mixing in unrelated greens.
 class ProviderQuotaCard extends StatelessWidget {
   const ProviderQuotaCard({required this.quota, super.key});
 
@@ -85,13 +85,13 @@ class ProviderQuotaCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: quota.hasError
                                 ? AppTheme.warning
-                                : AppTheme.success,
+                                : accent,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
                                 color: quota.hasError
                                     ? AppTheme.warning
-                                    : AppTheme.success,
+                                    : accent,
                                 blurRadius: 6,
                               ),
                             ],
@@ -115,14 +115,21 @@ class ProviderQuotaCard extends StatelessWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.violet.withValues(alpha: 0.18),
+                        accent.withValues(alpha: 0.16),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: accent.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.35),
+                    ),
                   ),
                   child: Text(
                     '${average.toStringAsFixed(0)}% 剩余',
-                    style: TextStyle(
-                      color: accent,
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w800,
                     ),
@@ -151,10 +158,10 @@ class ProviderQuotaCard extends StatelessWidget {
             const SizedBox(height: 15),
             EnergyBar(remaining: average, healthyColor: accent),
             if (quota.windows.isNotEmpty) ...[
-              const SizedBox(height: 13),
+              const SizedBox(height: 14),
               for (var index = 0; index < quota.windows.length; index++) ...[
-                if (index > 0) const SizedBox(height: 11),
-                QuotaRow(entry: quota.windows[index]),
+                if (index > 0) const SizedBox(height: 12),
+                QuotaRow(entry: quota.windows[index], accent: accent),
               ],
             ] else
               Padding(
@@ -171,7 +178,17 @@ class ProviderQuotaCard extends StatelessWidget {
   }
 }
 
-/// Glowing 14px energy bar with white specular highlight.
+/// Shared color rule: bars always stay in the card's duotone identity
+/// (accent + violet) while low charge shifts toward warning/danger.
+Color _barColor(double? remaining, Color accent) {
+  final r = remaining;
+  if (r == null) return const Color(0xFF75829B);
+  if (r <= 15) return AppTheme.danger;
+  if (r <= 35) return AppTheme.warning;
+  return accent;
+}
+
+/// Glowing 14px energy bar: violet-to-accent duotone with white highlight.
 class EnergyBar extends StatelessWidget {
   const EnergyBar({required this.remaining, required this.healthyColor});
 
@@ -181,20 +198,15 @@ class EnergyBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = remaining;
-    final color = r == null
-        ? const Color(0xFF75829B)
-        : r <= 15
-        ? const Color(0xFFE8455F)
-        : r <= 35
-        ? const Color(0xFFE8A825)
-        : healthyColor;
+    final color = _barColor(remaining, healthyColor);
+    final tail = r == null || r <= 35 ? color : AppTheme.violet;
     final value = ((r ?? 0) / 100).clamp(0.0, 1.0).toDouble();
     return Container(
       height: 14,
       decoration: BoxDecoration(
         color: const Color(0x2E24324A),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withValues(alpha: 0.35), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.30), width: 1),
       ),
       alignment: Alignment.centerLeft,
       child: FractionallySizedBox(
@@ -203,12 +215,12 @@ class EnergyBar extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(99),
             gradient: LinearGradient(
-              colors: [color.withValues(alpha: 0.92), color],
+              colors: [tail.withValues(alpha: 0.85), color],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ),
             boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10),
+              BoxShadow(color: color.withValues(alpha: 0.45), blurRadius: 9),
             ],
           ),
           child: Align(
@@ -220,7 +232,7 @@ class EnergyBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(99),
                   gradient: LinearGradient(
                     colors: [
-                      Colors.white.withValues(alpha: 0.5),
+                      Colors.white.withValues(alpha: 0.55),
                       Colors.transparent,
                     ],
                   ),
@@ -234,28 +246,26 @@ class EnergyBar extends StatelessWidget {
   }
 }
 
-/// Label | progress bar | percent row used under the energy bar.
+/// Label | progress bar | percent row under the energy bar.
 class QuotaRow extends StatelessWidget {
-  const QuotaRow({required this.entry});
+  const QuotaRow({required this.entry, required this.accent});
 
   final ProviderQuotaWindow entry;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
     final remaining = entry.remainingPercent;
-    final color = remaining == null
-        ? const Color(0xFF75829B)
-        : remaining <= 15
-        ? const Color(0xFFE8455F)
-        : remaining <= 35
-        ? const Color(0xFFE8A825)
-        : const Color(0xFF00D98A);
+    final color = _barColor(remaining, accent);
+    final tail = remaining == null || remaining <= 35
+        ? color
+        : AppTheme.violet;
     final progress = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
 
     return Row(
       children: [
         SizedBox(
-          width: 58,
+          width: 62,
           child: Text(
             entry.label,
             maxLines: 1,
@@ -285,14 +295,8 @@ class QuotaRow extends StatelessWidget {
                     height: 8,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [color.withValues(alpha: 0.8), color],
+                        colors: [tail.withValues(alpha: 0.75), color],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.25),
-                          blurRadius: 6,
-                        ),
-                      ],
                     ),
                   ),
                 ),
