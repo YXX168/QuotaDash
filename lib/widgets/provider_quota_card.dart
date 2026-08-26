@@ -26,8 +26,7 @@ class ProviderQuotaCard extends StatelessWidget {
     QuotaProviderId.openCode: Icons.bolt_rounded,
   };
 
-  Color get _accent =>
-      _accentByProvider[quota.provider] ?? AppTheme.magenta;
+  Color get _accent => _accentByProvider[quota.provider] ?? AppTheme.magenta;
 
   IconData get _icon => _iconByProvider[quota.provider] ?? Icons.bolt_rounded;
 

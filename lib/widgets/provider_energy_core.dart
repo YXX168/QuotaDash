@@ -391,9 +391,9 @@ class _EnergyPainter extends CustomPainter {
     final pulse = (math.sin(phase * math.pi * 2) + 1) / 2;
     final ringRadius = math.min(size.width, size.height) * 0.38;
 
-    final glow =
-        Paint()
-          ..shader = RadialGradient(
+    final glow = Paint()
+      ..shader =
+          RadialGradient(
             colors: [
               color.withValues(alpha: 0.55),
               color.withValues(alpha: 0.18),
@@ -451,9 +451,9 @@ class _EnergyPainter extends CustomPainter {
     }
 
     final coreRadius = ringRadius * 0.5 + pulse * 0.7;
-    final corePaint =
-        Paint()
-          ..shader = RadialGradient(
+    final corePaint = Paint()
+      ..shader =
+          RadialGradient(
             colors: [
               Colors.white.withValues(alpha: 0.95),
               color,
