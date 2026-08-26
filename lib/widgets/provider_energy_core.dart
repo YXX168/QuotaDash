@@ -6,312 +6,369 @@ import 'package:flutter/material.dart';
 import '../models/provider_quota.dart';
 import '../theme/app_theme.dart';
 
-/// Energy-orb tile for any provider, a faithful port of the Codex
-/// [EnergyAccountCore]: same 226px layout, header, painter and quota lines.
+/// "Plasma Core" energy card for any provider.
+///
+/// Original design: layered plasma orb (breathing core + counter-rotating
+/// dual rings + orbiting particles + lightning arcs at low charge) inside a
+/// dark glass tile, with an animated segmented charge bar and window lines.
 class ProviderEnergyCore extends StatefulWidget {
   const ProviderEnergyCore({
     required this.quota,
     required this.refreshing,
     super.key,
-    this.onTap,
   });
 
   final ProviderQuota quota;
   final bool refreshing;
-  final VoidCallback? onTap;
 
   @override
   State<ProviderEnergyCore> createState() => _ProviderEnergyCoreState();
 }
 
 class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+    with TickerProviderStateMixin {
+  late final AnimationController _rotation;
+  late final AnimationController _pulse;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _rotation = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 11),
+      duration: const Duration(seconds: 14),
     )..repeat();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _rotation.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final quota = widget.quota;
-    final remaining = quota.averageRemainingPercent;
-    final color = _coreColor(remaining);
-    final value = quota.hasError
-        ? '!'
-        : remaining == null
-        ? '--'
-        : '${remaining.toStringAsFixed(0)}%';
-    final label = quota.hasError ? '检查失败' : '综合剩余';
-    final primary = quota.windows.isNotEmpty ? quota.windows[0] : null;
-    final secondary = quota.windows.length > 1 ? quota.windows[1] : null;
-
-    return Semantics(
-      label: '${quota.provider.displayName}，$label $value',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(22),
-          child: Ink(
-            height: 226,
-            padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              gradient: const LinearGradient(
-                colors: [Color(0xD8172236), Color(0xC40C1323)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: color.withValues(alpha: 0.28)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: color, blurRadius: 7)],
-                      ),
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        quota.provider.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 2.5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(
-                          color: color.withValues(alpha: 0.28),
-                        ),
-                      ),
-                      child: Text(
-                        _statusLabel(quota, remaining),
-                        style: TextStyle(
-                          color: color.withValues(alpha: 0.95),
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                SizedBox(
-                  height: 108,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Positioned.fill(
-                        child: RepaintBoundary(
-                          child: CustomPaint(
-                            painter: _EnergyPainter(
-                              animation: _controller,
-                              color: color,
-                              progress: (remaining ?? 0).clamp(0, 100) / 100,
-                              hasError: quota.hasError,
-                              refreshing: widget.refreshing,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            value,
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 26,
-                                  height: 1,
-                                  shadows: [
-                                    Shadow(color: color, blurRadius: 18),
-                                  ],
-                                ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            label,
-                            style: TextStyle(
-                              color: color.withValues(alpha: 0.95),
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 7),
-                _EnergyBar(remaining: remaining, color: color),
-                const SizedBox(height: 8),
-                if (quota.hasError)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '${quota.error}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppTheme.danger.withValues(alpha: 0.9),
-                        fontSize: 9.5,
-                      ),
-                    ),
-                  )
-                else
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _QuotaLine(
-                          label: primary?.label ?? '滚动额度',
-                          remaining: primary?.remainingPercent,
-                        ),
-                      ),
-                      if (secondary != null) ...[
-                        Container(
-                          width: 1,
-                          height: 24,
-                          margin: const EdgeInsets.symmetric(horizontal: 9),
-                          color: const Color(0x332D3C55),
-                        ),
-                        Expanded(
-                          child: _QuotaLine(
-                            label: secondary.label,
-                            remaining: secondary.remainingPercent,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  static Color _coreColor(double? remaining) {
-    if (remaining == null) return AppTheme.magenta;
+  Color get _accent {
+    final remaining = widget.quota.averageRemainingPercent;
+    if (widget.quota.hasError) return AppTheme.danger;
+    if (remaining == null) return AppTheme.cyan;
     if (remaining <= 15) return AppTheme.danger;
     if (remaining <= 35) return AppTheme.warning;
     if (remaining <= 65) return AppTheme.violet;
     return AppTheme.magenta;
   }
 
-  static String _statusLabel(ProviderQuota quota, double? remaining) {
-    if (quota.hasError) return '检查失败';
-    if (remaining == null) return '状态正常';
-    if (remaining <= 15) return '额度紧张';
-    if (remaining <= 35) return '额度偏低';
-    return '状态正常';
+  String get _statusLabel {
+    final quota = widget.quota;
+    if (quota.hasError) return '同步失败';
+    final remaining = quota.averageRemainingPercent;
+    if (remaining == null) return '待同步';
+    if (remaining <= 15) return '额度告急';
+    if (remaining <= 35) return '余量偏低';
+    return '能量充沛';
   }
-}
-
-class _EnergyBar extends StatelessWidget {
-  const _EnergyBar({required this.remaining, required this.color});
-
-  final double? remaining;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final remaining = this.remaining;
-    final value = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
-    return Row(
-      children: [
-        Text(
-          '剩余能量',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontSize: 8.5,
-            fontWeight: FontWeight.w700,
+    final quota = widget.quota;
+    final accent = _accent;
+    final remaining = quota.averageRemainingPercent;
+    final valueText = quota.hasError
+        ? 'ERR'
+        : remaining == null
+        ? '--'
+        : '${remaining.toStringAsFixed(0)}%';
+
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        height: 232,
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [Color(0xF0151E33), Color(0xE60B1220)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            height: 11,
-            decoration: BoxDecoration(
-              color: const Color(0x221B2947),
-              borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: accent.withValues(alpha: 0.30)),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.10),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
             ),
-            alignment: Alignment.centerLeft,
-            child: FractionallySizedBox(
-              widthFactor: value,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(99),
-                  gradient: LinearGradient(
-                    colors: [color.withValues(alpha: 0.8), color],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.3),
-                      blurRadius: 6,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ---- Header -------------------------------------------------
+            Row(
+              children: [
+                _PulsingDot(controller: _pulse, color: accent),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    quota.provider.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
                     ),
-                  ],
+                  ),
                 ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.13),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.32),
+                    ),
+                  ),
+                  child: Text(
+                    _statusLabel,
+                    style: TextStyle(
+                      color: accent,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // ---- Plasma orb --------------------------------------------
+            Expanded(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned.fill(
+                    child: RepaintBoundary(
+                      child: AnimatedBuilder(
+                        animation: Listenable.merge([_rotation, _pulse]),
+                        builder: (context, _) => CustomPaint(
+                          painter: _PlasmaPainter(
+                            rotation: _rotation.value,
+                            pulse: Curves.easeInOut.transform(_pulse.value),
+                            accent: accent,
+                            progress:
+                                ((remaining ?? 0).clamp(0, 100)) / 100.0,
+                            hasError: quota.hasError,
+                            refreshing: widget.refreshing,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          colors: [
+                            Colors.white,
+                            accent.withValues(alpha: 0.85),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ).createShader(bounds),
+                        child: Text(
+                          valueText,
+                          style: const TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                            letterSpacing: -1,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          quota.hasError ? '请检查网络与凭据' : '综合剩余能量',
+                          style: TextStyle(
+                            color: accent.withValues(alpha: 0.95),
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
+            // ---- Segmented charge bar ----------------------------------
+            _SegmentedChargeBar(
+              progress: quota.hasError ? 0 : (remaining ?? 0) / 100,
+              accent: accent,
+            ),
+            const SizedBox(height: 8),
+            // ---- Window lines ------------------------------------------
+            if (quota.hasError)
+              Text(
+                '${quota.error}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTheme.danger.withValues(alpha: 0.92),
+                  fontSize: 9.5,
+                ),
+              )
+            else if (quota.windows.isEmpty)
+              const Text(
+                '暂无额度窗口',
+                style: TextStyle(color: Color(0xFF75829B), fontSize: 9.5),
+              )
+            else
+              Row(
+                children: [
+                  for (var index = 0;
+                      index < math.min(2, quota.windows.length);
+                      index++) ...[
+                    if (index > 0)
+                      Container(
+                        width: 1,
+                        height: 26,
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Color(0x552D3C55),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    Expanded(child: _WindowLine(entry: quota.windows[index])),
+                  ],
+                ],
+              ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Text(
-          remaining == null ? '--' : '${remaining.toStringAsFixed(0)}%',
-          style: TextStyle(
-            color: color,
-            fontSize: 10.5,
-            fontWeight: FontWeight.w800,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _QuotaLine extends StatelessWidget {
-  const _QuotaLine({required this.label, required this.remaining});
+// ---------------------------------------------------------------------------
 
-  final String label;
-  final double? remaining;
+class _PulsingDot extends StatelessWidget {
+  const _PulsingDot({required this.controller, required this.color});
+
+  final AnimationController controller;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final r = remaining;
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final t = controller.value;
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.25 + t * 0.45),
+                blurRadius: 5 + t * 6,
+                spreadRadius: t * 1.6,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SegmentedChargeBar extends StatelessWidget {
+  const _SegmentedChargeBar({required this.progress, required this.accent});
+
+  static const _segmentCount = 24;
+
+  final double progress;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final clamped = progress.clamp(0.0, 1.0);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: clamped),
+      duration: const Duration(milliseconds: 1100),
+      curve: Curves.easeOutCubic,
+      builder: (context, animated, _) {
+        final litCount = (animated * _segmentCount).round();
+        return Row(
+          children: [
+            for (var index = 0; index < _segmentCount; index++)
+              Expanded(
+                child: Container(
+                  height: 7,
+                  margin: EdgeInsets.only(right: index == _segmentCount - 1 ? 0 : 2.5),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    gradient: index < litCount
+                        ? LinearGradient(
+                            colors: [
+                              accent.withValues(alpha: 0.55 + 0.35 * (index / _segmentCount)),
+                              accent,
+                            ],
+                          )
+                        : null,
+                    color: index < litCount
+                        ? null
+                        : const Color(0xFF1A2438),
+                    boxShadow: index == litCount - 1 && litCount > 0
+                        ? [
+                            BoxShadow(
+                              color: accent.withValues(alpha: 0.65),
+                              blurRadius: 7,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _WindowLine extends StatelessWidget {
+  const _WindowLine({required this.entry});
+
+  final ProviderQuotaWindow entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = entry.remainingPercent;
     final color = r == null
         ? const Color(0xFF75829B)
         : r <= 15
@@ -326,7 +383,7 @@ class _QuotaLine extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                label,
+                entry.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -341,26 +398,25 @@ class _QuotaLine extends StatelessWidget {
                 color: color,
                 fontSize: 10.5,
                 fontWeight: FontWeight.w800,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 3),
-        Container(
-          height: 4,
-          decoration: BoxDecoration(
-            color: const Color(0x221B2947),
-            borderRadius: BorderRadius.circular(99),
-          ),
-          alignment: Alignment.centerLeft,
-          child: FractionallySizedBox(
-            widthFactor: ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble(),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(99),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99),
+          child: Stack(
+            children: [
+              Container(
+                height: 4,
+                color: const Color(0x221B2947),
               ),
-            ),
+              FractionallySizedBox(
+                widthFactor: ((r ?? 0) / 100).clamp(0.0, 1.0).toDouble(),
+                child: Container(height: 4, color: color),
+              ),
+            ],
           ),
         ),
       ],
@@ -368,17 +424,19 @@ class _QuotaLine extends StatelessWidget {
   }
 }
 
-class _EnergyPainter extends CustomPainter {
-  _EnergyPainter({
-    required this.animation,
-    required this.color,
+class _PlasmaPainter extends CustomPainter {
+  _PlasmaPainter({
+    required this.rotation,
+    required this.pulse,
+    required this.accent,
     required this.progress,
     required this.hasError,
     required this.refreshing,
-  }) : super(repaint: animation);
+  });
 
-  final Animation<double> animation;
-  final Color color;
+  final double rotation;
+  final double pulse;
+  final Color accent;
   final double progress;
   final bool hasError;
   final bool refreshing;
@@ -386,120 +444,184 @@ class _EnergyPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final phase = animation.value;
-    final speed = refreshing ? 2.2 : 0.5;
-    final rotation = phase * math.pi * 2 * speed;
-    final pulse = (math.sin(phase * math.pi * 2) + 1) / 2;
-    final ringRadius = math.min(size.width, size.height) * 0.38;
+    final baseRadius = math.min(size.width, size.height) * 0.34;
+    final speedBoost = refreshing ? 1.8 : 1.0;
 
-    final glow = Paint()
-      ..shader =
-          RadialGradient(
-            colors: [
-              color.withValues(alpha: 0.55),
-              color.withValues(alpha: 0.18),
-              Colors.transparent,
-            ],
-            stops: const [0, 0.55, 1],
-          ).createShader(
-            Rect.fromCircle(center: center, radius: ringRadius * 0.92),
-          );
-    canvas.drawCircle(center, ringRadius * 0.92, glow);
-
+    // Outer atmosphere glow.
     canvas.drawCircle(
       center,
-      ringRadius,
+      baseRadius * 1.55,
       Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..color = color.withValues(alpha: 0.12),
+        ..shader = RadialGradient(
+          colors: [
+            accent.withValues(alpha: 0.16 + pulse * 0.06),
+            accent.withValues(alpha: 0.04),
+            Colors.transparent,
+          ],
+          stops: const [0, 0.55, 1],
+        ).createShader(
+          Rect.fromCircle(center: center, radius: baseRadius * 1.55),
+        ),
     );
 
+    // Progress ring (thick arc with round caps).
+    final progressRect = Rect.fromCircle(center: center, radius: baseRadius);
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: ringRadius),
+      progressRect,
       -math.pi / 2,
-      math.pi * 2 * progress.clamp(0.0, 1.0),
+      math.pi * 2,
       false,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..color = color.withValues(alpha: 0.9),
+        ..strokeWidth = 5
+        ..color = accent.withValues(alpha: 0.10),
     );
-
-    final satelliteAngle = -math.pi / 2 + rotation;
-    final satellite = Offset(
-      center.dx + math.cos(satelliteAngle) * ringRadius,
-      center.dy + math.sin(satelliteAngle) * ringRadius,
-    );
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: ringRadius),
-      satelliteAngle - 0.9,
-      0.9,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..color = color.withValues(alpha: 0.35),
-    );
-    canvas.drawCircle(satellite, hasError ? 5 : 3.4, Paint()..color = color);
-    if (!hasError) {
-      canvas.drawCircle(
-        satellite,
-        5.2,
-        Paint()..color = color.withValues(alpha: 0.2 + pulse * 0.18),
+    if (!hasError && progress > 0) {
+      canvas.drawArc(
+        progressRect,
+        -math.pi / 2,
+        math.pi * 2 * progress.clamp(0.0, 1.0),
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5
+          ..strokeCap = StrokeCap.round
+          ..color = accent,
       );
     }
 
-    final coreRadius = ringRadius * 0.5 + pulse * 0.7;
-    final corePaint = Paint()
-      ..shader =
-          RadialGradient(
-            colors: [
-              Colors.white.withValues(alpha: 0.95),
-              color,
-              color.withValues(alpha: 0.62),
-            ],
-            stops: const [0, 0.42, 1],
-          ).createShader(
-            Rect.fromCircle(center: center - Offset(6, 6), radius: coreRadius),
-          );
-    canvas.drawCircle(center, coreRadius, corePaint);
+    // Counter-rotating dashed inner ring.
+    final innerRadius = baseRadius * 0.80;
+    final dashAngle = -rotation * math.pi * 2 * 0.7 * speedBoost;
+    for (var index = 0; index < 18; index++) {
+      final start = dashAngle + index * math.pi / 9;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: innerRadius),
+        start,
+        math.pi / 22,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = accent.withValues(alpha: 0.28 + pulse * 0.16),
+      );
+    }
+
+    // Orbiting energy particles on the progress ring.
+    final particleCount = hasError ? 2 : 3;
+    for (var index = 0; index < particleCount; index++) {
+      final angle =
+          rotation * math.pi * 2 * speedBoost +
+          index * math.pi * 2 / particleCount +
+          (hasError ? 0 : progress * math.pi * 2);
+      final position = Offset(
+        center.dx + math.cos(angle) * baseRadius,
+        center.dy + math.sin(angle) * baseRadius,
+      );
+      canvas.drawCircle(position, 2.6, Paint()..color = accent);
+      canvas.drawCircle(
+        position,
+        4.6,
+        Paint()..color = accent.withValues(alpha: 0.22),
+      );
+    }
+
+    // Plasma core with breathing radius and layered gradients.
+    final coreRadius = baseRadius * 0.52 + pulse * 2.2;
+    canvas.drawCircle(
+      center,
+      coreRadius * 1.5,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            accent.withValues(alpha: 0.30),
+            accent.withValues(alpha: 0.08),
+            Colors.transparent,
+          ],
+        ).createShader(
+          Rect.fromCircle(center: center, radius: coreRadius * 1.5),
+        ),
+    );
+    canvas.drawCircle(
+      center,
+      coreRadius,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.35, -0.4),
+          colors: [
+            Colors.white.withValues(alpha: 0.95),
+            accent,
+            accent.withValues(alpha: 0.55),
+          ],
+          stops: const [0, 0.45, 1],
+        ).createShader(
+          Rect.fromCircle(center: center, radius: coreRadius),
+        ),
+    );
     canvas.drawCircle(
       center,
       coreRadius,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.1
-        ..color = Colors.white.withValues(alpha: 0.45),
-    );
-    canvas.drawCircle(
-      center - Offset(coreRadius * 0.32, coreRadius * 0.34),
-      coreRadius * 0.24,
-      Paint()..color = Colors.white.withValues(alpha: 0.38 + pulse * 0.2),
+        ..strokeWidth = 1
+        ..color = Colors.white.withValues(alpha: 0.40),
     );
 
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(-rotation * 0.45);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset.zero,
-        width: ringRadius * 2.15,
-        height: ringRadius * 0.82,
-      ),
+    // Lightning arcs flicker when the battery is low or in error state.
+    if (hasError || progress <= 0.35) {
+      final random = math.Random(size.hashCode);
+      final bolts = refreshing ? 3 : 2;
+      for (var index = 0; index < bolts; index++) {
+        final phase = (rotation * speedBoost * 3 + index / bolts) % 1.0;
+        if (phase > 0.82) {
+          _paintBolt(canvas, center, coreRadius, baseRadius, accent, random);
+        }
+      }
+    }
+  }
+
+  void _paintBolt(
+    Canvas canvas,
+    Offset center,
+    double fromRadius,
+    double toRadius,
+    Color color,
+    math.Random random,
+  ) {
+    final startAngle = random.nextDouble() * math.pi * 2;
+    final start = Offset(
+      center.dx + math.cos(startAngle) * fromRadius,
+      center.dy + math.sin(startAngle) * fromRadius,
+    );
+    final end = Offset(
+      center.dx + math.cos(startAngle) * toRadius,
+      center.dy + math.sin(startAngle) * toRadius,
+    );
+    final mid1 = Offset.lerp(start, end, 0.4)!;
+    final mid2 = Offset.lerp(start, end, 0.7)!;
+    final jitter = (toRadius - fromRadius) * 0.22;
+    final path =
+        Path()
+          ..moveTo(start.dx, start.dy)
+          ..lineTo(mid1.dx + random.nextDouble() * jitter - jitter / 2,
+              mid1.dy + random.nextDouble() * jitter - jitter / 2)
+          ..lineTo(mid2.dx + random.nextDouble() * jitter - jitter / 2,
+              mid2.dy + random.nextDouble() * jitter - jitter / 2)
+          ..lineTo(end.dx, end.dy);
+    canvas.drawPath(
+      path,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.9
-        ..color = color.withValues(alpha: 0.22),
+        ..strokeWidth = 1.4
+        ..color = Colors.white.withValues(alpha: 0.55),
     );
-    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _EnergyPainter oldDelegate) {
-    return animation != oldDelegate.animation ||
-        color != oldDelegate.color ||
+  bool shouldRepaint(covariant _PlasmaPainter oldDelegate) {
+    return rotation != oldDelegate.rotation ||
+        pulse != oldDelegate.pulse ||
+        accent != oldDelegate.accent ||
         progress != oldDelegate.progress ||
         hasError != oldDelegate.hasError ||
         refreshing != oldDelegate.refreshing;

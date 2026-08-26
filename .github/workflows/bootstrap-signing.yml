@@ -1,0 +1,49 @@
+name: Bootstrap Release Signing
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Generate release keystore
+        shell: bash
+        run: |
+          STORE_PASSWORD="$(openssl rand -hex 16)"
+          KEY_PASSWORD="$(openssl rand -hex 16)"
+          KEY_ALIAS="quotadash"
+          keytool -genkeypair -v \
+            -keystore release.keystore \
+            -alias "$KEY_ALIAS" \
+            -keyalg RSA -keysize 4096 -validity 10950 \
+            -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+            -dname "CN=QuotaDash, OU=Personal, O=YXX168, L=Internet, ST=Internet, C=CN"
+          base64 -w0 release.keystore > release.keystore.b64
+          {
+            echo "STORE_PASSWORD=$STORE_PASSWORD"
+            echo "KEY_PASSWORD=$KEY_PASSWORD"
+            echo "KEY_ALIAS=$KEY_ALIAS"
+          } > signing.env
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-keystore
+          path: release.keystore
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: signing-env
+          path: signing.env
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-keystore-base64
+          path: release.keystore.b64
+          retention-days: 7
