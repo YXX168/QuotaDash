@@ -14,9 +14,7 @@ void main() {
       isFalse,
     );
     expect(
-      module.isEnabled(
-        const AppConfig(values: {'managementKey': 'secret'}),
-      ),
+      module.isEnabled(const AppConfig(values: {'managementKey': 'secret'})),
       isFalse,
     );
     expect(

@@ -213,10 +213,11 @@ class _ConfigScreenState extends State<ConfigScreen>
                                           const SizedBox(height: 12),
                                         _ProviderFieldInput(
                                           field: module.fields[index],
-                                          isModuleActive: () => module.fields
-                                              .any(
+                                          isModuleActive: () =>
+                                              module.fields.any(
                                                 (field) =>
-                                                    _fieldControllers[field.key]!
+                                                    _fieldControllers[field
+                                                            .key]!
                                                         .text
                                                         .trim()
                                                         .isNotEmpty,

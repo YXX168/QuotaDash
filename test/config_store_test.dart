@@ -59,6 +59,9 @@ void main() {
       const AppConfig(values: {'futureProviderApiKey': 'future-secret'}),
     );
 
-    expect((await store.load())?.value('futureProviderApiKey'), 'future-secret');
+    expect(
+      (await store.load())?.value('futureProviderApiKey'),
+      'future-secret',
+    );
   });
 }

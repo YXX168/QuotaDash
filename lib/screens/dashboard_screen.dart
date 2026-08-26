@@ -195,29 +195,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Widget> _providerSections() => [
     for (final entry in _providerQuotas.entries) ...[
       if (_providerModules[entry.key] case final module?) ...[
-      const SizedBox(height: 18),
-      SectionTitle(title: module.displayName, subtitle: '额度模块'),
-      const SizedBox(height: 10),
-      if (widget.visualMode == VisualMode.energy)
-        FractionallySizedBox(
-          alignment: Alignment.centerLeft,
-          widthFactor: 0.5,
-          child: ProviderEnergyCore(
-            key: Key('provider-energy-${entry.key.name}'),
+        const SizedBox(height: 18),
+        SectionTitle(title: module.displayName, subtitle: '额度模块'),
+        const SizedBox(height: 10),
+        if (widget.visualMode == VisualMode.energy)
+          FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: 0.5,
+            child: ProviderEnergyCore(
+              key: Key('provider-energy-${entry.key.name}'),
+              quota: entry.value,
+              displayName: module.displayName,
+              accentColor: module.accentColor,
+              refreshing: _refreshing,
+            ),
+          )
+        else
+          ProviderQuotaCard(
+            key: Key('quota-card-${entry.key.name}'),
             quota: entry.value,
             displayName: module.displayName,
             accentColor: module.accentColor,
-            refreshing: _refreshing,
+            icon: module.icon,
           ),
-        )
-      else
-        ProviderQuotaCard(
-          key: Key('quota-card-${entry.key.name}'),
-          quota: entry.value,
-          displayName: module.displayName,
-          accentColor: module.accentColor,
-          icon: module.icon,
-        ),
       ],
     ],
   ];
