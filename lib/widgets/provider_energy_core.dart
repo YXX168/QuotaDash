@@ -74,7 +74,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
   /// average across windows.
   double? get _headlineRemaining {
     for (final entry in widget.quota.windows) {
-      if (entry.label == '月额度') return entry.remainingPercent;
+      if (entry.label == '月限额') return entry.remainingPercent;
     }
     return widget.quota.averageRemainingPercent;
   }
@@ -203,7 +203,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        quota.hasError ? '同步异常' : '月度余额',
+                        quota.hasError ? '同步异常' : '月限额剩余',
                         style: TextStyle(
                           color: accent.withValues(alpha: 0.95),
                           fontSize: 8,
