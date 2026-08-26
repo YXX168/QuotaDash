@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../models/provider_quota.dart';
-
 /// Declarative description of one configuration input owned by a provider
 /// module. The config screen renders these fields dynamically so new
 /// providers never require UI changes.

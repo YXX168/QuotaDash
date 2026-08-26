@@ -18,6 +18,9 @@ typedef ModuleFactory =
 class ProviderRegistry {
   const ProviderRegistry({this.factories = defaultFactories});
 
+  /// The standard registry with every built-in provider module.
+  static const ProviderRegistry defaultRegistry = ProviderRegistry();
+
   static const List<ModuleFactory> defaultFactories = [
     _createCliProxyModule,
     _createOpenCodeModule,

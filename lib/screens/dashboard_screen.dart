@@ -26,6 +26,7 @@ import 'tools_screen.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     required this.config,
+    required this.repository,
     required this.onEditConfig,
     required this.visualMode,
     required this.onVisualModeChanged,

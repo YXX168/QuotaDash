@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/app_config.dart';
-import '../models/dashboard_snapshot.dart';
 import '../models/provider_quota.dart';
 import '../theme/app_theme.dart';
 import 'management_service.dart';

@@ -123,7 +123,7 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
               loadError: _loadError.toString(),
               onSaved: _saveConfig,
             )
-          : _config == null || _config.values.isEmpty
+          : _config == null || _config!.values.isEmpty
           ? ConfigScreen(configStore: _configStore, onSaved: _saveConfig)
           : Builder(
               builder: (homeContext) => DashboardScreen(
