@@ -130,9 +130,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: 0.13),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: accent.withValues(alpha: 0.32),
-                    ),
+                    border: Border.all(color: accent.withValues(alpha: 0.32)),
                   ),
                   child: Text(
                     _statusLabel,
@@ -160,8 +158,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                             rotation: _rotation.value,
                             pulse: Curves.easeInOut.transform(_pulse.value),
                             accent: accent,
-                            progress:
-                                ((remaining ?? 0).clamp(0, 100)) / 100.0,
+                            progress: ((remaining ?? 0).clamp(0, 100)) / 100.0,
                             hasError: quota.hasError,
                             refreshing: widget.refreshing,
                           ),
@@ -241,9 +238,11 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
             else
               Row(
                 children: [
-                  for (var index = 0;
-                      index < math.min(2, quota.windows.length);
-                      index++) ...[
+                  for (
+                    var index = 0;
+                    index < math.min(2, quota.windows.length);
+                    index++
+                  ) ...[
                     if (index > 0)
                       Container(
                         width: 1,
@@ -329,20 +328,22 @@ class _SegmentedChargeBar extends StatelessWidget {
               Expanded(
                 child: Container(
                   height: 7,
-                  margin: EdgeInsets.only(right: index == _segmentCount - 1 ? 0 : 2.5),
+                  margin: EdgeInsets.only(
+                    right: index == _segmentCount - 1 ? 0 : 2.5,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(3),
                     gradient: index < litCount
                         ? LinearGradient(
                             colors: [
-                              accent.withValues(alpha: 0.55 + 0.35 * (index / _segmentCount)),
+                              accent.withValues(
+                                alpha: 0.55 + 0.35 * (index / _segmentCount),
+                              ),
                               accent,
                             ],
                           )
                         : null,
-                    color: index < litCount
-                        ? null
-                        : const Color(0xFF1A2438),
+                    color: index < litCount ? null : const Color(0xFF1A2438),
                     boxShadow: index == litCount - 1 && litCount > 0
                         ? [
                             BoxShadow(
@@ -408,10 +409,7 @@ class _WindowLine extends StatelessWidget {
           borderRadius: BorderRadius.circular(99),
           child: Stack(
             children: [
-              Container(
-                height: 4,
-                color: const Color(0x221B2947),
-              ),
+              Container(height: 4, color: const Color(0x221B2947)),
               FractionallySizedBox(
                 widthFactor: ((r ?? 0) / 100).clamp(0.0, 1.0).toDouble(),
                 child: Container(height: 4, color: color),
@@ -452,16 +450,17 @@ class _PlasmaPainter extends CustomPainter {
       center,
       baseRadius * 1.55,
       Paint()
-        ..shader = RadialGradient(
-          colors: [
-            accent.withValues(alpha: 0.16 + pulse * 0.06),
-            accent.withValues(alpha: 0.04),
-            Colors.transparent,
-          ],
-          stops: const [0, 0.55, 1],
-        ).createShader(
-          Rect.fromCircle(center: center, radius: baseRadius * 1.55),
-        ),
+        ..shader =
+            RadialGradient(
+              colors: [
+                accent.withValues(alpha: 0.16 + pulse * 0.06),
+                accent.withValues(alpha: 0.04),
+                Colors.transparent,
+              ],
+              stops: const [0, 0.55, 1],
+            ).createShader(
+              Rect.fromCircle(center: center, radius: baseRadius * 1.55),
+            ),
     );
 
     // Progress ring (thick arc with round caps).
@@ -532,15 +531,16 @@ class _PlasmaPainter extends CustomPainter {
       center,
       coreRadius * 1.5,
       Paint()
-        ..shader = RadialGradient(
-          colors: [
-            accent.withValues(alpha: 0.30),
-            accent.withValues(alpha: 0.08),
-            Colors.transparent,
-          ],
-        ).createShader(
-          Rect.fromCircle(center: center, radius: coreRadius * 1.5),
-        ),
+        ..shader =
+            RadialGradient(
+              colors: [
+                accent.withValues(alpha: 0.30),
+                accent.withValues(alpha: 0.08),
+                Colors.transparent,
+              ],
+            ).createShader(
+              Rect.fromCircle(center: center, radius: coreRadius * 1.5),
+            ),
     );
     canvas.drawCircle(
       center,
@@ -554,9 +554,7 @@ class _PlasmaPainter extends CustomPainter {
             accent.withValues(alpha: 0.55),
           ],
           stops: const [0, 0.45, 1],
-        ).createShader(
-          Rect.fromCircle(center: center, radius: coreRadius),
-        ),
+        ).createShader(Rect.fromCircle(center: center, radius: coreRadius)),
     );
     canvas.drawCircle(
       center,
@@ -600,14 +598,17 @@ class _PlasmaPainter extends CustomPainter {
     final mid1 = Offset.lerp(start, end, 0.4)!;
     final mid2 = Offset.lerp(start, end, 0.7)!;
     final jitter = (toRadius - fromRadius) * 0.22;
-    final path =
-        Path()
-          ..moveTo(start.dx, start.dy)
-          ..lineTo(mid1.dx + random.nextDouble() * jitter - jitter / 2,
-              mid1.dy + random.nextDouble() * jitter - jitter / 2)
-          ..lineTo(mid2.dx + random.nextDouble() * jitter - jitter / 2,
-              mid2.dy + random.nextDouble() * jitter - jitter / 2)
-          ..lineTo(end.dx, end.dy);
+    final path = Path()
+      ..moveTo(start.dx, start.dy)
+      ..lineTo(
+        mid1.dx + random.nextDouble() * jitter - jitter / 2,
+        mid1.dy + random.nextDouble() * jitter - jitter / 2,
+      )
+      ..lineTo(
+        mid2.dx + random.nextDouble() * jitter - jitter / 2,
+        mid2.dy + random.nextDouble() * jitter - jitter / 2,
+      )
+      ..lineTo(end.dx, end.dy);
     canvas.drawPath(
       path,
       Paint()
