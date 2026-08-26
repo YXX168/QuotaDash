@@ -311,11 +311,12 @@ class _QuotaLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = remaining == null
+    final r = remaining;
+    final color = r == null
         ? const Color(0xFF75829B)
-        : remaining <= 15
+        : r <= 15
         ? AppTheme.danger
-        : remaining <= 35
+        : r <= 35
         ? AppTheme.warning
         : AppTheme.success;
     return Column(
@@ -335,7 +336,7 @@ class _QuotaLine extends StatelessWidget {
               ),
             ),
             Text(
-              remaining == null ? '--' : '${remaining.toStringAsFixed(0)}%',
+              remaining == null ? '--' : '${r.toStringAsFixed(0)}%',
               style: TextStyle(
                 color: color,
                 fontSize: 10.5,
