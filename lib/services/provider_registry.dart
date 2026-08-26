@@ -6,7 +6,10 @@ import 'quota_repository.dart';
 
 /// Signature used to construct one bound quota module instance.
 typedef ModuleFactory =
-    QuotaModule Function(AppConfig config, {QuotaRepository? cliProxyRepository});
+    QuotaModule Function(
+      AppConfig config, {
+      QuotaRepository? cliProxyRepository,
+    });
 
 /// Central registry of every quota provider module compiled into the app.
 ///
@@ -38,8 +41,9 @@ class ProviderRegistry {
     AppConfig config, {
     QuotaRepository? cliProxyRepository,
   }) => CliProxyApiModule(
-    repositoryFactory:
-        cliProxyRepository == null ? null : () => cliProxyRepository,
+    repositoryFactory: cliProxyRepository == null
+        ? null
+        : () => cliProxyRepository,
   );
 
   static QuotaModule _createOpenCodeModule(

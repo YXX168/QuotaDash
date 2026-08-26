@@ -200,15 +200,19 @@ class _ConfigScreenState extends State<ConfigScreen>
                                     for (final module in _modules) ...[
                                       _ModuleSectionHeader(module: module),
                                       const SizedBox(height: 10),
-                                      for (var index = 0;
-                                          index < module.fields.length;
-                                          index++) ...[
+                                      for (
+                                        var index = 0;
+                                        index < module.fields.length;
+                                        index++
+                                      ) ...[
                                         if (index > 0)
                                           const SizedBox(height: 12),
                                         _ProviderFieldInput(
                                           field: module.fields[index],
                                           controller:
-                                              _fieldControllers[module.fields[index].key]!,
+                                              _fieldControllers[module
+                                                  .fields[index]
+                                                  .key]!,
                                           onSubmitted:
                                               index == module.fields.length - 1
                                               ? (_) => _save()
@@ -512,15 +516,18 @@ class _ProviderFieldInputState extends State<_ProviderFieldInput> {
       controller: widget.controller,
       obscureText: field.obscure && _obscured,
       keyboardType: field.keyboardType,
-      textInputAction:
-          widget.onSubmitted == null ? TextInputAction.next : TextInputAction.done,
+      textInputAction: widget.onSubmitted == null
+          ? TextInputAction.next
+          : TextInputAction.done,
       autocorrect: false,
       enableSuggestions: false,
       onFieldSubmitted: widget.onSubmitted,
       decoration: InputDecoration(
         labelText: field.label + (field.required ? '' : '（可选）'),
         hintText: field.hint,
-        prefixIcon: Icon(field.obscure ? Icons.key_rounded : Icons.link_rounded),
+        prefixIcon: Icon(
+          field.obscure ? Icons.key_rounded : Icons.link_rounded,
+        ),
         suffixIcon: field.obscure
             ? IconButton(
                 tooltip: _obscured ? '显示' : '隐藏',

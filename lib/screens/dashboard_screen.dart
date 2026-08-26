@@ -287,7 +287,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _ServicePanel(
-                                    snapshot: _snapshot ??
+                                    snapshot:
+                                        _snapshot ??
                                         DashboardSnapshot(
                                           accounts: const [],
                                           checkedAt: DateTime.now(),

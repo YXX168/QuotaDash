@@ -13,8 +13,9 @@ const openCodeConfigKeys = <String>['openCodeApiKey'];
 
 /// OpenCode Go provider module.
 class OpenCodeModule implements QuotaModule<ProviderModuleResult> {
-  const OpenCodeModule({OpencodeService Function(String apiKey)? serviceFactory})
-    : _serviceFactory = serviceFactory;
+  const OpenCodeModule({
+    OpencodeService Function(String apiKey)? serviceFactory,
+  }) : _serviceFactory = serviceFactory;
 
   final OpencodeService Function(String apiKey)? _serviceFactory;
 

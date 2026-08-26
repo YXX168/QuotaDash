@@ -124,8 +124,8 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                     children: [
                       Text(
                         value,
-                        style:
-                            Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
                               color: Colors.white,
                               fontSize: 25,
                               height: 1,
@@ -269,9 +269,9 @@ class _OrbPainter extends CustomPainter {
     final pulse = (math.sin(phase * math.pi * 2) + 1) / 2;
     final ringRadius = math.min(size.width, size.height) * 0.38;
 
-    final glow =
-        Paint()
-          ..shader = RadialGradient(
+    final glow = Paint()
+      ..shader =
+          RadialGradient(
             colors: [
               color.withValues(alpha: 0.55),
               color.withValues(alpha: 0.18),
@@ -312,9 +312,9 @@ class _OrbPainter extends CustomPainter {
     canvas.drawCircle(satellite, hasError ? 5 : 3.4, Paint()..color = color);
 
     final coreRadius = ringRadius * 0.5 + pulse * 0.7;
-    final corePaint =
-        Paint()
-          ..shader = RadialGradient(
+    final corePaint = Paint()
+      ..shader =
+          RadialGradient(
             colors: [
               Colors.white.withValues(alpha: 0.95),
               color,

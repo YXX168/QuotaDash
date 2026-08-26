@@ -36,8 +36,7 @@ class PluginConfigStore implements ConfigStore {
 
     // ---- Legacy migration -------------------------------------------
     var legacyBaseUrl =
-        (await _secureStorage.read(key: _legacySecureBaseUrlKey))?.trim() ??
-        '';
+        (await _secureStorage.read(key: _legacySecureBaseUrlKey))?.trim() ?? '';
     if (legacyBaseUrl.isEmpty) {
       legacyBaseUrl = preferences.getString(_legacyBaseUrlKey)?.trim() ?? '';
       if (legacyBaseUrl.isNotEmpty) {
@@ -103,7 +102,10 @@ class PluginConfigStore implements ConfigStore {
       await _secureStorage.delete(key: _legacySecureBaseUrlKey);
     }
     if (managementKey.isNotEmpty) {
-      await _secureStorage.write(key: _legacyManagementKey, value: managementKey);
+      await _secureStorage.write(
+        key: _legacyManagementKey,
+        value: managementKey,
+      );
     } else {
       await _secureStorage.delete(key: _legacyManagementKey);
     }

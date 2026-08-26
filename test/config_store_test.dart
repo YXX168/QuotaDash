@@ -27,11 +27,13 @@ void main() {
 
     final store = PluginConfigStore();
     await store.save(
-      const AppConfig(values: {
-        'baseUrl': 'https://proxy.example/v0/management',
-        'managementKey': 'proxy-secret',
-        'openCodeApiKey': 'opencode-secret',
-      }),
+      const AppConfig(
+        values: {
+          'baseUrl': 'https://proxy.example/v0/management',
+          'managementKey': 'proxy-secret',
+          'openCodeApiKey': 'opencode-secret',
+        },
+      ),
     );
 
     final loaded = await store.load();
