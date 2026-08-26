@@ -89,9 +89,7 @@ class ProviderQuotaCard extends StatelessWidget {
                       ],
                     ),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: accent.withValues(alpha: 0.38),
-                    ),
+                    border: Border.all(color: accent.withValues(alpha: 0.38)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -217,9 +215,7 @@ class _WindowRow extends StatelessWidget {
             ],
             const Spacer(),
             Text(
-              remaining == null
-                  ? '--'
-                  : '${remaining.toStringAsFixed(0)}%',
+              remaining == null ? '--' : '${remaining.toStringAsFixed(0)}%',
               style: TextStyle(
                 color: _color,
                 fontSize: 13,
@@ -244,10 +240,7 @@ class _WindowRow extends StatelessWidget {
                   height: isMonthly ? 9 : 7,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        _tailColor.withValues(alpha: 0.70),
-                        _color,
-                      ],
+                      colors: [_tailColor.withValues(alpha: 0.70), _color],
                     ),
                   ),
                 ),
