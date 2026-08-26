@@ -8,102 +8,157 @@ import 'glass_widgets.dart';
 
 /// Generic quota panel card for any provider module.
 ///
-/// Mirrors the Codex [AccountCard] visual language: glass card, gradient
-/// icon, status pill and animated progress rows with reset countdowns.
+/// Visual language mirrors the OpenCode energy-bar card from the original
+/// branch: glass card, accent icon tile, live-sync status, corner badge,
+/// glowing 14px energy bar and label/bar/percent rows per window.
 class ProviderQuotaCard extends StatelessWidget {
   const ProviderQuotaCard({required this.quota, super.key});
 
   final ProviderQuota quota;
 
-  static Color _accentFor(QuotaProviderId id) {
-    switch (id) {
-      case QuotaProviderId.cliProxyApi:
-        return AppTheme.cyan;
-      case QuotaProviderId.openCode:
-        return AppTheme.magenta;
-    }
-  }
+  static const _accentByProvider = {
+    QuotaProviderId.cliProxyApi: AppTheme.cyan,
+    QuotaProviderId.openCode: AppTheme.magenta,
+  };
 
-  static IconData _iconFor(QuotaProviderId id) {
-    switch (id) {
-      case QuotaProviderId.cliProxyApi:
-        return Icons.dns_rounded;
-      case QuotaProviderId.openCode:
-        return Icons.bolt_rounded;
-    }
-  }
+  static const _iconByProvider = {
+    QuotaProviderId.cliProxyApi: Icons.dns_rounded,
+    QuotaProviderId.openCode: Icons.bolt_rounded,
+  };
+
+  Color get _accent =>
+      _accentByProvider[quota.provider] ?? AppTheme.magenta;
+
+  IconData get _icon => _iconByProvider[quota.provider] ?? Icons.bolt_rounded;
 
   @override
   Widget build(BuildContext context) {
-    final accent = _accentFor(quota.provider);
     final average = quota.averageRemainingPercent;
+    final accent = quota.hasError ? AppTheme.warning : _accent;
     return GlassCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 15),
       borderColor: accent.withValues(alpha: 0.22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              GradientIcon(icon: _iconFor(quota.provider)),
-              const SizedBox(width: 14),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(color: accent.withValues(alpha: 0.28)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.16),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(_icon, size: 20, color: accent),
+              ),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       quota.provider.displayName,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      quota.hasError ? '同步失败' : '额度窗口实时同步',
-                      style: Theme.of(context).textTheme.bodySmall,
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: quota.hasError
+                                ? AppTheme.warning
+                                : AppTheme.success,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: quota.hasError
+                                    ? AppTheme.warning
+                                    : AppTheme.success,
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          quota.hasError ? '同步失败' : '官方用量实时同步',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(fontSize: 10, height: 1.2),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              StatusPill(
-                label: quota.hasError ? '异常' : '正常',
-                color: quota.hasError ? AppTheme.danger : AppTheme.success,
-              ),
+              if (average != null && !quota.hasError)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: accent.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    '${average.toStringAsFixed(0)}% 剩余',
+                    style: TextStyle(
+                      color: accent,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
             ],
           ),
           if (quota.hasError) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppTheme.danger.withValues(alpha: 0.09),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: AppTheme.danger.withValues(alpha: 0.24),
                 ),
               ),
               child: Text(
                 '${quota.error}',
-                style: const TextStyle(color: Color(0xFFFFA1B5)),
+                style: const TextStyle(color: Color(0xFFFFA1B5), fontSize: 12),
               ),
             ),
           ] else ...[
-            if (average != null) ...[
-              const SizedBox(height: 18),
-              _AverageRow(remaining: average, accent: accent),
-            ],
-            const SizedBox(height: 16),
-            for (var index = 0; index < quota.windows.length; index++) ...[
-              if (index > 0) const SizedBox(height: 17),
-              _WindowProgress(
-                label: quota.windows[index].label,
-                remaining: quota.windows[index].remainingPercent,
-                resetAt: quota.windows[index].resetAt,
-              ),
-            ],
-            if (quota.windows.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: Text('暂无可用额度窗口'),
+            const SizedBox(height: 15),
+            EnergyBar(remaining: average, healthyColor: accent),
+            if (quota.windows.isNotEmpty) ...[
+              const SizedBox(height: 13),
+              for (var index = 0; index < quota.windows.length; index++) ...[
+                if (index > 0) const SizedBox(height: 11),
+                QuotaRow(entry: quota.windows[index]),
+              ],
+            ] else
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  '暂无可用额度窗口',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
           ],
         ],
@@ -112,53 +167,12 @@ class ProviderQuotaCard extends StatelessWidget {
   }
 }
 
-class _AverageRow extends StatelessWidget {
-  const _AverageRow({required this.remaining, required this.accent});
+/// Glowing 14px energy bar with white specular highlight.
+class EnergyBar extends StatelessWidget {
+  const EnergyBar({required this.remaining, required this.healthyColor});
 
-  final double remaining;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.09),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.donut_large_rounded, size: 18, color: accent),
-          const SizedBox(width: 9),
-          const Text('综合剩余'),
-          const Spacer(),
-          Text(
-            '${remaining.toStringAsFixed(0)}%',
-            style: TextStyle(
-              color: accent,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WindowProgress extends StatelessWidget {
-  const _WindowProgress({
-    required this.label,
-    required this.remaining,
-    this.resetAt,
-  });
-
-  final String label;
   final double? remaining;
-  final DateTime? resetAt;
+  final Color healthyColor;
 
   @override
   Widget build(BuildContext context) {
@@ -166,78 +180,137 @@ class _WindowProgress extends StatelessWidget {
     final color = r == null
         ? const Color(0xFF75829B)
         : r <= 15
-        ? AppTheme.danger
+        ? const Color(0xFFE8455F)
         : r <= 35
-        ? AppTheme.warning
-        : AppTheme.magenta;
-    final target = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: target),
-      duration: const Duration(milliseconds: 850),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(child: Text(label)),
-              Text(
-                remaining == null
-                    ? '--'
-                    : '${(value * 100).toStringAsFixed(0)}% 剩余',
-                style: TextStyle(color: color, fontWeight: FontWeight.w800),
-              ),
+        ? const Color(0xFFE8A825)
+        : healthyColor;
+    final value = ((r ?? 0) / 100).clamp(0.0, 1.0).toDouble();
+    return Container(
+      height: 14,
+      decoration: BoxDecoration(
+        color: const Color(0x2E24324A),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 1),
+      ),
+      alignment: Alignment.centerLeft,
+      child: FractionallySizedBox(
+        widthFactor: value,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            gradient: LinearGradient(
+              colors: [color.withValues(alpha: 0.92), color],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            boxShadow: [
+              BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10),
             ],
           ),
-          const SizedBox(height: 9),
-          Container(
-            height: 8,
-            decoration: BoxDecoration(
-              color: const Color(0x221B2947),
-              borderRadius: BorderRadius.circular(99),
-            ),
+          child: Align(
             alignment: Alignment.centerLeft,
             child: FractionallySizedBox(
-              widthFactor: value,
+              widthFactor: 0.16,
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(99),
                   gradient: LinearGradient(
-                    colors: [color.withValues(alpha: 0.72), color],
+                    colors: [
+                      Colors.white.withValues(alpha: 0.5),
+                      Colors.transparent,
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.28),
-                      blurRadius: 8,
-                    ),
-                  ],
                 ),
               ),
             ),
           ),
-          if (resetAt != null) ...[
-            const SizedBox(height: 7),
-            Text(
-              _resetLabel(resetAt!),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontSize: 10.5),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
+}
 
-  static String _resetLabel(DateTime resetAt) {
-    final diff = resetAt.difference(DateTime.now());
-    if (diff.isNegative) return '已重置';
-    if (diff.inDays >= 1) {
-      return '${diff.inDays} 天后重置';
-    }
-    final hours = diff.inHours;
-    final minutes = diff.inMinutes % 60;
-    if (hours >= 1) return '${hours} 小时 ${minutes} 分后重置';
-    return '${diff.inMinutes} 分钟后重置';
+/// Label | progress bar | percent row used under the energy bar.
+class QuotaRow extends StatelessWidget {
+  const QuotaRow({required this.entry});
+
+  final ProviderQuotaWindow entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final remaining = entry.remainingPercent;
+    final color = remaining == null
+        ? const Color(0xFF75829B)
+        : remaining <= 15
+        ? const Color(0xFFE8455F)
+        : remaining <= 35
+        ? const Color(0xFFE8A825)
+        : const Color(0xFF00D98A);
+    final progress = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 58,
+          child: Text(
+            entry.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: Stack(
+              children: [
+                Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0x221B2947),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: progress,
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color.withValues(alpha: 0.8), color],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.25),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 38,
+          child: Text(
+            remaining == null ? '--' : '${remaining.toStringAsFixed(0)}%',
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: color,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
