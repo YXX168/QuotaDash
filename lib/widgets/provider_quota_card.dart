@@ -83,9 +83,7 @@ class ProviderQuotaCard extends StatelessWidget {
                           width: 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: quota.hasError
-                                ? AppTheme.warning
-                                : accent,
+                            color: quota.hasError ? AppTheme.warning : accent,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -122,9 +120,7 @@ class ProviderQuotaCard extends StatelessWidget {
                       ],
                     ),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: accent.withValues(alpha: 0.35),
-                    ),
+                    border: Border.all(color: accent.withValues(alpha: 0.35)),
                   ),
                   child: Text(
                     '${average.toStringAsFixed(0)}% 剩余',
@@ -257,9 +253,7 @@ class QuotaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final remaining = entry.remainingPercent;
     final color = _barColor(remaining, accent);
-    final tail = remaining == null || remaining <= 35
-        ? color
-        : AppTheme.violet;
+    final tail = remaining == null || remaining <= 35 ? color : AppTheme.violet;
     final progress = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
 
     return Row(
