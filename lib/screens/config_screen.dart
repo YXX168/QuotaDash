@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 
 import '../models/app_config.dart';
 import '../services/config_store.dart';
+import '../services/provider_field.dart';
+import '../services/provider_registry.dart';
+import '../services/quota_module.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_widgets.dart';
 
@@ -14,12 +17,14 @@ class ConfigScreen extends StatefulWidget {
     this.initialConfig,
     this.loadError,
     this.popOnSave = false,
+    this.registry = ProviderRegistry.defaultRegistry,
   });
 
   final ConfigStore configStore;
   final AppConfig? initialConfig;
   final String? loadError;
   final bool popOnSave;
+  final ProviderRegistry registry;
   final Future<void> Function(AppConfig config) onSaved;
 
   @override
@@ -29,26 +34,23 @@ class ConfigScreen extends StatefulWidget {
 class _ConfigScreenState extends State<ConfigScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _urlController;
-  late final TextEditingController _keyController;
-  late final TextEditingController _opencodeKeyController;
+  late final List<QuotaModule> _modules;
+  late final Map<String, TextEditingController> _fieldControllers;
   late final AnimationController _entryController;
-  bool _obscureKey = true;
   bool _saving = false;
   String? _saveError;
 
   @override
   void initState() {
     super.initState();
-    _urlController = TextEditingController(
-      text: _originOnly(widget.initialConfig?.baseUrl ?? ''),
-    );
-    _keyController = TextEditingController(
-      text: widget.initialConfig?.key ?? '',
-    );
-    _opencodeKeyController = TextEditingController(
-      text: widget.initialConfig?.opencodeKey ?? '',
-    );
+    _modules = widget.registry.modules;
+    _fieldControllers = {
+      for (final module in _modules)
+        for (final field in module.fields)
+          field.key: TextEditingController(
+            text: _displayValue(field, widget.initialConfig),
+          ),
+    };
     _entryController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 480),
@@ -58,10 +60,18 @@ class _ConfigScreenState extends State<ConfigScreen>
   @override
   void dispose() {
     _entryController.dispose();
-    _urlController.dispose();
-    _keyController.dispose();
-    _opencodeKeyController.dispose();
+    for (final controller in _fieldControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  String _displayValue(ProviderField field, AppConfig? config) {
+    final raw = config?.value(field.key) ?? '';
+    if (field.key == 'baseUrl' && raw.isNotEmpty) {
+      return _originOnly(raw);
+    }
+    return raw;
   }
 
   Future<void> _save() async {
@@ -72,11 +82,13 @@ class _ConfigScreenState extends State<ConfigScreen>
       _saveError = null;
     });
 
-    final config = AppConfig(
-      baseUrl: _managementUrl(_urlController.text),
-      key: _keyController.text.trim(),
-      opencodeKey: _opencodeKeyController.text.trim(),
-    );
+    final values = <String, String>{};
+    for (final entry in _fieldControllers.entries) {
+      var value = entry.value.text.trim();
+      if (entry.key == 'baseUrl') value = _managementUrl(value);
+      if (value.isNotEmpty) values[entry.key] = value;
+    }
+    final config = AppConfig(values: values);
 
     try {
       await widget.onSaved(config);
@@ -173,7 +185,7 @@ class _ConfigScreenState extends State<ConfigScreen>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              '连接你的 CLIProxyAPI 实例；可选填入其他供应商 API Key（如 OpenCode）',
+                              '按供应商分别填入连接信息；所有凭据仅保存在设备安全存储中。',
                               style: Theme.of(
                                 context,
                               ).textTheme.bodySmall?.copyWith(fontSize: 13),
@@ -185,69 +197,27 @@ class _ConfigScreenState extends State<ConfigScreen>
                                 key: _formKey,
                                 child: Column(
                                   children: [
-                                    TextFormField(
-                                      key: const Key('management-url-field'),
-                                      controller: _urlController,
-                                      keyboardType: TextInputType.url,
-                                      textInputAction: TextInputAction.next,
-                                      autocorrect: false,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Management API',
-                                        prefixIcon: Icon(Icons.link_rounded),
-                                      ),
-                                      validator: _validateUrl,
-                                    ),
-                                    const SizedBox(height: 14),
-                                    TextFormField(
-                                      key: const Key('management-key-field'),
-                                      controller: _keyController,
-                                      obscureText: _obscureKey,
-                                      textInputAction: TextInputAction.done,
-                                      autocorrect: false,
-                                      enableSuggestions: false,
-                                      onFieldSubmitted: (_) => _save(),
-                                      decoration: InputDecoration(
-                                        labelText: '管理密码',
-                                        prefixIcon: const Icon(
-                                          Icons.key_rounded,
+                                    for (final module in _modules) ...[
+                                      _ModuleSectionHeader(module: module),
+                                      const SizedBox(height: 10),
+                                      for (var index = 0;
+                                          index < module.fields.length;
+                                          index++) ...[
+                                        if (index > 0)
+                                          const SizedBox(height: 12),
+                                        _ProviderFieldInput(
+                                          field: module.fields[index],
+                                          controller:
+                                              _fieldControllers[module.fields[index].key]!,
+                                          onSubmitted:
+                                              index == module.fields.length - 1
+                                              ? (_) => _save()
+                                              : null,
                                         ),
-                                        suffixIcon: IconButton(
-                                          tooltip: _obscureKey ? '显示' : '隐藏',
-                                          onPressed: () => setState(
-                                            () => _obscureKey = !_obscureKey,
-                                          ),
-                                          icon: AnimatedSwitcher(
-                                            duration: const Duration(
-                                              milliseconds: 180,
-                                            ),
-                                            child: Icon(
-                                              _obscureKey
-                                                  ? Icons.visibility_rounded
-                                                  : Icons
-                                                        .visibility_off_rounded,
-                                              key: ValueKey(_obscureKey),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      validator: (value) =>
-                                          value == null || value.trim().isEmpty
-                                          ? '请输入管理密码'
-                                          : null,
-                                    ),
-                                    const SizedBox(height: 14),
-                                    TextFormField(
-                                      key: const Key('opencode-key-field'),
-                                      controller: _opencodeKeyController,
-                                      obscureText: true,
-                                      textInputAction: TextInputAction.done,
-                                      autocorrect: false,
-                                      enableSuggestions: false,
-                                      decoration: const InputDecoration(
-                                        labelText: 'OpenCode API Key（可选）',
-                                        prefixIcon: Icon(Icons.bolt_rounded),
-                                      ),
-                                    ),
+                                      ],
+                                      if (!identical(module, _modules.last))
+                                        const SizedBox(height: 20),
+                                    ],
                                     const SizedBox(height: 12),
                                     const Row(
                                       children: [
@@ -321,44 +291,44 @@ class _ConfigScreenState extends State<ConfigScreen>
       ),
     );
   }
+}
 
-  static String _normalizeUrl(String value) {
-    return value.trim().replaceFirst(RegExp(r'/+$'), '');
-  }
+String _normalizeUrl(String value) {
+  return value.trim().replaceFirst(RegExp(r'/+$'), '');
+}
 
-  static String _managementUrl(String value) {
-    final uri = Uri.parse(_normalizeUrl(value));
-    const suffix = '/v0/management';
-    final path = uri.path.endsWith(suffix)
-        ? uri.path
-        : '${uri.path.replaceFirst(RegExp(r'/+$'), '')}$suffix';
-    return uri.replace(path: path, query: null, fragment: null).toString();
-  }
+String _managementUrl(String value) {
+  final uri = Uri.parse(_normalizeUrl(value));
+  const suffix = '/v0/management';
+  final path = uri.path.endsWith(suffix)
+      ? uri.path
+      : '${uri.path.replaceFirst(RegExp(r'/+$'), '')}$suffix';
+  return uri.replace(path: path, query: null, fragment: null).toString();
+}
 
-  static String _originOnly(String value) {
-    final uri = Uri.tryParse(value);
-    if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
-    const suffix = '/v0/management';
-    final path = uri.path.endsWith(suffix)
-        ? uri.path.substring(0, uri.path.length - suffix.length)
-        : uri.path;
-    return uri
-        .replace(path: path, query: null, fragment: null)
-        .toString()
-        .replaceFirst(RegExp(r'/+$'), '');
-  }
+String _originOnly(String value) {
+  final uri = Uri.tryParse(value);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
+  const suffix = '/v0/management';
+  final path = uri.path.endsWith(suffix)
+      ? uri.path.substring(0, uri.path.length - suffix.length)
+      : uri.path;
+  return uri
+      .replace(path: path, query: null, fragment: null)
+      .toString()
+      .replaceFirst(RegExp(r'/+$'), '');
+}
 
-  static String? _validateUrl(String? value) {
-    final uri = Uri.tryParse(value?.trim() ?? '');
-    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      return '请输入完整地址';
-    }
-    if (uri.scheme != 'https' && uri.scheme != 'http') {
-      return '仅支持 HTTP 或 HTTPS';
-    }
-    if (uri.hasQuery || uri.hasFragment) return '地址不能包含参数或片段';
-    return null;
+String? _validateUrl(String? value) {
+  final uri = Uri.tryParse(value?.trim() ?? '');
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+    return '请输入完整地址';
   }
+  if (uri.scheme != 'https' && uri.scheme != 'http') {
+    return '仅支持 HTTP 或 HTTPS';
+  }
+  if (uri.hasQuery || uri.hasFragment) return '地址不能包含参数或片段';
+  return null;
 }
 
 class _ConfigDeco extends StatelessWidget {
@@ -466,6 +436,119 @@ class _ErrorBanner extends StatelessWidget {
         border: Border.all(color: AppTheme.danger.withValues(alpha: 0.25)),
       ),
       child: Text(message, style: const TextStyle(color: Color(0xFFFFA1B5))),
+    );
+  }
+}
+
+class _ModuleSectionHeader extends StatelessWidget {
+  const _ModuleSectionHeader({required this.module});
+
+  final QuotaModule module;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = module.accentColor;
+    return Row(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: accent.withValues(alpha: 0.28)),
+          ),
+          child: Icon(module.icon, size: 16, color: accent),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                module.displayName,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                module.description,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontSize: 10.5, height: 1.2),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProviderFieldInput extends StatefulWidget {
+  const _ProviderFieldInput({
+    required this.field,
+    required this.controller,
+    this.onSubmitted,
+  });
+
+  final ProviderField field;
+  final TextEditingController controller;
+  final ValueChanged<String>? onSubmitted;
+
+  @override
+  State<_ProviderFieldInput> createState() => _ProviderFieldInputState();
+}
+
+class _ProviderFieldInputState extends State<_ProviderFieldInput> {
+  bool _obscured = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final field = widget.field;
+    return TextFormField(
+      key: Key('provider-field-${field.key}'),
+      controller: widget.controller,
+      obscureText: field.obscure && _obscured,
+      keyboardType: field.keyboardType,
+      textInputAction:
+          widget.onSubmitted == null ? TextInputAction.next : TextInputAction.done,
+      autocorrect: false,
+      enableSuggestions: false,
+      onFieldSubmitted: widget.onSubmitted,
+      decoration: InputDecoration(
+        labelText: field.label + (field.required ? '' : '（可选）'),
+        hintText: field.hint,
+        prefixIcon: Icon(field.obscure ? Icons.key_rounded : Icons.link_rounded),
+        suffixIcon: field.obscure
+            ? IconButton(
+                tooltip: _obscured ? '显示' : '隐藏',
+                onPressed: () => setState(() => _obscured = !_obscured),
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    _obscured
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                    key: ValueKey(_obscured),
+                  ),
+                ),
+              )
+            : null,
+      ),
+      validator: (value) {
+        final trimmed = value?.trim() ?? '';
+        if (field.required && trimmed.isEmpty) {
+          return '请输入${field.label}';
+        }
+        if (field.key == 'baseUrl' &&
+            trimmed.isNotEmpty &&
+            _validateUrl(trimmed) != null) {
+          return _validateUrl(trimmed);
+        }
+        return null;
+      },
     );
   }
 }

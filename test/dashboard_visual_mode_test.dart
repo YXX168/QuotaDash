@@ -42,8 +42,10 @@ Future<void> _pumpDashboard(WidgetTester tester, VisualMode mode) async {
     MaterialApp(
       home: DashboardScreen(
         config: const AppConfig(
-          baseUrl: 'https://example.com/v0/management',
-          key: 'test-key',
+          values: {
+            'baseUrl': 'https://example.com/v0/management',
+            'managementKey': 'test-key',
+          },
         ),
         repository: _FixedRepository(),
         visualMode: mode,

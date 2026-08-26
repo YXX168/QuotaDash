@@ -2,12 +2,17 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_config.dart';
+import 'provider_registry_keys.dart';
 
 abstract interface class ConfigStore {
   Future<AppConfig?> load();
   Future<void> save(AppConfig config);
 }
 
+/// Secure key/value store for every provider module's settings.
+///
+/// Legacy single-provider keys (management_base_url, management_key,
+/// opencode_api_key) are migrated transparently on first load.
 class PluginConfigStore implements ConfigStore {
   PluginConfigStore({
     FlutterSecureStorage? secureStorage,
@@ -16,10 +21,11 @@ class PluginConfigStore implements ConfigStore {
        _preferencesFactory =
            preferencesFactory ?? SharedPreferences.getInstance;
 
-  static const _baseUrlKey = 'management_base_url';
-  static const _secureBaseUrlKey = 'management_base_url_secure';
-  static const _managementKey = 'management_key';
-  static const _opencodeKey = 'opencode_api_key';
+  // Legacy keys (pre multi-provider).
+  static const _legacyBaseUrlKey = 'management_base_url';
+  static const _legacySecureBaseUrlKey = 'management_base_url_secure';
+  static const _legacyManagementKey = 'management_key';
+  static const _legacyOpencodeKey = 'opencode_api_key';
 
   final FlutterSecureStorage _secureStorage;
   final Future<SharedPreferences> Function() _preferencesFactory;
@@ -27,33 +33,80 @@ class PluginConfigStore implements ConfigStore {
   @override
   Future<AppConfig?> load() async {
     final preferences = await _preferencesFactory();
-    final key = await _secureStorage.read(key: _managementKey);
-    var baseUrl =
-        (await _secureStorage.read(key: _secureBaseUrlKey))?.trim() ?? '';
-    if (baseUrl.isEmpty) {
-      baseUrl = preferences.getString(_baseUrlKey)?.trim() ?? '';
-      if (baseUrl.isNotEmpty) {
-        await _secureStorage.write(key: _secureBaseUrlKey, value: baseUrl);
-        await preferences.remove(_baseUrlKey);
+
+    // ---- Legacy migration -------------------------------------------
+    var legacyBaseUrl =
+        (await _secureStorage.read(key: _legacySecureBaseUrlKey))?.trim() ??
+        '';
+    if (legacyBaseUrl.isEmpty) {
+      legacyBaseUrl = preferences.getString(_legacyBaseUrlKey)?.trim() ?? '';
+      if (legacyBaseUrl.isNotEmpty) {
+        await _secureStorage.write(
+          key: _legacySecureBaseUrlKey,
+          value: legacyBaseUrl,
+        );
+        await preferences.remove(_legacyBaseUrlKey);
       }
     }
-    if (key == null || key.trim().isEmpty || baseUrl.isEmpty) return null;
-    final opencodeKey =
-        (await _secureStorage.read(key: _opencodeKey))?.trim() ?? '';
-    return AppConfig(baseUrl: baseUrl, key: key, opencodeKey: opencodeKey);
+    final legacyKey = await _secureStorage.read(key: _legacyManagementKey);
+    final legacyOpencode = await _secureStorage.read(key: _legacyOpencodeKey);
+
+    // ---- Current per-provider values ---------------------------------
+    final values = <String, String>{};
+    for (final entry in providerConfigKeys.entries) {
+      final raw = await _secureStorage.read(key: entry.value);
+      if (raw != null && raw.trim().isNotEmpty) {
+        values[entry.key] = raw.trim();
+      }
+    }
+
+    // Map legacy values into the new module-owned keys.
+    if (values['baseUrl'] == null && legacyBaseUrl.isNotEmpty) {
+      values['baseUrl'] = legacyBaseUrl;
+    }
+    if (values['managementKey'] == null &&
+        legacyKey != null &&
+        legacyKey.trim().isNotEmpty) {
+      values['managementKey'] = legacyKey.trim();
+    }
+    if (values['openCodeApiKey'] == null &&
+        legacyOpencode != null &&
+        legacyOpencode.trim().isNotEmpty) {
+      values['openCodeApiKey'] = legacyOpencode.trim();
+    }
+
+    if (values.isEmpty) return null;
+    return AppConfig(values: values);
   }
 
   @override
   Future<void> save(AppConfig config) async {
     final preferences = await _preferencesFactory();
-    await _secureStorage.write(key: _secureBaseUrlKey, value: config.baseUrl);
-    await _secureStorage.write(key: _managementKey, value: config.key);
-    if (config.opencodeKey.trim().isNotEmpty) {
-      await _secureStorage.write(
-        key: _opencodeKey,
-        value: config.opencodeKey.trim(),
-      );
+    await preferences.remove(_legacyBaseUrlKey);
+
+    for (final entry in providerConfigKeys.entries) {
+      final value = config.value(entry.key);
+      if (value.isEmpty) {
+        await _secureStorage.delete(key: entry.value);
+      } else {
+        await _secureStorage.write(key: entry.value, value: value);
+      }
     }
-    await preferences.remove(_baseUrlKey);
+
+    // Keep legacy secure-storage slots in sync so a downgrade does not
+    // lose the CLIProxyAPI connection silently.
+    final baseUrl = config.value('baseUrl');
+    final managementKey = config.value('managementKey');
+    if (baseUrl.isNotEmpty) {
+      await _secureStorage.write(key: _legacySecureBaseUrlKey, value: baseUrl);
+    } else {
+      await _secureStorage.delete(key: _legacySecureBaseUrlKey);
+    }
+    if (managementKey.isNotEmpty) {
+      await _secureStorage.write(key: _legacyManagementKey, value: managementKey);
+    } else {
+      await _secureStorage.delete(key: _legacyManagementKey);
+    }
+    await _secureStorage.delete(key: _legacyOpencodeKey);
   }
 }

@@ -11,19 +11,23 @@ class ProviderQuotaCard extends StatelessWidget {
 
   final ProviderQuota quota;
 
-  static const _accentByProvider = {
-    QuotaProviderId.cliProxyApi: AppTheme.cyan,
-    QuotaProviderId.openCode: AppTheme.orange,
-  };
+  Color get _accent {
+    switch (quota.provider) {
+      case QuotaProviderId.cliProxyApi:
+        return AppTheme.cyan;
+      case QuotaProviderId.openCode:
+        return AppTheme.orange;
+    }
+  }
 
-  static const _iconByProvider = {
-    QuotaProviderId.cliProxyApi: Icons.dns_rounded,
-    QuotaProviderId.openCode: Icons.bolt_rounded,
-  };
-
-  Color get _accent => _accentByProvider[quota.provider] ?? AppTheme.cyan;
-
-  IconData get _icon => _iconByProvider[quota.provider] ?? Icons.apps_rounded;
+  IconData get _icon {
+    switch (quota.provider) {
+      case QuotaProviderId.cliProxyApi:
+        return Icons.dns_rounded;
+      case QuotaProviderId.openCode:
+        return Icons.bolt_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

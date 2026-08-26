@@ -8,14 +8,14 @@ import '../models/app_config.dart';
 import '../models/dashboard_snapshot.dart';
 import '../models/provider_quota.dart';
 import '../models/visual_mode.dart';
-import '../services/cliproxyapi_module.dart';
-import '../services/opencode_module.dart';
 import '../services/quota_module.dart';
+import '../services/provider_registry.dart';
 import '../services/quota_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/account_card.dart';
 import '../widgets/energy_core.dart';
 import '../widgets/glass_widgets.dart';
+import '../widgets/provider_energy_core.dart';
 import '../widgets/provider_quota_card.dart';
 import '../widgets/quantum_emblem.dart';
 import '../widgets/request_activity.dart';
@@ -26,20 +26,21 @@ import 'tools_screen.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     required this.config,
-    required this.repository,
     required this.onEditConfig,
     required this.visualMode,
     required this.onVisualModeChanged,
     super.key,
     this.autoRefreshInterval = const Duration(minutes: 5),
+    this.registry = ProviderRegistry.defaultRegistry,
   });
 
   final AppConfig config;
-  final QuotaRepository repository;
+  final QuotaRepository? repository;
   final Future<void> Function() onEditConfig;
   final VisualMode visualMode;
   final Future<void> Function(VisualMode) onVisualModeChanged;
   final Duration autoRefreshInterval;
+  final ProviderRegistry registry;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -48,6 +49,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   DashboardSnapshot? _snapshot;
   final Map<QuotaProviderId, ProviderQuota> _providerQuotas = {};
+  final Map<QuotaProviderId, Object> _fetchErrors = {};
   Object? _error;
   bool _loading = true;
   bool _refreshing = false;
@@ -93,11 +95,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _refreshing = true;
       if (_snapshot == null && !silent) _loading = true;
       _error = null;
+      _fetchErrors.clear();
     });
     try {
+      final modules = widget.registry.createModules(
+        widget.config,
+        cliProxyRepository: widget.repository,
+      );
       final results = await Future.wait<dynamic>([
-        _fetchModule(CliProxyApiModule(repository: widget.repository)),
-        _fetchModule(OpenCodeModule(apiKey: widget.config.opencodeKey)),
+        for (final module in modules) _fetchModule(module),
       ]);
       if (!mounted) return;
       setState(() {
@@ -111,7 +117,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
         }
         _loading = false;
-        _error = null;
+        // Surface the CLIProxyAPI failure reason when its module is the one
+        // that broke; other provider sections stay untouched and cached
+        // snapshot data keeps rendering with a stale banner.
+        final cliErrorEntry = _fetchErrors[QuotaProviderId.cliProxyApi];
+        final cliQuotaError = _providerQuotas[QuotaProviderId.cliProxyApi];
+        final cliProxyError =
+            cliErrorEntry ??
+            (cliQuotaError != null && cliQuotaError.hasError
+                ? cliQuotaError.error
+                : null);
+        _error = cliProxyError;
       });
     } catch (error) {
       if (!mounted) return;
@@ -125,31 +141,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<ModuleResult> _fetchModule(QuotaModule<dynamic> module) async {
-    if (!module.isEnabled) {
+    if (!module.isEnabled(widget.config)) {
       return const ProviderModuleResult(null);
     }
     try {
-      return await module.fetch();
+      return await module.fetch(widget.config);
     } catch (error) {
-      // A failed module must not take down other providers.
-      if (module.displayName == QuotaProviderId.cliProxyApi.displayName) {
-        return CodexModuleResult(null);
+      _fetchErrors[module.id] = error;
+      if (module.id == QuotaProviderId.cliProxyApi) {
+        return const CodexModuleResult(null);
       }
+      // A failed module must not take down other providers.
       return ProviderModuleResult(null);
     }
   }
 
   List<Widget> _providerSections() => [
-    for (final provider in QuotaProviderId.values)
-      if (_providerQuotas.containsKey(provider)) ...[
-        const SizedBox(height: 18),
-        SectionTitle(title: provider.displayName, subtitle: '额度模块'),
-        const SizedBox(height: 10),
+    for (final entry in _providerQuotas.entries) ...[
+      const SizedBox(height: 18),
+      SectionTitle(title: entry.key.displayName, subtitle: '额度模块'),
+      const SizedBox(height: 10),
+      if (widget.visualMode == VisualMode.energy)
+        ProviderEnergyCore(
+          key: Key('provider-energy-${entry.key.name}'),
+          quota: entry.value,
+          refreshing: _refreshing,
+        )
+      else
         ProviderQuotaCard(
-          key: Key('quota-card-${provider.name}'),
-          quota: _providerQuotas[provider]!,
+          key: Key('quota-card-${entry.key.name}'),
+          quota: entry.value,
         ),
-      ],
+    ],
   ];
 
   Future<void> _refreshWithFeedback() async {
@@ -164,8 +187,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openAccount(int index) {
+    final snapshot = _snapshot;
+    if (snapshot == null || snapshot.accounts.isEmpty) return;
     unawaited(HapticFeedback.lightImpact());
-    final account = _snapshot!.accounts[index];
+    if (index < 0 || index >= snapshot.accounts.length) return;
+    final account = snapshot.accounts[index];
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => AccountDetailScreen(account: account),
@@ -250,7 +276,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 key: const ValueKey('loading'),
                                 visualMode: widget.visualMode,
                               )
-                            : _snapshot == null
+                            : _snapshot == null && _providerQuotas.isEmpty
                             ? _FatalErrorPanel(
                                 key: const ValueKey('fatal'),
                                 error: _error,
@@ -261,7 +287,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _ServicePanel(
-                                    snapshot: _snapshot!,
+                                    snapshot: _snapshot ??
+                                        DashboardSnapshot(
+                                          accounts: const [],
+                                          checkedAt: DateTime.now(),
+                                        ),
                                     error: _error,
                                   ),
                                   if (_error != null) ...[
@@ -272,34 +302,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                   ],
                                   const SizedBox(height: 10),
-                                  _StatsGrid(
-                                    key: const Key('summary-stats-grid'),
-                                    snapshot: _snapshot!,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _TrafficPulsePanel(snapshot: _snapshot!),
-                                  const SizedBox(height: 18),
-                                  SectionTitle(
-                                    title: 'Codex',
-                                    subtitle: _snapshot!.accounts.isEmpty
-                                        ? '未找到启用的 Codex 认证文件'
-                                        : '${_snapshot!.totalAccounts} 个账号',
-                                  ),
-                                  const SizedBox(height: 10),
-                                  if (_snapshot!.accounts.isEmpty)
-                                    const _EmptyAccounts()
-                                  else if (widget.visualMode ==
-                                      VisualMode.energy)
-                                    _EnergyAccountGrid(
+                                  if (_snapshot != null)
+                                    _StatsGrid(
+                                      key: const Key('summary-stats-grid'),
                                       snapshot: _snapshot!,
-                                      refreshing: _refreshing,
-                                      onTap: _openAccount,
-                                    )
-                                  else
-                                    _AccountGrid(
-                                      snapshot: _snapshot!,
-                                      onTap: _openAccount,
                                     ),
+                                  const SizedBox(height: 10),
+                                  if (_snapshot != null) ...[
+                                    _TrafficPulsePanel(snapshot: _snapshot!),
+                                    const SizedBox(height: 18),
+                                    SectionTitle(
+                                      title: 'Codex',
+                                      subtitle: _snapshot!.accounts.isEmpty
+                                          ? '未找到启用的 Codex 认证文件'
+                                          : '${_snapshot!.totalAccounts} 个账号',
+                                    ),
+                                  ],
+                                  if (_snapshot != null) ...[
+                                    const SizedBox(height: 10),
+                                    if (_snapshot!.accounts.isEmpty)
+                                      const _EmptyAccounts()
+                                    else if (widget.visualMode ==
+                                        VisualMode.energy)
+                                      _EnergyAccountGrid(
+                                        snapshot: _snapshot!,
+                                        refreshing: _refreshing,
+                                        onTap: _openAccount,
+                                      )
+                                    else
+                                      _AccountGrid(
+                                        snapshot: _snapshot!,
+                                        onTap: _openAccount,
+                                      ),
+                                  ],
                                   ..._providerSections(),
                                 ],
                               ),

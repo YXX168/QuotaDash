@@ -29,8 +29,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
   void initState() {
     super.initState();
     _service = ProxyApiService(
-      baseUri: widget.config.baseUri,
-      managementKey: widget.config.key,
+      baseUri: Uri.parse(widget.config.value('baseUrl')),
+      managementKey: widget.config.value('managementKey'),
     );
     _checkVersion();
   }
@@ -209,7 +209,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     const SizedBox(height: 20),
                     Center(
                       child: Text(
-                        '连接至 ${widget.config.baseUrl}',
+                        '连接至 ${widget.config.value('baseUrl')}',
                         style: const TextStyle(
                           color: Color(0xFF657289),
                           fontSize: 10,

@@ -6,24 +6,23 @@ import 'screens/config_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'services/config_store.dart';
 import 'services/management_service.dart';
+import 'services/provider_registry.dart';
 import 'services/quota_repository.dart';
 import 'services/visual_mode_store.dart';
 import 'theme/app_theme.dart';
 import 'widgets/quantum_emblem.dart';
 
-typedef RepositoryFactory = QuotaRepository Function(AppConfig config);
-
 class CliProxyDashApp extends StatefulWidget {
   const CliProxyDashApp({
     super.key,
     this.configStore,
-    this.repositoryFactory,
     this.visualModeStore,
+    this.registry = ProviderRegistry.defaultRegistry,
   });
 
   final ConfigStore? configStore;
-  final RepositoryFactory? repositoryFactory;
   final VisualModeStore? visualModeStore;
+  final ProviderRegistry registry;
 
   @override
   State<CliProxyDashApp> createState() => _CliProxyDashAppState();
@@ -58,7 +57,7 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
       if (!mounted) return;
       setState(() {
         _config = config;
-        _repository = config == null ? null : _createRepository(config);
+        _repository = config == null ? null : _tryCreateRepository(config);
         _visualMode = visualMode;
         _loading = false;
       });
@@ -72,8 +71,14 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
   }
 
   QuotaRepository _createRepository(AppConfig config) {
-    return widget.repositoryFactory?.call(config) ??
-        ManagementService(baseUri: config.baseUri, managementKey: config.key);
+    final baseUrl = config.value('baseUrl');
+    if (baseUrl.isEmpty) {
+      throw StateError('CLIProxyAPI base URL is not configured');
+    }
+    return ManagementService(
+      baseUri: Uri.parse(baseUrl),
+      managementKey: config.value('managementKey'),
+    );
   }
 
   Future<void> _saveConfig(AppConfig config) async {
@@ -81,9 +86,19 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
     if (!mounted) return;
     setState(() {
       _config = config;
-      _repository = _createRepository(config);
+      _repository = _tryCreateRepository(config);
       _loadError = null;
     });
+  }
+
+  /// Returns null when the CLIProxyAPI module is not configured yet so
+  /// OpenCode-only users can still use the dashboard.
+  QuotaRepository? _tryCreateRepository(AppConfig config) {
+    try {
+      return _createRepository(config);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _setVisualMode(VisualMode mode) async {
@@ -96,7 +111,7 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CLIProxy',
+      title: 'Quota Dash',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       home: _loading
@@ -108,13 +123,13 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
               loadError: _loadError.toString(),
               onSaved: _saveConfig,
             )
-          : _config == null
+          : _config == null || _config.values.isEmpty
           ? ConfigScreen(configStore: _configStore, onSaved: _saveConfig)
           : Builder(
               builder: (homeContext) => DashboardScreen(
-                key: ValueKey(_config!.baseUrl),
+                key: ValueKey(_config!.value('baseUrl')),
                 config: _config!,
-                repository: _repository!,
+                repository: _repository,
                 visualMode: _visualMode,
                 onVisualModeChanged: _setVisualMode,
                 onEditConfig: () async {
@@ -150,7 +165,7 @@ class _BootstrapView extends StatelessWidget {
               const QuantumEmblem(size: 72),
               const SizedBox(height: 24),
               Text(
-                'CLIProxy',
+                'Quota Dash',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: const Color(0xFFF2F7FF),
                   letterSpacing: 0.3,

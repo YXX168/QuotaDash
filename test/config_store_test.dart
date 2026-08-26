@@ -7,67 +7,44 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('migrates a legacy management address into secure storage', () async {
+  test('migrates legacy management config into provider-scoped keys', () async {
     FlutterSecureStorage.setMockInitialValues({
+      'management_base_url_secure': 'https://proxy.example/v0/management',
       'management_key': 'test-secret',
     });
-    SharedPreferences.setMockInitialValues({
-      'management_base_url': 'https://proxy.example/v0/management',
-    });
+    SharedPreferences.setMockInitialValues({});
 
     final store = PluginConfigStore();
     final config = await store.load();
 
-    expect(config?.baseUrl, 'https://proxy.example/v0/management');
-    const secureStorage = FlutterSecureStorage();
-    expect(
-      await secureStorage.read(key: 'management_base_url_secure'),
-      'https://proxy.example/v0/management',
-    );
-    final preferences = await SharedPreferences.getInstance();
-    expect(preferences.containsKey('management_base_url'), isFalse);
+    expect(config?.value('baseUrl'), 'https://proxy.example/v0/management');
+    expect(config?.value('managementKey'), 'test-secret');
   });
 
-  test('saves both management fields only in secure storage', () async {
+  test('saves and reloads multi-provider settings', () async {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
 
     final store = PluginConfigStore();
     await store.save(
-      const AppConfig(
-        baseUrl: 'https://proxy.example/v0/management',
-        key: 'test-secret',
-        opencodeKey: 'opencode-secret',
-      ),
+      const AppConfig(values: {
+        'baseUrl': 'https://proxy.example/v0/management',
+        'managementKey': 'proxy-secret',
+        'openCodeApiKey': 'opencode-secret',
+      }),
     );
 
-    const secureStorage = FlutterSecureStorage();
-    expect(
-      await secureStorage.read(key: 'management_base_url_secure'),
-      'https://proxy.example/v0/management',
-    );
-    expect(await secureStorage.read(key: 'management_key'), 'test-secret');
-    expect(
-      await secureStorage.read(key: 'opencode_api_key'),
-      'opencode-secret',
-    );
-    final preferences = await SharedPreferences.getInstance();
-    expect(preferences.containsKey('management_base_url'), isFalse);
+    final loaded = await store.load();
+    expect(loaded?.value('baseUrl'), 'https://proxy.example/v0/management');
+    expect(loaded?.value('managementKey'), 'proxy-secret');
+    expect(loaded?.value('openCodeApiKey'), 'opencode-secret');
   });
 
-  test('loads saved opencode key alongside management config', () async {
-    FlutterSecureStorage.setMockInitialValues({
-      'management_base_url_secure': 'https://proxy.example/v0/management',
-      'management_key': 'test-secret',
-      'opencode_api_key': 'opencode-secret',
-    });
+  test('returns null when nothing is configured', () async {
+    FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
 
     final store = PluginConfigStore();
-    final config = await store.load();
-
-    expect(config?.baseUrl, 'https://proxy.example/v0/management');
-    expect(config?.key, 'test-secret');
-    expect(config?.opencodeKey, 'opencode-secret');
+    expect(await store.load(), isNull);
   });
 }

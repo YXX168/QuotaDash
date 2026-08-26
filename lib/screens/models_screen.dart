@@ -159,7 +159,7 @@ class _ModelsScreenState extends State<ModelsScreen> {
               totalModels: result.totalModels,
               totalExcluded: result.totalExcluded,
               providerCount: result.providers.length,
-              baseUrl: widget.config.baseUrl,
+              baseUrl: widget.config.value('baseUrl'),
             ),
             const SizedBox(height: 16),
           ],

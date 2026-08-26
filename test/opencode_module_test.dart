@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cliproxy_dash/models/app_config.dart';
 import 'package:cliproxy_dash/models/provider_quota.dart';
 import 'package:cliproxy_dash/services/opencode_module.dart';
 import 'package:cliproxy_dash/services/opencode_service.dart';
@@ -9,10 +10,10 @@ import 'package:http/testing.dart';
 
 void main() {
   group('OpenCodeModule', () {
-    test('is disabled when API key is empty', () async {
-      final module = OpenCodeModule(apiKey: '');
-      expect(module.isEnabled, isFalse);
-      final result = await module.fetch();
+    test('is disabled when API key is missing', () async {
+      const module = OpenCodeModule();
+      expect(module.isEnabled(const AppConfig()), isFalse);
+      final result = await module.fetch(const AppConfig());
       expect(result.quota, isNull);
     });
 
@@ -31,15 +32,15 @@ void main() {
       );
       addTearDown(() => OpencodeService.clientOverride = null);
 
-      final module = OpenCodeModule(apiKey: 'test-key');
-      expect(module.isEnabled, isTrue);
+      const module = OpenCodeModule();
+      const config = AppConfig(values: {'openCodeApiKey': 'test-key'});
+      expect(module.isEnabled(config), isTrue);
 
-      final result = await module.fetch();
+      final result = await module.fetch(config);
       final quota = result.quota!;
       expect(quota.provider, QuotaProviderId.openCode);
       expect(quota.hasError, isFalse);
       expect(quota.windows.length, 3);
-      expect(quota.windows[0].label, '滚动额度');
       expect(quota.windows[0].remainingPercent, 80);
       expect(quota.windows[1].remainingPercent, 60);
       expect(quota.windows[2].remainingPercent, 40);

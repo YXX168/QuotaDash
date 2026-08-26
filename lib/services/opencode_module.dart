@@ -1,24 +1,57 @@
+import 'package:flutter/material.dart';
+
+import '../models/app_config.dart';
 import '../models/opencode_quota.dart';
 import '../models/provider_quota.dart';
+import '../theme/app_theme.dart';
 import 'opencode_service.dart';
+import 'provider_field.dart';
 import 'quota_module.dart';
+
+/// Configuration keys owned by the OpenCode Go module.
+const openCodeConfigKeys = <String>['openCodeApiKey'];
 
 /// OpenCode Go provider module.
 class OpenCodeModule implements QuotaModule<ProviderModuleResult> {
-  OpenCodeModule({required this.apiKey});
+  const OpenCodeModule({OpencodeService Function(String apiKey)? serviceFactory})
+    : _serviceFactory = serviceFactory;
 
-  final String apiKey;
+  final OpencodeService Function(String apiKey)? _serviceFactory;
 
   @override
-  bool get isEnabled => apiKey.trim().isNotEmpty;
+  QuotaProviderId get id => QuotaProviderId.openCode;
+
+  @override
+  bool isEnabled(AppConfig config) => config.hasAny(openCodeConfigKeys);
 
   @override
   String get displayName => QuotaProviderId.openCode.displayName;
 
   @override
-  Future<ProviderModuleResult> fetch() async {
-    if (!isEnabled) return const ProviderModuleResult(null);
-    final service = OpencodeService(apiKey: apiKey);
+  String get description => '滚动、周与月度额度窗口';
+
+  @override
+  Color get accentColor => AppTheme.orange;
+
+  @override
+  IconData get icon => Icons.bolt_rounded;
+
+  @override
+  List<ProviderField> get fields => const [
+    ProviderField(
+      key: 'openCodeApiKey',
+      label: 'OpenCode API Key',
+      hint: 'sk-...',
+      obscure: true,
+    ),
+  ];
+
+  @override
+  Future<ProviderModuleResult> fetch(AppConfig config) async {
+    final apiKey = config.value('openCodeApiKey');
+    if (apiKey.isEmpty) return const ProviderModuleResult(null);
+    final service =
+        _serviceFactory?.call(apiKey) ?? OpencodeService(apiKey: apiKey);
     try {
       final quota = await service.fetchQuota();
       return ProviderModuleResult(_toUnified(quota));

@@ -97,8 +97,10 @@ Future<void> _render(
       theme: AppTheme.dark,
       home: DashboardScreen(
         config: const AppConfig(
-          baseUrl: 'https://example.com/v0/management',
-          key: 'preview',
+          values: {
+            'baseUrl': 'https://example.com/v0/management',
+            'managementKey': 'preview',
+          },
         ),
         repository: _ReviewRepository(),
         visualMode: mode,
@@ -135,8 +137,10 @@ Future<void> _renderSyncFlow(
       theme: AppTheme.dark,
       home: DashboardScreen(
         config: const AppConfig(
-          baseUrl: 'https://example.com/v0/management',
-          key: 'preview',
+          values: {
+            'baseUrl': 'https://example.com/v0/management',
+            'managementKey': 'preview',
+          },
         ),
         repository: _PendingRepository(),
         visualMode: mode,

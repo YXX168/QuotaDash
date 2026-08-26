@@ -4,6 +4,22 @@
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-26
+
+### 多供应商模块化平台
+
+- 供应商接入全面模块化：新增 QuotaModule 统一接口与 ProviderRegistry 注册表，
+  新增供应商只需实现接口并注册，无需修改界面或存储层。
+- 配置页按注册表动态生成每个供应商的设置区块，支持声明式字段（ProviderField）。
+- 配置模型改为通用键值存储（AppConfig.values），所有供应商凭据保存在设备安全存储，
+  旧版单一配置自动迁移，不丢数据。
+- 能量球显示模式扩展到所有供应商：OpenCode 等通用供应商新增 ProviderEnergyCore
+  能量核心渲染，与 CLIProxyAPI 账号能量核心风格统一。
+- 仅配置 OpenCode 时也可正常使用仪表盘；CLIProxyAPI 失败时保留缓存数据并显示
+  真实错误原因。
+- 应用更名为 Quota Dash，版本升级至 2.0.0。
+
+### 多供应商额度面板（进行中）
 ### 多供应商额度面板（进行中）
 
 - 新增统一的 ProviderQuota 数据模型与 QuotaModule 模块接口，CLIProxyAPI 与 OpenCode 作为独立模块接入。
