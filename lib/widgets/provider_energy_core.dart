@@ -140,9 +140,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                     decoration: BoxDecoration(
                       color: accent.withValues(alpha: 0.13),
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: accent.withValues(alpha: 0.32),
-                      ),
+                      border: Border.all(color: accent.withValues(alpha: 0.32)),
                     ),
                     child: Text(
                       _statusLabel,
