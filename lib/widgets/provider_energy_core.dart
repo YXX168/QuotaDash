@@ -51,7 +51,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
   }
 
   Color get _accent {
-    final remaining = widget.quota.averageRemainingPercent;
+    final remaining = _headlineRemaining;
     if (widget.quota.hasError) return AppTheme.danger;
     if (remaining == null) return AppTheme.cyan;
     if (remaining <= 15) return AppTheme.danger;
@@ -63,18 +63,27 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
   String get _statusLabel {
     final quota = widget.quota;
     if (quota.hasError) return '同步失败';
-    final remaining = quota.averageRemainingPercent;
+    final remaining = _headlineRemaining;
     if (remaining == null) return '待同步';
     if (remaining <= 15) return '额度告急';
     if (remaining <= 35) return '余量偏低';
     return '能量充沛';
   }
 
+  /// Monthly remaining when available (the account hard cap), otherwise the
+  /// average across windows.
+  double? get _headlineRemaining {
+    for (final entry in widget.quota.windows) {
+      if (entry.label == '月额度') return entry.remainingPercent;
+    }
+    return widget.quota.averageRemainingPercent;
+  }
+
   @override
   Widget build(BuildContext context) {
     final quota = widget.quota;
     final accent = _accent;
-    final remaining = quota.averageRemainingPercent;
+    final remaining = _headlineRemaining;
     final valueText = quota.hasError
         ? 'ERR'
         : remaining == null
@@ -122,23 +131,29 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.13),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: accent.withValues(alpha: 0.32)),
-                  ),
-                  child: Text(
-                    _statusLabel,
-                    style: TextStyle(
-                      color: accent,
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.13),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: accent.withValues(alpha: 0.32),
+                      ),
+                    ),
+                    child: Text(
+                      _statusLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                      ),
                     ),
                   ),
                 ),
@@ -181,7 +196,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                         child: Text(
                           valueText,
                           style: const TextStyle(
-                            fontSize: 34,
+                            fontSize: 27,
                             fontWeight: FontWeight.w900,
                             height: 1,
                             letterSpacing: -1,
@@ -189,23 +204,13 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          quota.hasError ? '请检查网络与凭据' : '综合剩余能量',
-                          style: TextStyle(
-                            color: accent.withValues(alpha: 0.95),
-                            fontSize: 8,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.1,
-                          ),
+                      Text(
+                        quota.hasError ? '同步异常' : '月度余额',
+                        style: TextStyle(
+                          color: accent.withValues(alpha: 0.95),
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.1,
                         ),
                       ),
                     ],

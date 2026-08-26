@@ -76,8 +76,8 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          autocorrect: false,
-          enableSuggestions: false,
+          autocorrect: true,
+          enableSuggestions: true,
           decoration: const InputDecoration(labelText: 'API Key'),
           onSubmitted: (value) => Navigator.of(dialogContext).pop(value.trim()),
         ),

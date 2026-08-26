@@ -517,8 +517,8 @@ class _ProviderFieldInputState extends State<_ProviderFieldInput> {
       textInputAction: widget.onSubmitted == null
           ? TextInputAction.next
           : TextInputAction.done,
-      autocorrect: false,
-      enableSuggestions: false,
+      autocorrect: true,
+      enableSuggestions: true,
       onFieldSubmitted: widget.onSubmitted,
       decoration: InputDecoration(
         labelText: field.label + (field.required ? '' : '（可选）'),

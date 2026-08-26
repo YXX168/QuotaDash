@@ -32,7 +32,12 @@ class ProviderQuotaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final average = quota.averageRemainingPercent;
+    // Prefer the monthly window (account hard cap) for the headline badge.
+    double? headline;
+    for (final entry in quota.windows) {
+      if (entry.label == '月额度') headline = entry.remainingPercent;
+    }
+    final average = headline ?? quota.averageRemainingPercent;
     final accent = quota.hasError ? AppTheme.warning : _accent;
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 15),
