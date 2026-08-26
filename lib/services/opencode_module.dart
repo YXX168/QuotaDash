@@ -43,7 +43,6 @@ class OpenCodeModule implements QuotaModule<ProviderModuleResult> {
       key: 'openCodeApiKey',
       label: 'OpenCode API Key',
       hint: 'sk-...',
-      obscure: true,
     ),
   ];
 

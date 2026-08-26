@@ -506,15 +506,13 @@ class _ProviderFieldInput extends StatefulWidget {
 }
 
 class _ProviderFieldInputState extends State<_ProviderFieldInput> {
-  bool _obscured = true;
-
   @override
   Widget build(BuildContext context) {
     final field = widget.field;
     return TextFormField(
       key: Key('provider-field-${field.key}'),
       controller: widget.controller,
-      obscureText: field.obscure && _obscured,
+      obscureText: field.obscure,
       keyboardType: field.keyboardType,
       textInputAction: widget.onSubmitted == null
           ? TextInputAction.next
@@ -526,23 +524,10 @@ class _ProviderFieldInputState extends State<_ProviderFieldInput> {
         labelText: field.label + (field.required ? '' : '（可选）'),
         hintText: field.hint,
         prefixIcon: Icon(
-          field.obscure ? Icons.key_rounded : Icons.link_rounded,
+          field.keyboardType == TextInputType.url
+              ? Icons.link_rounded
+              : Icons.key_rounded,
         ),
-        suffixIcon: field.obscure
-            ? IconButton(
-                tooltip: _obscured ? '显示' : '隐藏',
-                onPressed: () => setState(() => _obscured = !_obscured),
-                icon: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: Icon(
-                    _obscured
-                        ? Icons.visibility_rounded
-                        : Icons.visibility_off_rounded,
-                    key: ValueKey(_obscured),
-                  ),
-                ),
-              )
-            : null,
       ),
       validator: (value) {
         final trimmed = value?.trim() ?? '';

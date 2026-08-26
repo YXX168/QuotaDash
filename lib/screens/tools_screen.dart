@@ -25,6 +25,12 @@ class _ToolsScreenState extends State<ToolsScreen> {
   String? _latestVersion;
   bool _checkingVersion = false;
 
+  bool get _cliProxyConfigured =>
+      widget.config.isConfigured('baseUrl') &&
+      widget.config.isConfigured('managementKey');
+
+  bool get _openCodeConfigured => widget.config.isConfigured('openCodeApiKey');
+
   @override
   void initState() {
     super.initState();
@@ -120,8 +126,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     ),
                     const SizedBox(height: 20),
                     const SectionTitle(
-                      title: '管理工具',
-                      subtitle: '查看和管理 CLIProxyAPI 实例',
+                      title: 'CLIProxyAPI',
+                      subtitle: '查看和管理已接入的实例',
                     ),
                     const SizedBox(height: 14),
                     _ToolCard(
@@ -207,6 +213,63 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    const SectionTitle(
+                      title: 'OpenCode Go',
+                      subtitle: '额度数据通过 API Key 同步',
+                    ),
+                    const SizedBox(height: 14),
+                    if (_openCodeConfigured)
+                      GlassCard(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                        borderColor: AppTheme.magenta.withValues(alpha: 0.22),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: AppTheme.magenta.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(13),
+                                border: Border.all(
+                                  color: AppTheme.magenta.withValues(
+                                    alpha: 0.16,
+                                  ),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.bolt_rounded,
+                                size: 20,
+                                color: AppTheme.magenta,
+                              ),
+                            ),
+                            const SizedBox(width: 13),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '已连接',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '滚动 / 周 / 月度额度实时同步中',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      const _NotConnectedCard(providerName: 'OpenCode Go'),
+                    const SizedBox(height: 20),
                     Center(
                       child: Text(
                         '连接至 ${widget.config.value('baseUrl')}',
@@ -223,6 +286,56 @@ class _ToolsScreenState extends State<ToolsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _NotConnectedCard extends StatelessWidget {
+  const _NotConnectedCard({required this.providerName});
+
+  final String providerName;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0x66121A2D),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: const Color(0xFF27344A)),
+            ),
+            child: const Icon(
+              Icons.link_off_rounded,
+              size: 20,
+              color: Color(0xFF7F8AA3),
+            ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$providerName 未接入',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '在连接配置中填入凭据后即可启用',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

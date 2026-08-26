@@ -30,7 +30,7 @@ class OpencodeService {
             'Authorization': 'Bearer ${apiKey.trim()}',
           },
         )
-        .timeout(const Duration(seconds: 12));
+        .timeout(const Duration(seconds: 20));
     if (response.statusCode == 401 || response.statusCode == 403) {
       throw const OpencodeException('API Key 无效或已过期');
     }

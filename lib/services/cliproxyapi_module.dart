@@ -48,7 +48,6 @@ class CliProxyApiModule implements QuotaModule<CodexModuleResult> {
     ProviderField(
       key: 'managementKey',
       label: '管理密码',
-      obscure: true,
       required: true,
     ),
   ];

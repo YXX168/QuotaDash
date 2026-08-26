@@ -22,7 +22,14 @@ class QuotaWindow {
       json['used_percent'] ??
           json['usedPercent'] ??
           // OpenCode usage endpoint reports plain "percent".
-          json['percent'],
+          json['percent'] ??
+          json['percentage'],
+    );
+    // Some providers report remaining directly instead of used.
+    final directRemaining = _asDouble(
+      json['remaining_percent'] ??
+          json['remainingPercent'] ??
+          json['remaining'],
     );
     final limitWindowSeconds = _asInt(
       json['limit_window_seconds'] ??
@@ -32,7 +39,9 @@ class QuotaWindow {
     );
     return QuotaWindow(
       usedPercent: used,
-      remainingPercent: used == null ? null : (100 - used).clamp(0, 100),
+      remainingPercent: used != null
+          ? (100 - used).clamp(0, 100)
+          : directRemaining?.clamp(0, 100),
       resetAt: parseResetTime(
         json['reset_at'] ?? json['resetAt'] ?? json['resetsAt'],
       ),
