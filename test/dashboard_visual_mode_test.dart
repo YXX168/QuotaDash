@@ -5,6 +5,7 @@ import 'package:cliproxy_dash/models/quota_window.dart';
 import 'package:cliproxy_dash/models/visual_mode.dart';
 import 'package:cliproxy_dash/screens/dashboard_screen.dart';
 import 'package:cliproxy_dash/services/quota_repository.dart';
+import 'package:cliproxy_dash/widgets/energy_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
