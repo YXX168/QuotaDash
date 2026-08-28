@@ -1,7 +1,7 @@
 name: cliproxy_dash
 description: A privacy-conscious Android quota dashboard for multiple AI model providers.
 publish_to: 'none'
-version: 2.0.4+9
+version: 2.0.5+10
 
 environment:
   sdk: ^3.11.4

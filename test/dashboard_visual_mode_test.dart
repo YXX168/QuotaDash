@@ -83,12 +83,19 @@ void main() {
         of: find.byKey(const Key('energy-account-0')),
         matching: find.text('80%'),
       ),
-      findsNWidgets(3),
+      findsNWidgets(2),
     );
     expect(
       find.descendant(
         of: find.byKey(const Key('energy-account-0')),
-        matching: find.byKey(const Key('energy-charge-bar')),
+        matching: find.byKey(const Key('energy-orb')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('energy-account-0')),
+        matching: find.byKey(const Key('energy-foreground')),
       ),
       findsOneWidget,
     );
@@ -98,6 +105,13 @@ void main() {
         matching: find.byKey(const Key('energy-quota-line-primary')),
       ),
       findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('energy-account-0')),
+        matching: find.byKey(const Key('energy-quota-line-secondary')),
+      ),
+      findsNothing,
     );
   });
 
