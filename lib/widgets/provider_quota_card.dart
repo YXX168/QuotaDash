@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import '../models/provider_quota.dart';
@@ -30,6 +28,11 @@ class ProviderQuotaCard extends StatelessWidget {
     }
     return null;
   }
+
+  /// True only when the provider actually exposes a monthly window so the
+  /// header badge never mislabels an average as the monthly hard cap.
+  bool get _hasMonthlyWindow =>
+      quota.windows.any((entry) => entry.label == '月限额');
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +73,7 @@ class ProviderQuotaCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (!quota.hasError && monthly != null)
+              if (!quota.hasError && _hasMonthlyWindow && monthly != null)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 11,

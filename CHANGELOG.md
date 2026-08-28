@@ -2,6 +2,19 @@
 
 此文件从首个正式版本开始记录发布变化。
 
+## [2.0.2] - 2026-08-28
+
+### Bug 修复
+
+- 修复能量球模式下供应商能量核心被压缩为半宽的问题，恢复全宽渲染。
+- 修复供应商卡片在无月度窗口时把滚动平均值误标为"月限额"的问题。
+- 修复重置倒计时到点后一直显示 00:00:00 的问题，改为"待刷新"提示。
+- 修复仅配置 OpenCode 时工具箱仍显示 CLIProxyAPI 工具入口的问题，未连接时改为引导卡片。
+
+### 其他
+
+- README 构建徽章与更新日志链接修正为 QuotaDash 仓库。
+
 ## [2.0.0] - 2026-08-26
 
 ### 界面与体验修复
@@ -25,7 +38,6 @@
   真实错误原因。
 - 应用更名为 Quota Dash，版本升级至 2.0.0。
 
-### 多供应商额度面板（进行中）
 ### 多供应商额度面板（进行中）
 
 - 新增统一的 ProviderQuota 数据模型与 QuotaModule 模块接口，CLIProxyAPI 与 OpenCode 作为独立模块接入。
@@ -64,6 +76,6 @@
 - Management API 地址和管理密钥保存在 Android 安全存储中。
 - 提供 ARM64 APK 与 SHA-256 完整性校验文件。
 
-[1.0.2]: https://github.com/YXX168/CLIProxy-Dash/releases/tag/v1.0.2
-[1.0.1]: https://github.com/YXX168/CLIProxy-Dash/releases/tag/v1.0.1
-[1.0.0]: https://github.com/YXX168/CLIProxy-Dash/releases/tag/v1.0.0
+[1.0.2]: https://github.com/YXX168/QuotaDash/releases/tag/v1.0.2
+[1.0.1]: https://github.com/YXX168/QuotaDash/releases/tag/v1.0.1
+[1.0.0]: https://github.com/YXX168/QuotaDash/releases/tag/v1.0.0

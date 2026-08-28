@@ -199,16 +199,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SectionTitle(title: module.displayName, subtitle: '额度模块'),
         const SizedBox(height: 10),
         if (widget.visualMode == VisualMode.energy)
-          FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: 0.5,
-            child: ProviderEnergyCore(
-              key: Key('provider-energy-${entry.key.name}'),
-              quota: entry.value,
-              displayName: module.displayName,
-              accentColor: module.accentColor,
-              refreshing: _refreshing,
-            ),
+          ProviderEnergyCore(
+            key: Key('provider-energy-${entry.key.name}'),
+            quota: entry.value,
+            displayName: module.displayName,
+            accentColor: module.accentColor,
+            refreshing: _refreshing,
           )
         else
           ProviderQuotaCard(

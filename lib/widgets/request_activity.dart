@@ -73,6 +73,32 @@ class _ResetCountdownState extends State<ResetCountdown> {
     }
     final difference = target.difference(DateTime.now());
     final remaining = difference.isNegative ? Duration.zero : difference;
+    // Past the reset moment the countdown would otherwise freeze at zero
+    // forever; show an explicit placeholder instead until fresh data
+    // arrives with the next window.
+    if (difference.isNegative) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.hourglass_bottom_rounded,
+            size: 13,
+            color: AppTheme.cyan,
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              '${widget.prefix}待刷新',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF9EABC2)),
+            ),
+          ),
+        ],
+      );
+    }
     final days = remaining.inDays;
     final hours = remaining.inHours.remainder(24);
     final minutes = remaining.inMinutes.remainder(60);

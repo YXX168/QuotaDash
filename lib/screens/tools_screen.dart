@@ -21,33 +21,43 @@ class ToolsScreen extends StatefulWidget {
 }
 
 class _ToolsScreenState extends State<ToolsScreen> {
-  late final ProxyApiService _service;
+  late final ProxyApiService? _service;
   String? _latestVersion;
   bool _checkingVersion = false;
+
+  /// CLIProxyAPI tools need a base URL and a management key; when either
+  /// is missing (OpenCode-only users) the section renders as guidance
+  /// instead of firing requests at an empty URI.
+  bool get _cliProxyConfigured =>
+      widget.config.isConfigured('baseUrl') &&
+      widget.config.isConfigured('managementKey');
 
   bool get _openCodeConfigured => widget.config.isConfigured('openCodeApiKey');
 
   @override
   void initState() {
     super.initState();
-    _service = ProxyApiService(
-      baseUri: Uri.parse(widget.config.value('baseUrl')),
-      managementKey: widget.config.value('managementKey'),
-    );
-    _checkVersion();
+    _service = _cliProxyConfigured
+        ? ProxyApiService(
+            baseUri: Uri.parse(widget.config.value('baseUrl')),
+            managementKey: widget.config.value('managementKey'),
+          )
+        : null;
+    if (_service != null) _checkVersion();
   }
 
   @override
   void dispose() {
-    _service.dispose();
+    _service?.dispose();
     super.dispose();
   }
 
   Future<void> _checkVersion() async {
-    if (_checkingVersion) return;
+    final service = _service;
+    if (_checkingVersion || service == null) return;
     setState(() => _checkingVersion = true);
     try {
-      final version = await _service.fetchLatestVersion();
+      final version = await service.fetchLatestVersion();
       if (mounted) setState(() => _latestVersion = version);
     } catch (_) {
       // Silently ignore version check errors.
@@ -121,93 +131,111 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    const SectionTitle(
-                      title: 'CLIProxyAPI',
-                      subtitle: '查看和管理已接入的实例',
-                    ),
-                    const SizedBox(height: 14),
-                    _ToolCard(
-                      icon: Icons.model_training_rounded,
-                      iconColor: AppTheme.cyan,
-                      title: '模型列表',
-                      subtitle: '查看已配置的 AI 模型与别名',
-                      onTap: () => _navigate(
-                        ModelsScreen(service: _service, config: widget.config),
+                    if (_cliProxyConfigured) ...[
+                      const SectionTitle(
+                        title: 'CLIProxyAPI',
+                        subtitle: '查看和管理已接入的实例',
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    _ToolCard(
-                      icon: Icons.key_rounded,
-                      iconColor: AppTheme.success,
-                      title: 'API Key 管理',
-                      subtitle: '查看客户端 API Key 列表',
-                      onTap: () => _navigate(ApiKeysScreen(service: _service)),
-                    ),
+                      const SizedBox(height: 14),
+                      _ToolCard(
+                        icon: Icons.model_training_rounded,
+                        iconColor: AppTheme.cyan,
+                        title: '模型列表',
+                        subtitle: '查看已配置的 AI 模型与别名',
+                        onTap: () => _navigate(
+                          ModelsScreen(
+                            service: _service!,
+                            config: widget.config,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _ToolCard(
+                        icon: Icons.key_rounded,
+                        iconColor: AppTheme.success,
+                        title: 'API Key 管理',
+                        subtitle: '查看客户端 API Key 列表',
+                        onTap: () =>
+                            _navigate(ApiKeysScreen(service: _service!)),
+                      ),
+                    ] else ...[
+                      const SectionTitle(
+                        title: 'CLIProxyAPI',
+                        subtitle: '配置实例后开放模型与密钥管理',
+                      ),
+                      const SizedBox(height: 14),
+                      const _NotConnectedCard(providerName: 'CLIProxyAPI'),
+                    ],
                     const SizedBox(height: 20),
-                    const SectionTitle(
-                      title: '版本信息',
-                      subtitle: '检查 CLIProxyAPI 最新版本',
-                    ),
-                    const SizedBox(height: 14),
-                    GlassCard(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: AppTheme.cyan.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(13),
-                              border: Border.all(
-                                color: AppTheme.cyan.withValues(alpha: 0.16),
+                    if (_cliProxyConfigured) ...[
+                      const SectionTitle(
+                        title: '版本信息',
+                        subtitle: '检查 CLIProxyAPI 最新版本',
+                      ),
+                      const SizedBox(height: 14),
+                      GlassCard(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: AppTheme.cyan.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(13),
+                                border: Border.all(
+                                  color: AppTheme.cyan.withValues(alpha: 0.16),
+                                ),
                               ),
-                            ),
-                            child: _checkingVersion
-                                ? const Padding(
-                                    padding: EdgeInsets.all(12),
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                              child: _checkingVersion
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(12),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppTheme.cyan,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.system_update_rounded,
+                                      size: 20,
                                       color: AppTheme.cyan,
                                     ),
-                                  )
-                                : const Icon(
-                                    Icons.system_update_rounded,
-                                    size: 20,
-                                    color: AppTheme.cyan,
-                                  ),
-                          ),
-                          const SizedBox(width: 13),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  '最新版本',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  _latestVersion != null
-                                      ? _latestVersion!
-                                      : _checkingVersion
-                                      ? '正在检查...'
-                                      : '点击右侧按钮检查',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodySmall?.copyWith(fontSize: 12),
-                                ),
-                              ],
                             ),
-                          ),
-                          TextButton.icon(
-                            onPressed: _checkingVersion ? null : _checkVersion,
-                            icon: const Icon(Icons.refresh_rounded, size: 17),
-                            label: const Text('检查'),
-                          ),
-                        ],
+                            const SizedBox(width: 13),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '最新版本',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    _latestVersion != null
+                                        ? _latestVersion!
+                                        : _checkingVersion
+                                        ? '正在检查...'
+                                        : '点击右侧按钮检查',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: _checkingVersion
+                                  ? null
+                                  : _checkVersion,
+                              icon: const Icon(Icons.refresh_rounded, size: 17),
+                              label: const Text('检查'),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 20),
                     const SectionTitle(
                       title: 'OpenCode Go',
@@ -263,17 +291,19 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       )
                     else
                       const _NotConnectedCard(providerName: 'OpenCode Go'),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: Text(
-                        '连接至 ${widget.config.value('baseUrl')}',
-                        style: const TextStyle(
-                          color: Color(0xFF657289),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                    if (_cliProxyConfigured) ...[
+                      const SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          '连接至 ${widget.config.value('baseUrl')}',
+                          style: const TextStyle(
+                            color: Color(0xFF657289),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
