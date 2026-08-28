@@ -170,15 +170,16 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                             Container(
                               width: 1,
                               height: 25,
-                              margin: const EdgeInsets.symmetric(horizontal: 9),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                              ),
                               color: const Color(0x332D3C55),
                             ),
                             Expanded(
                               child: _QuotaReading(
                                 key: const Key('energy-quota-line-secondary'),
                                 label: account.secondaryLabel,
-                                remaining:
-                                    account.secondary?.remainingPercent,
+                                remaining: account.secondary?.remainingPercent,
                               ),
                             ),
                           ],
@@ -216,7 +217,11 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
 }
 
 class _QuotaReading extends StatelessWidget {
-  const _QuotaReading({required this.label, required this.remaining, super.key});
+  const _QuotaReading({
+    required this.label,
+    required this.remaining,
+    super.key,
+  });
 
   final String label;
   final double? remaining;
