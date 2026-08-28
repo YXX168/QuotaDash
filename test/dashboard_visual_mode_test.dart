@@ -176,6 +176,10 @@ void main() {
         tester.getSize(find.byType(EnergyAccountCore)).height,
         closeTo(226, 0.1),
       );
+      expect(
+        tester.getSize(find.byKey(const Key('energy-quota-row'))).height,
+        closeTo(28, 0.1),
+      );
       expect(find.byKey(const Key('energy-orb')), findsOneWidget);
       expect(
         find.byKey(const Key('energy-quota-line-primary')),

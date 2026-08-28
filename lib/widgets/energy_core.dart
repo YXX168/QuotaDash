@@ -173,7 +173,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                 ),
                 SizedBox(
                   key: const Key('energy-quota-row'),
-                  height: 27,
+                  height: 28,
                   child: Row(
                     children: [
                       Expanded(

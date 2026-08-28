@@ -284,7 +284,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                       ),
                     Expanded(
                       child: SizedBox(
-                        height: 30,
+                        height: 31,
                         child: _WindowLine(entry: quota.windows[index]),
                       ),
                     ),
