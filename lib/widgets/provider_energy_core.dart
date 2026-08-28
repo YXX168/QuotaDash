@@ -82,6 +82,11 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
     return widget.quota.averageRemainingPercent;
   }
 
+  /// Whether the headline value actually reflects a monthly window.
+  bool get _headlineIsMonthly => widget.quota.windows.any(
+    (entry) => entry.label == '月限额' && entry.remainingPercent != null,
+  );
+
   @override
   Widget build(BuildContext context) {
     final quota = widget.quota;
@@ -162,61 +167,71 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
             ),
             // ---- Plasma orb --------------------------------------------
             Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned.fill(
-                    child: RepaintBoundary(
-                      child: AnimatedBuilder(
-                        animation: Listenable.merge([_rotation, _pulse]),
-                        builder: (context, _) => CustomPaint(
-                          painter: _PlasmaPainter(
-                            rotation: _rotation.value,
-                            pulse: Curves.easeInOut.transform(_pulse.value),
-                            accent: accent,
-                            progress: ((remaining ?? 0).clamp(0, 100)) / 100.0,
-                            hasError: quota.hasError,
-                            refreshing: widget.refreshing,
+              // The stack must span the full card width; otherwise it
+              // shrink-wraps to the center text and the orb hugs one side.
+              child: SizedBox(
+                width: double.infinity,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child: RepaintBoundary(
+                        child: AnimatedBuilder(
+                          animation: Listenable.merge([_rotation, _pulse]),
+                          builder: (context, _) => CustomPaint(
+                            painter: _PlasmaPainter(
+                              rotation: _rotation.value,
+                              pulse: Curves.easeInOut.transform(_pulse.value),
+                              accent: accent,
+                              progress:
+                                  ((remaining ?? 0).clamp(0, 100)) / 100.0,
+                              hasError: quota.hasError,
+                              refreshing: widget.refreshing,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          colors: [
-                            Colors.white,
-                            accent.withValues(alpha: 0.85),
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ).createShader(bounds),
-                        child: Text(
-                          valueText,
-                          style: const TextStyle(
-                            fontSize: 27,
-                            fontWeight: FontWeight.w900,
-                            height: 1,
-                            letterSpacing: -1,
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            colors: [
+                              Colors.white,
+                              accent.withValues(alpha: 0.85),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ).createShader(bounds),
+                          child: Text(
+                            valueText,
+                            style: const TextStyle(
+                              fontSize: 27,
+                              fontWeight: FontWeight.w900,
+                              height: 1,
+                              letterSpacing: -1,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        quota.hasError ? '同步异常' : '月限额剩余',
-                        style: TextStyle(
-                          color: accent.withValues(alpha: 0.95),
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.1,
+                        const SizedBox(height: 4),
+                        Text(
+                          quota.hasError
+                              ? '同步异常'
+                              : _headlineIsMonthly
+                              ? '月限额剩余'
+                              : '综合剩余',
+                          style: TextStyle(
+                            color: accent.withValues(alpha: 0.95),
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.1,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             // ---- Segmented charge bar ----------------------------------
