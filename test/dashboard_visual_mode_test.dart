@@ -161,9 +161,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       final orbRect = tester.getRect(find.byKey(const Key('energy-orb')));
-      final headerRect = tester.getRect(
-        find.byKey(const Key('energy-header')),
-      );
+      final headerRect = tester.getRect(find.byKey(const Key('energy-header')));
       final quotaRect = tester.getRect(
         find.byKey(const Key('energy-quota-row')),
       );
