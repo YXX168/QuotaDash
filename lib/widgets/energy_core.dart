@@ -72,129 +72,147 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
               ),
               border: Border.all(color: color.withValues(alpha: 0.28)),
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.hardEdge,
+            child: Column(
+              key: const Key('energy-foreground'),
               children: [
-                Positioned.fill(
-                  child: RepaintBoundary(
-                    key: const Key('energy-orb'),
-                    child: CustomPaint(
-                      painter: _EnergyPainter(
-                        animation: _controller,
-                        color: color,
-                        progress: (remaining ?? 0).clamp(0, 100) / 100,
-                        hasError: account.hasError,
-                        refreshing: widget.refreshing,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: Column(
-                    key: const Key('energy-foreground'),
+                SizedBox(
+                  key: const Key('energy-header'),
+                  height: 18,
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(color: color, blurRadius: 7),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: Text(
-                              account.name.isEmpty ? '未命名账号' : account.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          Flexible(
-                            child: Text(
-                              account.plan.isEmpty
-                                  ? 'CODEX'
-                                  : account.plan.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.end,
-                              style: TextStyle(
-                                color: color.withValues(alpha: 0.9),
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Text(
-                        value,
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontSize: 27,
-                              shadows: [Shadow(color: color, blurRadius: 16)],
-                            ),
-                      ),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          color: color.withValues(alpha: 0.95),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.7,
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: color, blurRadius: 7)],
                         ),
                       ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _QuotaReading(
-                              key: const Key('energy-quota-line-primary'),
-                              label: account.primaryLabel,
-                              remaining: account.primary?.remainingPercent,
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          account.name.isEmpty ? '未命名账号' : account.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          account.plan.isEmpty
+                              ? 'CODEX'
+                              : account.plan.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            color: color.withValues(alpha: 0.9),
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ClipRect(
+                    child: Stack(
+                      key: const Key('energy-orb'),
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        Positioned.fill(
+                          child: RepaintBoundary(
+                            child: CustomPaint(
+                              painter: _EnergyPainter(
+                                animation: _controller,
+                                color: color,
+                                progress: (remaining ?? 0).clamp(0, 100) / 100,
+                                hasError: account.hasError,
+                                refreshing: widget.refreshing,
+                              ),
                             ),
                           ),
-                          if (account.secondary != null) ...[
-                            Container(
-                              width: 1,
-                              height: 25,
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 9,
-                              ),
-                              color: const Color(0x332D3C55),
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              value,
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 27,
+                                    height: 1,
+                                    shadows: [
+                                      Shadow(color: color, blurRadius: 16),
+                                    ],
+                                  ),
                             ),
-                            Expanded(
-                              child: _QuotaReading(
-                                key: const Key('energy-quota-line-secondary'),
-                                label: account.secondaryLabel,
-                                remaining: account.secondary?.remainingPercent,
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: color.withValues(alpha: 0.95),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.7,
                               ),
                             ),
                           ],
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  key: const Key('energy-quota-row'),
+                  height: 27,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _QuotaReading(
+                          key: const Key('energy-quota-line-primary'),
+                          label: account.primaryLabel,
+                          remaining: account.primary?.remainingPercent,
+                        ),
                       ),
-                      const SizedBox(height: 7),
-                      Text(
-                        account.email.isEmpty ? 'Codex Account' : account.email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(fontSize: 9),
-                      ),
+                      if (account.secondary != null) ...[
+                        Container(
+                          width: 1,
+                          height: 25,
+                          margin: const EdgeInsets.symmetric(horizontal: 9),
+                          color: const Color(0x332D3C55),
+                        ),
+                        Expanded(
+                          child: _QuotaReading(
+                            key: const Key('energy-quota-line-secondary'),
+                            label: account.secondaryLabel,
+                            remaining: account.secondary?.remainingPercent,
+                          ),
+                        ),
+                      ],
                     ],
+                  ),
+                ),
+                const SizedBox(height: 7),
+                SizedBox(
+                  key: const Key('energy-account-email'),
+                  height: 12,
+                  child: Text(
+                    account.email.isEmpty ? 'Codex Account' : account.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(fontSize: 9),
                   ),
                 ),
               ],
@@ -229,6 +247,7 @@ class _QuotaReading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           remaining == null ? '--' : '${remaining!.toStringAsFixed(0)}%',
@@ -263,10 +282,20 @@ class _EnergyPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2 - 2);
     final phase = animation.value;
+    final center = Offset(size.width / 2, size.height / 2 - 2);
     final pulse = (math.sin(phase * math.pi * 2) + 1) / 2;
-    final radius = 40.0 + pulse * 2.5;
+    final ringRadius = math.min(
+      53.0,
+      math.min(size.width * 0.37, size.height * 0.38),
+    );
+    final glowRadius = ringRadius * (1.28 + pulse * 0.06);
+    final rotation = phase * math.pi * 2 * (refreshing ? 2.4 : 0.45);
+    final progressValue = progress.clamp(0.0, 1.0).toDouble();
+
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+
     final glow = Paint()
       ..shader = RadialGradient(
         colors: [
@@ -276,22 +305,31 @@ class _EnergyPainter extends CustomPainter {
           Colors.transparent,
         ],
         stops: const [0, 0.27, 0.64, 1],
-      ).createShader(Rect.fromCircle(center: center, radius: radius * 1.3));
-    canvas.drawCircle(center, radius * 1.3, glow);
+      ).createShader(Rect.fromCircle(center: center, radius: glowRadius));
+    canvas.drawCircle(center, glowRadius, glow);
 
     final ring = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round
-      ..color = color.withValues(alpha: 0.85);
-    final rotation = phase * math.pi * 2 * (refreshing ? 2.4 : 0.45);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: 53),
-      rotation - math.pi / 2,
-      math.pi * 2 * progress,
-      false,
-      ring,
-    );
+      ..color = color.withValues(alpha: hasError ? 0.28 : 0.85);
+    if (hasError || progressValue <= 0) {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: ringRadius),
+        0,
+        math.pi * 2,
+        false,
+        ring,
+      );
+    } else {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: ringRadius),
+        rotation - math.pi / 2,
+        math.pi * 2 * progressValue,
+        false,
+        ring,
+      );
+    }
 
     final orbit = Paint()
       ..style = PaintingStyle.stroke
@@ -301,14 +339,19 @@ class _EnergyPainter extends CustomPainter {
     canvas.translate(center.dx, center.dy);
     canvas.rotate(-rotation * 0.55);
     canvas.drawOval(
-      Rect.fromCenter(center: Offset.zero, width: 126, height: 70),
+      Rect.fromCenter(
+        center: Offset.zero,
+        width: ringRadius * 2.38,
+        height: ringRadius * 1.32,
+      ),
       orbit,
     );
     canvas.drawCircle(
-      const Offset(60, 0),
+      Offset(ringRadius * 1.13, 0),
       hasError ? 4.2 : 2.4,
       Paint()..color = hasError ? AppTheme.danger : color,
     );
+    canvas.restore();
     canvas.restore();
   }
 

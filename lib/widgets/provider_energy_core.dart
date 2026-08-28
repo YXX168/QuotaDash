@@ -173,6 +173,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                 width: double.infinity,
                 child: Stack(
                   alignment: Alignment.center,
+                  clipBehavior: Clip.hardEdge,
                   children: [
                     Positioned.fill(
                       child: RepaintBoundary(
@@ -281,7 +282,12 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                           ),
                         ),
                       ),
-                    Expanded(child: _WindowLine(entry: quota.windows[index])),
+                    Expanded(
+                      child: SizedBox(
+                        height: 30,
+                        child: _WindowLine(entry: quota.windows[index]),
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -426,17 +432,32 @@ class _WindowLine extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(99),
-          child: Stack(
-            children: [
-              Container(height: 4, color: const Color(0x221B2947)),
-              FractionallySizedBox(
-                widthFactor: ((r ?? 0) / 100).clamp(0.0, 1.0).toDouble(),
-                child: Container(height: 4, color: color),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final progress = ((r ?? 0) / 100).clamp(0.0, 1.0).toDouble();
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: 4,
+                child: Stack(
+                  children: [
+                    const Positioned.fill(
+                      child: ColoredBox(color: Color(0x221B2947)),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: constraints.maxWidth * progress,
+                        height: 4,
+                        child: ColoredBox(color: color),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );

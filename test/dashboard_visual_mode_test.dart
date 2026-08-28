@@ -115,6 +115,89 @@ void main() {
     );
   });
 
+  testWidgets(
+    'energy core stays bounded with two quota windows on a narrow card',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Directionality(
+            textDirection: TextDirection.ltr,
+            child: SizedBox(
+              width: 296,
+              child: EnergyAccountCore(
+                account: CodexAccount(
+                  id: 'narrow-account',
+                  authIndex: '1',
+                  name: 'very-long-account-name@example.com',
+                  email: 'very-long-account-name@example.com',
+                  plan: 'team',
+                  available: true,
+                  limitReached: false,
+                  primary: QuotaWindow(
+                    usedPercent: 20,
+                    remainingPercent: 80,
+                    limitWindowSeconds: 604800,
+                  ),
+                  secondary: QuotaWindow(
+                    usedPercent: 40,
+                    remainingPercent: 60,
+                    limitWindowSeconds: 2592000,
+                  ),
+                  secondaryLabel: '月度额度',
+                  resetCredits: 0,
+                  successRequests: 0,
+                  failedRequests: 0,
+                ),
+                refreshing: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(tester.takeException(), isNull);
+      final orbRect = tester.getRect(find.byKey(const Key('energy-orb')));
+      final headerRect = tester.getRect(
+        find.byKey(const Key('energy-header')),
+      );
+      final quotaRect = tester.getRect(
+        find.byKey(const Key('energy-quota-row')),
+      );
+      final emailRect = tester.getRect(
+        find.byKey(const Key('energy-account-email')),
+      );
+      expect(headerRect.bottom, lessThanOrEqualTo(orbRect.top));
+      expect(orbRect.bottom, lessThanOrEqualTo(quotaRect.top));
+      expect(quotaRect.bottom, lessThanOrEqualTo(emailRect.top));
+      expect(
+        tester.getSize(find.byType(EnergyAccountCore)).height,
+        closeTo(226, 0.1),
+      );
+      expect(find.byKey(const Key('energy-orb')), findsOneWidget);
+      expect(
+        find.byKey(const Key('energy-quota-line-primary')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('energy-quota-line-secondary')),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              widget.data == 'very-long-account-name@example.com' &&
+              widget.maxLines == 1,
+        ),
+        findsNWidgets(2),
+      );
+    },
+  );
+
   testWidgets('labels a single current quota window as weekly', (tester) async {
     await _pumpDashboard(tester, VisualMode.console);
 
