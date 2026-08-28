@@ -85,6 +85,20 @@ void main() {
       ),
       findsNWidgets(3),
     );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('energy-account-0')),
+        matching: find.byKey(const Key('energy-charge-bar')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('energy-account-0')),
+        matching: find.byKey(const Key('energy-quota-line-周额度')),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('labels a single current quota window as weekly', (tester) async {

@@ -1294,7 +1294,6 @@ class _EnergyAccountGrid extends StatelessWidget {
         final width =
             (constraints.maxWidth - (columns - 1) * spacing) / columns;
         return Wrap(
-          alignment: WrapAlignment.center,
           spacing: spacing,
           runSpacing: spacing,
           children: [

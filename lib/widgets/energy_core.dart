@@ -238,6 +238,7 @@ class _EnergyBar extends StatelessWidget {
     final remaining = this.remaining;
     final value = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
     return Row(
+      key: const Key('energy-charge-bar'),
       children: [
         Text(
           '剩余能量',
@@ -306,6 +307,7 @@ class _QuotaLine extends StatelessWidget {
         ? AppTheme.warning
         : AppTheme.success;
     return Column(
+      key: ValueKey('energy-quota-line-$label'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
