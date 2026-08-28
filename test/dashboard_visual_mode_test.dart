@@ -95,7 +95,9 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('energy-account-0')),
-        matching: find.byKey(const Key('energy-quota-line-周额度')),
+        matching: find.byKey(
+          const Key('energy-quota-line-primary'),
+        ),
       ),
       findsOneWidget,
     );

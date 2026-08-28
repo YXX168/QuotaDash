@@ -179,6 +179,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                   children: [
                     Expanded(
                       child: _QuotaLine(
+                        key: const ValueKey('energy-quota-line-primary'),
                         label: account.primaryLabel,
                         window: account.primary,
                       ),
@@ -191,6 +192,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                     ),
                     Expanded(
                       child: _QuotaLine(
+                        key: const ValueKey('energy-quota-line-secondary'),
                         label: account.secondaryLabel,
                         window: account.secondary,
                       ),
@@ -291,7 +293,7 @@ class _EnergyBar extends StatelessWidget {
 }
 
 class _QuotaLine extends StatelessWidget {
-  const _QuotaLine({required this.label, required this.window});
+  const _QuotaLine({required this.label, required this.window, super.key});
 
   final String label;
   final QuotaWindow? window;
@@ -307,7 +309,6 @@ class _QuotaLine extends StatelessWidget {
         ? AppTheme.warning
         : AppTheme.success;
     return Column(
-      key: ValueKey('energy-quota-line-$label'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
