@@ -47,9 +47,7 @@ void main() {
     final lightStrip = tester.getRect(
       find.byKey(const Key('opencode-top-light-strip')),
     );
-    final card = tester.getRect(
-      find.byKey(const Key('opencode-compact-card')),
-    );
+    final card = tester.getRect(find.byKey(const Key('opencode-compact-card')));
     final title = tester.getRect(find.byKey(const Key('opencode-title')));
     expect(lightStrip.top, greaterThanOrEqualTo(card.top + 4));
     expect(lightStrip.bottom, lessThanOrEqualTo(title.top - 4));
