@@ -41,7 +41,7 @@ class CliProxyApiModule implements QuotaModule<CodexModuleResult> {
   List<ProviderField> get fields => const [
     ProviderField(
       key: 'baseUrl',
-      label: 'Management API 地址',
+      label: '服务地址',
       hint: 'https://your-server.example.com',
       required: true,
       keyboardType: TextInputType.url,

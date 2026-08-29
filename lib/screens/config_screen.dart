@@ -187,14 +187,7 @@ class _ConfigScreenState extends State<ConfigScreen>
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '按供应商分别填入连接信息；所有凭据仅保存在设备安全存储中。',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(fontSize: 13),
-                            ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 14),
                             GlassCard(
                               padding: const EdgeInsets.all(18),
                               child: Form(
@@ -235,26 +228,6 @@ class _ConfigScreenState extends State<ConfigScreen>
                                       if (!identical(module, _modules.last))
                                         const SizedBox(height: 20),
                                     ],
-                                    const SizedBox(height: 12),
-                                    const Row(
-                                      children: [
-                                        Icon(
-                                          Icons.shield_outlined,
-                                          size: 15,
-                                          color: AppTheme.success,
-                                        ),
-                                        SizedBox(width: 7),
-                                        Expanded(
-                                          child: Text(
-                                            '管理地址与密码仅保存在设备安全存储中，不内置于 App。',
-                                            style: TextStyle(
-                                              color: Color(0xFF8F9BB1),
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                     if (widget.loadError != null ||
                                         _saveError != null) ...[
                                       const SizedBox(height: 14),
@@ -479,23 +452,12 @@ class _ModuleSectionHeader extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                module.displayName,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                module.description,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(fontSize: 10.5, height: 1.2),
-              ),
-            ],
+          child: Text(
+            module.displayName,
+            style: const TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ],

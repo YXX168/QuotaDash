@@ -39,5 +39,10 @@ void main() {
 
     expect(find.text('连接配置'), findsOneWidget);
     expect(find.byKey(const Key('save-config-button')), findsOneWidget);
+    expect(find.text('服务地址'), findsOneWidget);
+    expect(find.text('API Key（可选）'), findsOneWidget);
+    expect(find.textContaining('按供应商分别填入'), findsNothing);
+    expect(find.textContaining('仅保存在设备安全存储'), findsNothing);
+    expect(find.text('套餐额度与恢复周期'), findsNothing);
   });
 }

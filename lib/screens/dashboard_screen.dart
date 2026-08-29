@@ -15,6 +15,7 @@ import '../theme/app_theme.dart';
 import '../widgets/account_card.dart';
 import '../widgets/energy_core.dart';
 import '../widgets/glass_widgets.dart';
+import '../widgets/opencode_compact_card.dart';
 import '../widgets/provider_energy_core.dart';
 import '../widgets/provider_quota_card.dart';
 import '../widgets/quantum_emblem.dart';
@@ -194,28 +195,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<Widget> _providerSections() => [
     for (final entry in _providerQuotas.entries) ...[
-      if (_providerModules[entry.key] case final module?) ...[
-        const SizedBox(height: 18),
-        SectionTitle(title: module.displayName, subtitle: module.description),
-        const SizedBox(height: 10),
-        if (widget.visualMode == VisualMode.energy)
-          ProviderEnergyCore(
-            key: Key('provider-energy-${entry.key.name}'),
-            quota: entry.value,
-            displayName: module.displayName,
-            description: module.description,
-            accentColor: module.accentColor,
-            refreshing: _refreshing,
-          )
-        else
-          ProviderQuotaCard(
-            key: Key('quota-card-${entry.key.name}'),
-            quota: entry.value,
-            displayName: module.displayName,
-            description: module.description,
-            accentColor: module.accentColor,
-            icon: module.icon,
-          ),
+      if (entry.key != QuotaProviderId.openCode) ...[
+        if (_providerModules[entry.key] case final module?) ...[
+          const SizedBox(height: 18),
+          SectionTitle(title: module.displayName, subtitle: module.description),
+          const SizedBox(height: 10),
+          if (widget.visualMode == VisualMode.energy)
+            ProviderEnergyCore(
+              key: Key('provider-energy-${entry.key.name}'),
+              quota: entry.value,
+              displayName: module.displayName,
+              description: module.description,
+              accentColor: module.accentColor,
+              refreshing: _refreshing,
+            )
+          else
+            ProviderQuotaCard(
+              key: Key('quota-card-${entry.key.name}'),
+              quota: entry.value,
+              displayName: module.displayName,
+              description: module.description,
+              accentColor: module.accentColor,
+              icon: module.icon,
+            ),
+        ],
       ],
     ],
   ];
@@ -331,16 +334,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 key: const ValueKey('dashboard-content'),
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (_cliProxyEnabled || _snapshot != null)
-                                    _ServicePanel(
-                                      snapshot:
-                                          _snapshot ??
-                                          DashboardSnapshot(
-                                            accounts: const [],
-                                            checkedAt: DateTime.now(),
-                                          ),
-                                      error: _error,
-                                    ),
+                                   if (_cliProxyEnabled || _snapshot != null)
+                                     _ServicePanel(
+                                       snapshot:
+                                           _snapshot ??
+                                           DashboardSnapshot(
+                                             accounts: const [],
+                                             checkedAt: DateTime.now(),
+                                           ),
+                                       error: _error,
+                                     ),
+                                   if (_providerQuotas[QuotaProviderId.openCode]
+                                       case final openCodeQuota?) ...[
+                                     const SizedBox(height: 10),
+                                     OpenCodeCompactCard(
+                                       quota: openCodeQuota,
+                                     ),
+                                   ],
                                   if (_error != null) ...[
                                     const SizedBox(height: 10),
                                     _StaleDataBanner(
@@ -700,7 +710,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
               icon: Icons.admin_panel_settings_outlined,
               iconColor: AppTheme.violet,
               title: '连接配置',
-              subtitle: '修改 Management API 与管理密码',
+              subtitle: '服务地址与密钥',
               onTap: widget.onEditConfig,
               trailing: const Icon(
                 Icons.arrow_forward_rounded,

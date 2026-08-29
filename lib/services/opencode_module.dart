@@ -29,7 +29,7 @@ class OpenCodeModule implements QuotaModule<ProviderModuleResult> {
   String get displayName => QuotaProviderId.openCode.displayName;
 
   @override
-  String get description => '套餐额度与恢复周期';
+  String get description => '';
 
   @override
   Color get accentColor => AppTheme.magenta;
@@ -41,7 +41,7 @@ class OpenCodeModule implements QuotaModule<ProviderModuleResult> {
   List<ProviderField> get fields => const [
     ProviderField(
       key: 'openCodeApiKey',
-      label: 'OpenCode API Key',
+      label: 'API Key',
       hint: 'sk-...',
       obscure: true,
     ),
