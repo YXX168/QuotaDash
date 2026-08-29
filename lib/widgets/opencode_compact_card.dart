@@ -121,7 +121,7 @@ class OpenCodeCompactCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _UsageBadge(
+                    _UsageReading(
                       accent: accent,
                       error: quota.hasError,
                       usedPercent: _monthlyUsed,
@@ -154,28 +154,20 @@ class OpenCodeCompactCard extends StatelessWidget {
                     key: const Key('opencode-compact-values'),
                     children: [
                       for (var index = 0; index < quota.windows.length; index++)
+                        ...[
+                          if (index > 0)
+                            Container(
+                              width: 1,
+                              height: 44,
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              color: const Color(0x242F3C55),
+                            ),
                         Expanded(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              border: index == 0
-                                  ? null
-                                  : const Border(
-                                      left: BorderSide(
-                                        color: Color(0x242F3C55),
-                                      ),
-                                    ),
-                            ),
-                            child: Padding(
-                              padding: EdgeInsets.only(
-                                left: index == 0 ? 0 : 10,
-                                right: index == quota.windows.length - 1
-                                    ? 0
-                                    : 10,
-                              ),
-                              child: _QuotaValue(window: quota.windows[index]),
-                            ),
+                          child: _QuotaValue(
+                            window: quota.windows[index],
                           ),
                         ),
+                        ],
                     ],
                   ),
               ],
@@ -187,8 +179,8 @@ class OpenCodeCompactCard extends StatelessWidget {
   }
 }
 
-class _UsageBadge extends StatelessWidget {
-  const _UsageBadge({
+class _UsageReading extends StatelessWidget {
+  const _UsageReading({
     required this.accent,
     required this.error,
     required this.usedPercent,
@@ -200,28 +192,44 @@ class _UsageBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = error
-        ? '同步失败'
-        : usedPercent == null
-        ? '已用量 --'
-        : '已用量 ${usedPercent!.toStringAsFixed(0)}%';
-    return Container(
-      key: const Key('opencode-used-badge'),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.30)),
-      ),
-      child: Text(
-        text,
+    if (error) {
+      return const Text(
+        '同步失败',
         style: TextStyle(
-          color: error ? AppTheme.warning : Colors.white,
+          color: AppTheme.warning,
           fontSize: 10,
           fontWeight: FontWeight.w800,
-          fontFeatures: const [FontFeature.tabularFigures()],
         ),
-      ),
+      );
+    }
+    final value = usedPercent == null
+        ? '--'
+        : '${usedPercent!.toStringAsFixed(0)}%';
+    return Row(
+      key: const Key('opencode-used-badge'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        const Text(
+          '月已用',
+          style: TextStyle(
+            color: Color(0xFF8996AD),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          value,
+          style: TextStyle(
+            color: accent,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -246,6 +254,7 @@ class _QuotaValue extends StatelessWidget {
     final progress = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
     final color = _valueColor;
     return Column(
+      key: Key('opencode-quota-${window.label}'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -273,6 +282,7 @@ class _QuotaValue extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(99),
           child: SizedBox(
+            key: Key('opencode-quota-track-${window.label}'),
             height: 3,
             child: Stack(
               children: [

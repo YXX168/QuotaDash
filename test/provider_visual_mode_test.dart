@@ -40,7 +40,15 @@ void main() {
     expect(find.text('5 小时周期'), findsOneWidget);
     expect(find.text('周限额度'), findsOneWidget);
     expect(find.text('月限额度'), findsOneWidget);
-    expect(find.text('已用量 60%'), findsOneWidget);
+    final usage = find.byKey(const Key('opencode-used-badge'));
+    expect(
+      find.descendant(of: usage, matching: find.text('月已用')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: usage, matching: find.text('60%')),
+      findsOneWidget,
+    );
     expect(find.text('套餐额度与恢复周期'), findsNothing);
     expect(find.text('月度周期'), findsNothing);
   });
@@ -59,9 +67,20 @@ void main() {
     final values = tester.getRect(
       find.byKey(const Key('opencode-compact-values')),
     );
+    final rollingTrack = tester.getSize(
+      find.byKey(const Key('opencode-quota-track-5 小时周期')),
+    );
+    final weeklyTrack = tester.getSize(
+      find.byKey(const Key('opencode-quota-track-周限额度')),
+    );
+    final monthlyTrack = tester.getSize(
+      find.byKey(const Key('opencode-quota-track-月限额度')),
+    );
     expect(card.width, closeTo(296, 0.1));
     expect(card.top, lessThanOrEqualTo(values.top));
     expect(values.bottom, lessThanOrEqualTo(card.bottom));
     expect(card.height, lessThan(150));
+    expect(rollingTrack.width, closeTo(weeklyTrack.width, 0.1));
+    expect(weeklyTrack.width, closeTo(monthlyTrack.width, 0.1));
   });
 }
