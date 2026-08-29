@@ -57,7 +57,7 @@ class QuotaWindow {
     if (seconds == null) return '周额度';
     if (seconds >= _monthWindowSeconds) return '月度额度';
     if (seconds >= _weekWindowSeconds) return '周额度';
-    return '短时额度';
+    return '5H额度';
   }
 
   static DateTime? parseResetTime(Object? value) {

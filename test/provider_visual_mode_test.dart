@@ -47,8 +47,13 @@ void main() {
     final lightStrip = tester.getRect(
       find.byKey(const Key('opencode-top-light-strip')),
     );
+    final card = tester.getRect(
+      find.byKey(const Key('opencode-compact-card')),
+    );
     final title = tester.getRect(find.byKey(const Key('opencode-title')));
-    expect(lightStrip.bottom, lessThan(title.top));
+    expect(lightStrip.top, greaterThanOrEqualTo(card.top + 4));
+    expect(lightStrip.bottom, lessThanOrEqualTo(title.top - 4));
+    expect(lightStrip.width, closeTo(132, 0.1));
   });
 
   testWidgets('OpenCode compact card stays bounded on a narrow phone', (

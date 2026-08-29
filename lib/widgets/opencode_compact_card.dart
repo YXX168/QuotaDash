@@ -52,20 +52,23 @@ class OpenCodeCompactCard extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: -12,
-              left: 64,
-              right: 64,
-              child: Container(
-                key: const Key('opencode-top-light-strip'),
-                height: 1,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      AppTheme.cyan.withValues(alpha: 0.64),
-                      AppTheme.violet.withValues(alpha: 0.56),
-                      Colors.transparent,
-                    ],
+              top: -7,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  key: const Key('opencode-top-light-strip'),
+                  width: 132,
+                  height: 1.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        AppTheme.cyan.withValues(alpha: 0.70),
+                        AppTheme.violet.withValues(alpha: 0.62),
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
                 ),
               ),

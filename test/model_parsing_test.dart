@@ -49,7 +49,7 @@ void main() {
     expect(camel.remainingPercent, 79.5);
     expect(camel.resetAt, isNotNull);
     expect(camel.limitWindowSeconds, 18000);
-    expect(camel.displayLabel, '短时额度');
+    expect(camel.displayLabel, '5H额度');
   });
 
   test('auth file uses reference priority and masks identity', () {
