@@ -232,9 +232,7 @@ class _WindowRow extends StatelessWidget {
             ],
             const Spacer(),
             Text(
-              remaining == null
-                  ? '--'
-                  : '可用 ${remaining.toStringAsFixed(0)}%',
+              remaining == null ? '--' : '可用 ${remaining.toStringAsFixed(0)}%',
               style: TextStyle(
                 color: _color,
                 fontSize: 13,

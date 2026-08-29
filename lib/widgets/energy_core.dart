@@ -220,9 +220,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                               children: [
                                 Expanded(
                                   child: _QuotaReading(
-                                    key: const Key(
-                                      'energy-quota-line-primary',
-                                    ),
+                                    key: const Key('energy-quota-line-primary'),
                                     label: account.primaryLabel,
                                     remaining:
                                         account.primary?.remainingPercent,
@@ -351,9 +349,7 @@ class _QuotaReading extends StatelessWidget {
               ),
               const SizedBox(width: 5),
               Text(
-                remaining == null
-                    ? '--'
-                    : remaining!.toStringAsFixed(0) + '%',
+                remaining == null ? '--' : remaining!.toStringAsFixed(0) + '%',
                 style: TextStyle(
                   color: valueColor,
                   fontSize: 12,
@@ -442,9 +438,7 @@ class _EnergyPainter extends CustomPainter {
             color.withValues(alpha: 0.38),
           ],
           stops: const [0, 0.42, 1],
-        ).createShader(
-          Rect.fromCircle(center: center, radius: coreRadius),
-        ),
+        ).createShader(Rect.fromCircle(center: center, radius: coreRadius)),
     );
 
     final dashPaint = Paint()

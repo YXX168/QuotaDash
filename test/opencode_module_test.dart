@@ -46,10 +46,11 @@ void main() {
       expect(quota.provider, QuotaProviderId.openCode);
       expect(quota.hasError, isFalse);
       expect(quota.windows.length, 3);
-      expect(
-        quota.windows.map((entry) => entry.label).toList(),
-        ['5 小时周期', '本周额度', '本月额度'],
-      );
+      expect(quota.windows.map((entry) => entry.label).toList(), [
+        '5 小时周期',
+        '本周额度',
+        '本月额度',
+      ]);
       expect(quota.windows[0].remainingPercent, 80);
       expect(quota.windows[1].remainingPercent, 60);
       expect(quota.windows[2].remainingPercent, 40);
