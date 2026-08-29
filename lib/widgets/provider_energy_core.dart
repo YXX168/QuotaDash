@@ -525,9 +525,20 @@ class _WindowLine extends StatelessWidget {
                     const Positioned.fill(
                       child: ColoredBox(color: Color(0xFF1C2940)),
                     ),
-                    SizedBox(
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
                       width: constraints.maxWidth * progress,
-                      child: ColoredBox(color: color),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: color == AppTheme.cyan
+                                ? const [AppTheme.cyan, AppTheme.violet]
+                                : [color.withValues(alpha: 0.82), color],
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

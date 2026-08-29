@@ -77,7 +77,7 @@ class _FixedOpenCodeModule implements QuotaModule<ProviderModuleResult> {
       ProviderQuota(
         provider: QuotaProviderId.openCode,
         windows: [
-          ProviderQuotaWindow(label: '5 小时周期', remainingPercent: 80),
+          ProviderQuotaWindow(label: '5 小时额度', remainingPercent: 80),
           ProviderQuotaWindow(label: '周限额度', remainingPercent: 60),
           ProviderQuotaWindow(label: '月限额度', remainingPercent: 40),
         ],
@@ -246,6 +246,20 @@ void main() {
         find.byKey(const Key('energy-quota-line-secondary')),
         findsOneWidget,
       );
+      final weeklyTrack = tester.getSize(
+        find.byKey(const Key('energy-quota-track-周额度')),
+      );
+      final weeklyFill = tester.getSize(
+        find.byKey(const Key('energy-quota-fill-周额度')),
+      );
+      final monthlyTrack = tester.getSize(
+        find.byKey(const Key('energy-quota-track-月度额度')),
+      );
+      final monthlyFill = tester.getSize(
+        find.byKey(const Key('energy-quota-fill-月度额度')),
+      );
+      expect(weeklyFill.width, closeTo(weeklyTrack.width * 0.8, 0.1));
+      expect(monthlyFill.width, closeTo(monthlyTrack.width * 0.6, 0.1));
       expect(
         find.byWidgetPredicate(
           (widget) =>

@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 const _openCodeQuota = ProviderQuota(
   provider: QuotaProviderId.openCode,
   windows: [
-    ProviderQuotaWindow(label: '5 小时周期', remainingPercent: 80),
+    ProviderQuotaWindow(label: '5 小时额度', remainingPercent: 80),
     ProviderQuotaWindow(label: '周限额度', remainingPercent: 60),
     ProviderQuotaWindow(label: '月限额度', remainingPercent: 40),
   ],
@@ -37,13 +37,18 @@ void main() {
     expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
     expect(find.byKey(const Key('opencode-compact-values')), findsOneWidget);
     expect(find.text('OpenCode Go'), findsOneWidget);
-    expect(find.text('5 小时周期'), findsOneWidget);
+    expect(find.text('5 小时额度'), findsOneWidget);
     expect(find.text('周限额度'), findsOneWidget);
     expect(find.text('月限额度'), findsOneWidget);
     expect(find.text('月已用'), findsNothing);
     expect(find.byIcon(Icons.bolt_rounded), findsNothing);
     expect(find.text('套餐额度与恢复周期'), findsNothing);
     expect(find.text('月度周期'), findsNothing);
+    final lightStrip = tester.getRect(
+      find.byKey(const Key('opencode-top-light-strip')),
+    );
+    final title = tester.getRect(find.byKey(const Key('opencode-title')));
+    expect(lightStrip.bottom, lessThan(title.top));
   });
 
   testWidgets('OpenCode compact card stays bounded on a narrow phone', (
@@ -61,7 +66,7 @@ void main() {
       find.byKey(const Key('opencode-compact-values')),
     );
     final rollingTrack = tester.getSize(
-      find.byKey(const Key('opencode-quota-track-5 小时周期')),
+      find.byKey(const Key('opencode-quota-track-5 小时额度')),
     );
     final weeklyTrack = tester.getSize(
       find.byKey(const Key('opencode-quota-track-周限额度')),
@@ -76,7 +81,7 @@ void main() {
     expect(rollingTrack.width, closeTo(weeklyTrack.width, 0.1));
     expect(weeklyTrack.width, closeTo(monthlyTrack.width, 0.1));
     final rollingFill = tester.getSize(
-      find.byKey(const Key('opencode-quota-fill-5 小时周期')),
+      find.byKey(const Key('opencode-quota-fill-5 小时额度')),
     );
     final weeklyFill = tester.getSize(
       find.byKey(const Key('opencode-quota-fill-周限额度')),

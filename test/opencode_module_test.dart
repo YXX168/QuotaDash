@@ -47,7 +47,7 @@ void main() {
       expect(quota.hasError, isFalse);
       expect(quota.windows.length, 3);
       expect(quota.windows.map((entry) => entry.label).toList(), [
-        '5 小时周期',
+        '5 小时额度',
         '周限额度',
         '月限额度',
       ]);

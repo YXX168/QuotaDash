@@ -31,6 +31,7 @@ class OpenCodeCompactCard extends StatelessWidget {
           ],
         ),
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
             Positioned(
               top: -50,
@@ -51,17 +52,18 @@ class OpenCodeCompactCard extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: 0,
-              left: 30,
-              right: 30,
+              top: -12,
+              left: 64,
+              right: 64,
               child: Container(
+                key: const Key('opencode-top-light-strip'),
                 height: 1,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
-                      AppTheme.cyan.withValues(alpha: 0.88),
-                      AppTheme.violet.withValues(alpha: 0.72),
+                      AppTheme.cyan.withValues(alpha: 0.64),
+                      AppTheme.violet.withValues(alpha: 0.56),
                       Colors.transparent,
                     ],
                   ),
@@ -75,6 +77,7 @@ class OpenCodeCompactCard extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'OpenCode Go',
+                    key: Key('opencode-title'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

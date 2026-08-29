@@ -359,23 +359,42 @@ class _QuotaReading extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: SizedBox(
-              height: 4,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99),
+          child: LayoutBuilder(
+            builder: (context, constraints) => SizedBox(
+              key: Key('energy-quota-track-$label'),
+              width: double.infinity,
+              height: 5,
               child: Stack(
                 children: [
                   const Positioned.fill(
                     child: ColoredBox(color: Color(0xFF1C2940)),
                   ),
-                  FractionallySizedBox(
-                    widthFactor: progress,
-                    child: ColoredBox(color: valueColor),
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: constraints.maxWidth * progress,
+                    child: DecoratedBox(
+                      key: Key('energy-quota-fill-$label'),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: valueColor == AppTheme.cyan
+                              ? const [AppTheme.cyan, AppTheme.violet]
+                              : [
+                                  valueColor.withValues(alpha: 0.82),
+                                  valueColor,
+                                ],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        ),
         ],
       ),
     );
