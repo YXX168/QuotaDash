@@ -284,6 +284,7 @@ class _QuotaValue extends StatelessWidget {
           borderRadius: BorderRadius.circular(99),
           child: SizedBox(
             key: Key('opencode-quota-track-${window.label}'),
+            width: double.infinity,
             height: 3,
             child: Stack(
               children: [
