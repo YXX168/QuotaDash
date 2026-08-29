@@ -68,163 +68,165 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
               onTap: widget.onTap,
               borderRadius: BorderRadius.circular(22),
               child: Ink(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                gradient: const LinearGradient(
-                  colors: [Color(0xD8172236), Color(0xC40C1323)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(color: color.withValues(alpha: 0.28)),
-              ),
-              child: Column(
-                key: const Key('energy-foreground'),
-                children: [
-                  SizedBox(
-                    key: const Key('energy-header'),
-                    height: 18,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: color, blurRadius: 7)],
-                          ),
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            account.name.isEmpty ? '未命名账号' : account.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            account.plan.isEmpty
-                                ? 'CODEX'
-                                : account.plan.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
-                            style: TextStyle(
-                              color: color.withValues(alpha: 0.9),
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xD8172236), Color(0xC40C1323)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  Expanded(
-                    child: ClipRect(
-                      child: Stack(
-                        key: const Key('energy-orb'),
-                        alignment: Alignment.center,
-                        clipBehavior: Clip.hardEdge,
+                  border: Border.all(color: color.withValues(alpha: 0.28)),
+                ),
+                child: Column(
+                  key: const Key('energy-foreground'),
+                  children: [
+                    SizedBox(
+                      key: const Key('energy-header'),
+                      height: 18,
+                      child: Row(
                         children: [
-                          Positioned.fill(
-                            child: RepaintBoundary(
-                              child: CustomPaint(
-                                painter: _EnergyPainter(
-                                  animation: _controller,
-                                  color: color,
-                                  progress:
-                                      (remaining ?? 0).clamp(0, 100) / 100,
-                                  hasError: account.hasError,
-                                  refreshing: widget.refreshing,
-                                ),
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(color: color, blurRadius: 7),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              account.name.isEmpty ? '未命名账号' : account.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                value,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontSize: 27,
-                                      height: 1,
-                                      shadows: [
-                                        Shadow(color: color, blurRadius: 16),
-                                      ],
-                                    ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              account.plan.isEmpty
+                                  ? 'CODEX'
+                                  : account.plan.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: TextStyle(
+                                color: color.withValues(alpha: 0.9),
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
                               ),
-                              Text(
-                                label,
-                                style: TextStyle(
-                                  color: color.withValues(alpha: 0.95),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.7,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    key: const Key('energy-quota-row'),
-                    height: 28,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _QuotaReading(
-                            key: const Key('energy-quota-line-primary'),
-                            label: account.primaryLabel,
-                            remaining: account.primary?.remainingPercent,
-                          ),
+                    Expanded(
+                      child: ClipRect(
+                        child: Stack(
+                          key: const Key('energy-orb'),
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.hardEdge,
+                          children: [
+                            Positioned.fill(
+                              child: RepaintBoundary(
+                                child: CustomPaint(
+                                  painter: _EnergyPainter(
+                                    animation: _controller,
+                                    color: color,
+                                    progress:
+                                        (remaining ?? 0).clamp(0, 100) / 100,
+                                    hasError: account.hasError,
+                                    refreshing: widget.refreshing,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  value,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontSize: 27,
+                                        height: 1,
+                                        shadows: [
+                                          Shadow(color: color, blurRadius: 16),
+                                        ],
+                                      ),
+                                ),
+                                Text(
+                                  label,
+                                  style: TextStyle(
+                                    color: color.withValues(alpha: 0.95),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.7,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        if (account.secondary != null) ...[
-                          Container(
-                            width: 1,
-                            height: 25,
-                            margin: const EdgeInsets.symmetric(horizontal: 9),
-                            color: const Color(0x332D3C55),
-                          ),
+                      ),
+                    ),
+                    SizedBox(
+                      key: const Key('energy-quota-row'),
+                      height: 28,
+                      child: Row(
+                        children: [
                           Expanded(
                             child: _QuotaReading(
-                              key: const Key('energy-quota-line-secondary'),
-                              label: account.secondaryLabel,
-                              remaining: account.secondary?.remainingPercent,
+                              key: const Key('energy-quota-line-primary'),
+                              label: account.primaryLabel,
+                              remaining: account.primary?.remainingPercent,
                             ),
                           ),
+                          if (account.secondary != null) ...[
+                            Container(
+                              width: 1,
+                              height: 25,
+                              margin: const EdgeInsets.symmetric(horizontal: 9),
+                              color: const Color(0x332D3C55),
+                            ),
+                            Expanded(
+                              child: _QuotaReading(
+                                key: const Key('energy-quota-line-secondary'),
+                                label: account.secondaryLabel,
+                                remaining: account.secondary?.remainingPercent,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 7),
-                  SizedBox(
-                    key: const Key('energy-account-email'),
-                    height: 12,
-                    child: Text(
-                      account.email.isEmpty ? 'Codex Account' : account.email,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(fontSize: 9),
+                    const SizedBox(height: 7),
+                    SizedBox(
+                      key: const Key('energy-account-email'),
+                      height: 12,
+                      child: Text(
+                        account.email.isEmpty ? 'Codex Account' : account.email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(fontSize: 9),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
                 ),
               ),
             ),
