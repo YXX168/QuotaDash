@@ -87,10 +87,7 @@ class _FixedOpenCodeModule implements QuotaModule<ProviderModuleResult> {
 }
 
 final _testRegistry = ProviderRegistry(
-  factories: [
-    ProviderRegistry.defaultFactories.first,
-    _createFixedOpenCode,
-  ],
+  factories: [ProviderRegistry.defaultFactories.first, _createFixedOpenCode],
 );
 
 Future<void> _pumpDashboard(WidgetTester tester, VisualMode mode) async {

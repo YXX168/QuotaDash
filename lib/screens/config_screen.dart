@@ -454,10 +454,7 @@ class _ModuleSectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             module.displayName,
-            style: const TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
           ),
         ),
       ],

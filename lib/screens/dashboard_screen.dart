@@ -334,23 +334,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 key: const ValueKey('dashboard-content'),
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                   if (_cliProxyEnabled || _snapshot != null)
-                                     _ServicePanel(
-                                       snapshot:
-                                           _snapshot ??
-                                           DashboardSnapshot(
-                                             accounts: const [],
-                                             checkedAt: DateTime.now(),
-                                           ),
-                                       error: _error,
-                                     ),
-                                   if (_providerQuotas[QuotaProviderId.openCode]
-                                       case final openCodeQuota?) ...[
-                                     const SizedBox(height: 10),
-                                     OpenCodeCompactCard(
-                                       quota: openCodeQuota,
-                                     ),
-                                   ],
+                                  if (_cliProxyEnabled || _snapshot != null)
+                                    _ServicePanel(
+                                      snapshot:
+                                          _snapshot ??
+                                          DashboardSnapshot(
+                                            accounts: const [],
+                                            checkedAt: DateTime.now(),
+                                          ),
+                                      error: _error,
+                                    ),
+                                  if (_providerQuotas[QuotaProviderId.openCode]
+                                      case final openCodeQuota?) ...[
+                                    const SizedBox(height: 10),
+                                    OpenCodeCompactCard(quota: openCodeQuota),
+                                  ],
                                   if (_error != null) ...[
                                     const SizedBox(height: 10),
                                     _StaleDataBanner(

@@ -55,9 +55,7 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    final card = tester.getRect(
-      find.byKey(const Key('opencode-compact-card')),
-    );
+    final card = tester.getRect(find.byKey(const Key('opencode-compact-card')));
     final values = tester.getRect(
       find.byKey(const Key('opencode-compact-values')),
     );
