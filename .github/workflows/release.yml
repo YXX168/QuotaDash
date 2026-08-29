@@ -76,14 +76,14 @@ jobs:
         shell: bash
         run: |
           version="${GITHUB_REF_NAME#v}"
-          name="CLIProxy-v${version}-arm64.apk"
+          name="QuotaDash-v${version}-arm64.apk"
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk "dist/${name}"
           (cd dist && sha256sum "${name}" > "${name}.sha256")
 
       - uses: actions/upload-artifact@v7
         with:
-          name: CLIProxy-${{ github.ref_name }}-arm64
+          name: QuotaDash-${{ github.ref_name }}-arm64
           path: dist/*
           retention-days: 30
 
@@ -93,7 +93,7 @@ jobs:
         run: >-
           gh release create "${GITHUB_REF_NAME}" dist/*
           --verify-tag
-          --title "CLIProxy ${GITHUB_REF_NAME#v}"
+          --title "QuotaDash ${GITHUB_REF_NAME}"
           --notes-from-tag
 
       - name: Remove signing material
