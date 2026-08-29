@@ -53,6 +53,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
     final label = account.hasError ? '检查失败' : '综合剩余';
 
     return SizedBox(
+      key: const Key('energy-core-card'),
       height: 226,
       child: Semantics(
         button: widget.onTap != null,

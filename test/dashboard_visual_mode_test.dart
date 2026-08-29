@@ -173,7 +173,7 @@ void main() {
       expect(orbRect.bottom, lessThanOrEqualTo(quotaRect.top));
       expect(quotaRect.bottom, lessThanOrEqualTo(emailRect.top));
       expect(
-        tester.getSize(find.byType(EnergyAccountCore)).height,
+        tester.getSize(find.byKey(const Key('energy-core-card'))).height,
         closeTo(226, 0.1),
       );
       expect(
