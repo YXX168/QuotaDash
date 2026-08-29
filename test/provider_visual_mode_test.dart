@@ -26,7 +26,7 @@ Widget _app(Widget child) {
 }
 
 void main() {
-  testWidgets('OpenCode compact card shows three values and monthly usage', (
+  testWidgets('OpenCode compact card shows three balanced quota values', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -40,15 +40,8 @@ void main() {
     expect(find.text('5 小时周期'), findsOneWidget);
     expect(find.text('周限额度'), findsOneWidget);
     expect(find.text('月限额度'), findsOneWidget);
-    final usage = find.byKey(const Key('opencode-used-badge'));
-    expect(
-      find.descendant(of: usage, matching: find.text('月已用')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: usage, matching: find.text('60%')),
-      findsOneWidget,
-    );
+    expect(find.text('月已用'), findsNothing);
+    expect(find.byIcon(Icons.bolt_rounded), findsNothing);
     expect(find.text('套餐额度与恢复周期'), findsNothing);
     expect(find.text('月度周期'), findsNothing);
   });
@@ -82,5 +75,17 @@ void main() {
     expect(card.height, lessThan(150));
     expect(rollingTrack.width, closeTo(weeklyTrack.width, 0.1));
     expect(weeklyTrack.width, closeTo(monthlyTrack.width, 0.1));
+    final rollingFill = tester.getSize(
+      find.byKey(const Key('opencode-quota-fill-5 小时周期')),
+    );
+    final weeklyFill = tester.getSize(
+      find.byKey(const Key('opencode-quota-fill-周限额度')),
+    );
+    final monthlyFill = tester.getSize(
+      find.byKey(const Key('opencode-quota-fill-月限额度')),
+    );
+    expect(rollingFill.width, closeTo(rollingTrack.width * 0.8, 0.1));
+    expect(weeklyFill.width, closeTo(weeklyTrack.width * 0.6, 0.1));
+    expect(monthlyFill.width, closeTo(monthlyTrack.width * 0.4, 0.1));
   });
 }

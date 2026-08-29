@@ -9,22 +9,9 @@ class OpenCodeCompactCard extends StatelessWidget {
 
   final ProviderQuota quota;
 
-  double? get _monthlyRemaining {
-    for (final window in quota.windows) {
-      if (window.label.contains('月')) return window.remainingPercent;
-    }
-    return null;
-  }
-
-  double? get _monthlyUsed {
-    final remaining = _monthlyRemaining;
-    if (remaining == null) return null;
-    return (100 - remaining).clamp(0, 100).toDouble();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final accent = quota.hasError ? AppTheme.warning : AppTheme.magenta;
+    final accent = quota.hasError ? AppTheme.warning : AppTheme.cyan;
     return Semantics(
       label: 'OpenCode Go 额度',
       child: Container(
@@ -32,11 +19,7 @@ class OpenCodeCompactCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xF21A2238), Color(0xF2111728)],
-          ),
+          gradient: AppTheme.cardGradient,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: accent.withValues(alpha: 0.30)),
           boxShadow: [
@@ -59,7 +42,7 @@ class OpenCodeCompactCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
                       colors: [
-                        accent.withValues(alpha: 0.16),
+                        accent.withValues(alpha: 0.10),
                         Colors.transparent,
                       ],
                     ),
@@ -69,16 +52,16 @@ class OpenCodeCompactCard extends StatelessWidget {
             ),
             Positioned(
               top: 0,
-              left: 44,
-              right: 44,
+              left: 30,
+              right: 30,
               child: Container(
                 height: 1,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
-                      AppTheme.violet.withValues(alpha: 0.75),
-                      accent.withValues(alpha: 0.85),
+                      AppTheme.cyan.withValues(alpha: 0.88),
+                      AppTheme.violet.withValues(alpha: 0.72),
                       Colors.transparent,
                     ],
                   ),
@@ -88,47 +71,20 @@ class OpenCodeCompactCard extends StatelessWidget {
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppTheme.violet.withValues(alpha: 0.28),
-                            accent.withValues(alpha: 0.22),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(
-                          color: accent.withValues(alpha: 0.38),
-                        ),
-                      ),
-                      child: Icon(Icons.bolt_rounded, color: accent, size: 19),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'OpenCode Go',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.1,
                     ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'OpenCode Go',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    _UsageReading(
-                      accent: accent,
-                      error: quota.hasError,
-                      usedPercent: _monthlyUsed,
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 11),
                 if (quota.hasError)
                   const Align(
                     alignment: Alignment.centerLeft,
@@ -163,7 +119,7 @@ class OpenCodeCompactCard extends StatelessWidget {
                             width: 1,
                             height: 44,
                             margin: const EdgeInsets.symmetric(horizontal: 8),
-                            color: const Color(0x242F3C55),
+                            color: AppTheme.cyan.withValues(alpha: 0.08),
                           ),
                         Expanded(
                           child: _QuotaValue(window: quota.windows[index]),
@@ -180,61 +136,6 @@ class OpenCodeCompactCard extends StatelessWidget {
   }
 }
 
-class _UsageReading extends StatelessWidget {
-  const _UsageReading({
-    required this.accent,
-    required this.error,
-    required this.usedPercent,
-  });
-
-  final Color accent;
-  final bool error;
-  final double? usedPercent;
-
-  @override
-  Widget build(BuildContext context) {
-    if (error) {
-      return const Text(
-        '同步失败',
-        style: TextStyle(
-          color: AppTheme.warning,
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-        ),
-      );
-    }
-    final value = usedPercent == null
-        ? '--'
-        : '${usedPercent!.toStringAsFixed(0)}%';
-    return Row(
-      key: const Key('opencode-used-badge'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        const Text(
-          '月已用',
-          style: TextStyle(
-            color: Color(0xFF8996AD),
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          value,
-          style: TextStyle(
-            color: accent,
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _QuotaValue extends StatelessWidget {
   const _QuotaValue({required this.window});
 
@@ -245,8 +146,7 @@ class _QuotaValue extends StatelessWidget {
     if (remaining == null) return const Color(0xFF7F8CA4);
     if (remaining <= 15) return AppTheme.danger;
     if (remaining <= 35) return AppTheme.warning;
-    if (window.label.contains('月')) return AppTheme.magenta;
-    return AppTheme.violet;
+    return AppTheme.cyan;
   }
 
   @override
@@ -282,30 +182,37 @@ class _QuotaValue extends StatelessWidget {
         const SizedBox(height: 6),
         ClipRRect(
           borderRadius: BorderRadius.circular(99),
-          child: SizedBox(
-            key: Key('opencode-quota-track-${window.label}'),
-            width: double.infinity,
-            height: 3,
-            child: Stack(
-              children: [
-                const Positioned.fill(
-                  child: ColoredBox(color: Color(0xFF202B41)),
-                ),
-                FractionallySizedBox(
-                  widthFactor: progress,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.violet.withValues(alpha: 0.72),
-                          color,
-                        ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SizedBox(
+                key: Key('opencode-quota-track-${window.label}'),
+                width: double.infinity,
+                height: 4,
+                child: Stack(
+                  children: [
+                    const Positioned.fill(
+                      child: ColoredBox(color: Color(0xFF202B41)),
+                    ),
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: constraints.maxWidth * progress,
+                      child: DecoratedBox(
+                        key: Key('opencode-quota-fill-${window.label}'),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: color == AppTheme.cyan
+                                ? const [AppTheme.cyan, AppTheme.violet]
+                                : [color, color.withValues(alpha: 0.82)],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ],
