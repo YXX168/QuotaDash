@@ -153,21 +153,22 @@ class OpenCodeCompactCard extends StatelessWidget {
                   Row(
                     key: const Key('opencode-compact-values'),
                     children: [
-                      for (var index = 0; index < quota.windows.length; index++)
-                        ...[
-                          if (index > 0)
-                            Container(
-                              width: 1,
-                              height: 44,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
-                              color: const Color(0x242F3C55),
-                            ),
-                        Expanded(
-                          child: _QuotaValue(
-                            window: quota.windows[index],
+                      for (
+                        var index = 0;
+                        index < quota.windows.length;
+                        index++
+                      ) ...[
+                        if (index > 0)
+                          Container(
+                            width: 1,
+                            height: 44,
+                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                            color: const Color(0x242F3C55),
                           ),
+                        Expanded(
+                          child: _QuotaValue(window: quota.windows[index]),
                         ),
-                        ],
+                      ],
                     ],
                   ),
               ],
