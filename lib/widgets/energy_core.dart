@@ -52,16 +52,17 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
         : '${remaining.toStringAsFixed(0)}%';
     final label = account.hasError ? '检查失败' : '综合剩余';
 
-    return Semantics(
-      button: widget.onTap != null,
-      label: '${account.name}，$label $value',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(22),
-          child: Ink(
-            height: 226,
+    return SizedBox(
+      height: 226,
+      child: Semantics(
+        button: widget.onTap != null,
+        label: '${account.name}，$label $value',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(22),
+            child: Ink(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
@@ -216,6 +217,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ),
