@@ -170,15 +170,13 @@ void main() {
         find.byKey(const Key('energy-account-email')),
       );
       expect(headerRect.bottom, lessThanOrEqualTo(orbRect.top));
-      expect(orbRect.bottom, lessThanOrEqualTo(quotaRect.top));
+      expect((orbRect.top - quotaRect.top).abs(), lessThanOrEqualTo(0.1));
+      expect(orbRect.right, lessThanOrEqualTo(quotaRect.left));
+      expect(orbRect.bottom, lessThanOrEqualTo(emailRect.top));
       expect(quotaRect.bottom, lessThanOrEqualTo(emailRect.top));
       expect(
         tester.getSize(find.byKey(const Key('energy-core-card'))).height,
-        closeTo(226, 0.1),
-      );
-      expect(
-        tester.getSize(find.byKey(const Key('energy-quota-row'))).height,
-        closeTo(28, 0.1),
+        closeTo(218, 0.1),
       );
       expect(find.byKey(const Key('energy-orb')), findsOneWidget);
       expect(

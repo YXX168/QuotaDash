@@ -29,7 +29,7 @@ class OpenCodeModule implements QuotaModule<ProviderModuleResult> {
   String get displayName => QuotaProviderId.openCode.displayName;
 
   @override
-  String get description => '滚动、周与月度额度窗口';
+  String get description => '套餐额度与恢复周期';
 
   @override
   Color get accentColor => AppTheme.magenta;

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../models/provider_quota.dart';
 import '../theme/app_theme.dart';
@@ -14,6 +15,7 @@ class ProviderEnergyCore extends StatefulWidget {
   const ProviderEnergyCore({
     required this.quota,
     required this.displayName,
+    required this.description,
     required this.accentColor,
     required this.refreshing,
     super.key,
@@ -21,6 +23,7 @@ class ProviderEnergyCore extends StatefulWidget {
 
   final ProviderQuota quota;
   final String displayName;
+  final String description;
   final Color accentColor;
   final bool refreshing;
 
@@ -77,14 +80,14 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
   /// average across windows.
   double? get _headlineRemaining {
     for (final entry in widget.quota.windows) {
-      if (entry.label == '月限额') return entry.remainingPercent;
+      if (entry.label.contains('月')) return entry.remainingPercent;
     }
     return widget.quota.averageRemainingPercent;
   }
 
   /// Whether the headline value actually reflects a monthly window.
   bool get _headlineIsMonthly => widget.quota.windows.any(
-    (entry) => entry.label == '月限额' && entry.remainingPercent != null,
+    (entry) => entry.label.contains('月') && entry.remainingPercent != null,
   );
 
   @override
@@ -98,201 +101,271 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
         ? '--'
         : '${remaining.toStringAsFixed(0)}%';
 
+    final orb = _OrbPanel(
+      key: const Key('provider-energy-orb'),
+      rotation: _rotation,
+      pulse: _pulse,
+      accent: accent,
+      remaining: remaining,
+      valueText: valueText,
+      valueLabel: quota.hasError
+          ? '同步异常'
+          : _headlineIsMonthly
+          ? '本月可用'
+          : '综合可用',
+      hasError: quota.hasError,
+      refreshing: widget.refreshing,
+    );
+
     return Material(
       color: Colors.transparent,
       child: Ink(
-        height: 232,
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(26),
           gradient: const LinearGradient(
-            colors: [Color(0xF0151E33), Color(0xE60B1220)],
+            colors: [Color(0xF0182237), Color(0xF0080F1D)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: accent.withValues(alpha: 0.30)),
+          border: Border.all(color: accent.withValues(alpha: 0.32)),
           boxShadow: [
             BoxShadow(
               color: accent.withValues(alpha: 0.10),
-              blurRadius: 22,
-              offset: const Offset(0, 8),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ---- Header -------------------------------------------------
             Row(
               children: [
-                _PulsingDot(controller: _pulse, color: accent),
-                const SizedBox(width: 8),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.13),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: accent.withValues(alpha: 0.28)),
+                  ),
+                  child: Icon(Icons.bolt_rounded, color: accent, size: 21),
+                ),
+                const SizedBox(width: 11),
                 Expanded(
-                  child: Text(
-                    widget.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.2,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(fontSize: 10),
+                      ),
+                    ],
                   ),
                 ),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.13),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: accent.withValues(alpha: 0.32)),
-                    ),
-                    child: Text(
-                      _statusLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: accent,
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.6,
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: accent.withValues(alpha: 0.26)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _PulsingDot(controller: _pulse, color: accent),
+                      const SizedBox(width: 6),
+                      Text(
+                        _statusLabel,
+                        style: TextStyle(
+                          color: accent,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
-            // ---- Plasma orb --------------------------------------------
-            Expanded(
-              // The stack must span the full card width; otherwise it
-              // shrink-wraps to the center text and the orb hugs one side.
-              child: SizedBox(
-                width: double.infinity,
-                child: Stack(
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.hardEdge,
-                  children: [
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: AnimatedBuilder(
-                          animation: Listenable.merge([_rotation, _pulse]),
-                          builder: (context, _) => CustomPaint(
-                            painter: _PlasmaPainter(
-                              rotation: _rotation.value,
-                              pulse: Curves.easeInOut.transform(_pulse.value),
-                              accent: accent,
-                              progress:
-                                  ((remaining ?? 0).clamp(0, 100)) / 100.0,
-                              hasError: quota.hasError,
-                              refreshing: widget.refreshing,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ShaderMask(
-                          shaderCallback: (bounds) => LinearGradient(
-                            colors: [
-                              Colors.white,
-                              accent.withValues(alpha: 0.85),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ).createShader(bounds),
-                          child: Text(
-                            valueText,
-                            style: const TextStyle(
-                              fontSize: 27,
-                              fontWeight: FontWeight.w900,
-                              height: 1,
-                              letterSpacing: -1,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          quota.hasError
-                              ? '同步异常'
-                              : _headlineIsMonthly
-                              ? '月限额剩余'
-                              : '综合剩余',
-                          style: TextStyle(
-                            color: accent.withValues(alpha: 0.95),
-                            fontSize: 8,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // ---- Segmented charge bar ----------------------------------
-            _SegmentedChargeBar(
-              progress: quota.hasError ? 0 : (remaining ?? 0) / 100,
-              accent: accent,
-            ),
-            const SizedBox(height: 8),
-            // ---- Window lines ------------------------------------------
+            const SizedBox(height: 16),
             if (quota.hasError)
-              Text(
-                '${quota.error}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: AppTheme.danger.withValues(alpha: 0.92),
-                  fontSize: 9.5,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: AppTheme.danger.withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: AppTheme.danger.withValues(alpha: 0.22),
+                  ),
+                ),
+                child: Text(
+                  quota.error.toString(),
+                  style: const TextStyle(
+                    color: Color(0xFFFFA1B5),
+                    fontSize: 11,
+                  ),
                 ),
               )
             else if (quota.windows.isEmpty)
               const Text(
-                '暂无额度窗口',
-                style: TextStyle(color: Color(0xFF75829B), fontSize: 9.5),
+                '暂未获取到套餐额度',
+                style: TextStyle(color: Color(0xFF75829B), fontSize: 10),
               )
             else
-              Row(
-                children: [
-                  for (
-                    var index = 0;
-                    index < math.min(2, quota.windows.length);
-                    index++
-                  ) ...[
-                    if (index > 0)
-                      Container(
-                        width: 1,
-                        height: 26,
-                        margin: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0x552D3C55),
-                              Colors.transparent,
-                            ],
-                          ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 520;
+                  final windows = Column(
+                    key: const Key('provider-energy-windows'),
+                    children: [
+                      for (
+                        var index = 0;
+                        index < quota.windows.length;
+                        index++
+                      ) ...[
+                        if (index > 0) const SizedBox(height: 8),
+                        _WindowLine(
+                          entry: quota.windows[index],
+                          accent: accent,
                         ),
-                      ),
-                    Expanded(
-                      child: SizedBox(
-                        height: 31,
-                        child: _WindowLine(entry: quota.windows[index]),
-                      ),
+                      ],
+                    ],
+                  );
+                  if (compact) {
+                    return Column(
+                      children: [
+                        SizedBox(height: 150, child: orb),
+                        const SizedBox(height: 12),
+                        windows,
+                      ],
+                    );
+                  }
+                  return SizedBox(
+                    height: 210,
+                    child: Row(
+                      children: [
+                        SizedBox(width: 190, child: orb),
+                        const SizedBox(width: 16),
+                        Expanded(child: windows),
+                      ],
                     ),
-                  ],
-                ],
+                  );
+                },
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _OrbPanel extends StatelessWidget {
+  const _OrbPanel({
+    required this.rotation,
+    required this.pulse,
+    required this.accent,
+    required this.remaining,
+    required this.valueText,
+    required this.valueLabel,
+    required this.hasError,
+    required this.refreshing,
+    super.key,
+  });
+
+  final AnimationController rotation;
+  final AnimationController pulse;
+  final Color accent;
+  final double? remaining;
+  final String valueText;
+  final String valueLabel;
+  final bool hasError;
+  final bool refreshing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0x42101A2B),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accent.withValues(alpha: 0.15)),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.hardEdge,
+        children: [
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: Listenable.merge([rotation, pulse]),
+                builder: (context, _) => CustomPaint(
+                  painter: _PlasmaPainter(
+                    rotation: rotation.value,
+                    pulse: Curves.easeInOut.transform(pulse.value),
+                    accent: accent,
+                    progress: ((remaining ?? 0).clamp(0, 100)) / 100.0,
+                    hasError: hasError,
+                    refreshing: refreshing,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                valueText,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                  letterSpacing: -1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                valueLabel,
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.9,
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: 12,
+            child: _SegmentedChargeBar(
+              progress: hasError ? 0 : (remaining ?? 0) / 100,
+              accent: accent,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -390,9 +463,10 @@ class _SegmentedChargeBar extends StatelessWidget {
 }
 
 class _WindowLine extends StatelessWidget {
-  const _WindowLine({required this.entry});
+  const _WindowLine({required this.entry, required this.accent});
 
   final ProviderQuotaWindow entry;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -403,64 +477,92 @@ class _WindowLine extends StatelessWidget {
         ? AppTheme.danger
         : r <= 35
         ? AppTheme.warning
-        : AppTheme.success;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                entry.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w700,
+        : accent;
+    final progress = ((r ?? 0) / 100).clamp(0.0, 1.0).toDouble();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
+      decoration: BoxDecoration(
+        color: const Color(0x54121C2F),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  entry.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-            Text(
-              r == null ? '--' : '${r.toStringAsFixed(0)}%',
-              style: TextStyle(
-                color: color,
-                fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                fontFeatures: const [FontFeature.tabularFigures()],
+              Text(
+                r == null ? '--' : '可用 ${r.toStringAsFixed(0)}%',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w900,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final progress = ((r ?? 0) / 100).clamp(0.0, 1.0).toDouble();
-            return ClipRRect(
+            ],
+          ),
+          const SizedBox(height: 7),
+          LayoutBuilder(
+            builder: (context, constraints) => ClipRRect(
               borderRadius: BorderRadius.circular(99),
               child: SizedBox(
-                width: constraints.maxWidth,
-                height: 4,
+                height: 5,
                 child: Stack(
                   children: [
                     const Positioned.fill(
-                      child: ColoredBox(color: Color(0x221B2947)),
+                      child: ColoredBox(color: Color(0xFF1C2940)),
                     ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: SizedBox(
-                        width: constraints.maxWidth * progress,
-                        height: 4,
-                        child: ColoredBox(color: color),
-                      ),
+                    SizedBox(
+                      width: constraints.maxWidth * progress,
+                      child: ColoredBox(color: color),
                     ),
                   ],
                 ),
               ),
-            );
-          },
-        ),
-      ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                size: 11,
+                color: color.withValues(alpha: 0.78),
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  _resetText(entry.resetAt),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontSize: 9),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  static String _resetText(DateTime? resetAt) {
+    if (resetAt == null) return '恢复时间待同步';
+    return '恢复于 ${DateFormat('M月d日 HH:mm').format(resetAt.toLocal())}';
   }
 }
 

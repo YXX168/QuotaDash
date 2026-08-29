@@ -196,13 +196,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     for (final entry in _providerQuotas.entries) ...[
       if (_providerModules[entry.key] case final module?) ...[
         const SizedBox(height: 18),
-        SectionTitle(title: module.displayName, subtitle: '额度模块'),
+        SectionTitle(title: module.displayName, subtitle: module.description),
         const SizedBox(height: 10),
         if (widget.visualMode == VisualMode.energy)
           ProviderEnergyCore(
             key: Key('provider-energy-${entry.key.name}'),
             quota: entry.value,
             displayName: module.displayName,
+            description: module.description,
             accentColor: module.accentColor,
             refreshing: _refreshing,
           )
@@ -211,6 +212,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             key: Key('quota-card-${entry.key.name}'),
             quota: entry.value,
             displayName: module.displayName,
+            description: module.description,
             accentColor: module.accentColor,
             icon: module.icon,
           ),
@@ -1283,11 +1285,9 @@ class _EnergyAccountGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 1000
-            ? 4
-            : constraints.maxWidth >= 650
+        final columns = constraints.maxWidth >= 1080
             ? 3
-            : constraints.maxWidth >= 350
+            : constraints.maxWidth >= 680
             ? 2
             : 1;
         const spacing = 10.0;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../models/provider_quota.dart';
 import '../theme/app_theme.dart';
@@ -12,6 +13,7 @@ class ProviderQuotaCard extends StatelessWidget {
   const ProviderQuotaCard({
     required this.quota,
     required this.displayName,
+    required this.description,
     required this.accentColor,
     required this.icon,
     super.key,
@@ -19,12 +21,13 @@ class ProviderQuotaCard extends StatelessWidget {
 
   final ProviderQuota quota;
   final String displayName;
+  final String description;
   final Color accentColor;
   final IconData icon;
 
   double? get _monthlyRemaining {
     for (final entry in quota.windows) {
-      if (entry.label == '月限额') return entry.remainingPercent;
+      if (_isMonthly(entry.label)) return entry.remainingPercent;
     }
     return null;
   }
@@ -32,7 +35,9 @@ class ProviderQuotaCard extends StatelessWidget {
   /// True only when the provider actually exposes a monthly window so the
   /// header badge never mislabels an average as the monthly hard cap.
   bool get _hasMonthlyWindow =>
-      quota.windows.any((entry) => entry.label == '月限额');
+      quota.windows.any((entry) => _isMonthly(entry.label));
+
+  static bool _isMonthly(String label) => label.contains('月');
 
   @override
   Widget build(BuildContext context) {
@@ -65,12 +70,26 @@ class ProviderQuotaCard extends StatelessWidget {
               ),
               const SizedBox(width: 11),
               Expanded(
-                child: Text(
-                  displayName,
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(fontSize: 10.5),
+                    ),
+                  ],
                 ),
               ),
               if (!quota.hasError && _hasMonthlyWindow && monthly != null)
@@ -99,7 +118,7 @@ class ProviderQuotaCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '月限额 ${monthly.toStringAsFixed(0)}%',
+                        '本月可用 ${monthly.toStringAsFixed(0)}%',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11.5,
@@ -130,7 +149,7 @@ class ProviderQuotaCard extends StatelessWidget {
             ),
           ] else if (quota.windows.isEmpty) ...[
             const SizedBox(height: 12),
-            Text('暂无可用额度窗口', style: Theme.of(context).textTheme.bodySmall),
+            Text('暂未获取到套餐额度', style: Theme.of(context).textTheme.bodySmall),
           ] else ...[
             const SizedBox(height: 16),
             for (var index = 0; index < quota.windows.length; index++) ...[
@@ -138,7 +157,7 @@ class ProviderQuotaCard extends StatelessWidget {
               _WindowRow(
                 entry: quota.windows[index],
                 accent: accent,
-                isMonthly: quota.windows[index].label == '月限额',
+                isMonthly: _isMonthly(quota.windows[index].label),
               ),
             ],
           ],
@@ -201,7 +220,7 @@ class _WindowRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
-                  '总额度',
+                  '月度周期',
                   style: TextStyle(
                     color: accent,
                     fontSize: 8,
@@ -213,7 +232,9 @@ class _WindowRow extends StatelessWidget {
             ],
             const Spacer(),
             Text(
-              remaining == null ? '--' : '${remaining.toStringAsFixed(0)}%',
+              remaining == null
+                  ? '--'
+                  : '可用 ${remaining.toStringAsFixed(0)}%',
               style: TextStyle(
                 color: _color,
                 fontSize: 13,
@@ -246,7 +267,19 @@ class _WindowRow extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 6),
+        Text(
+          _resetText(entry.resetAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 9.5),
+        ),
       ],
     );
+  }
+
+  static String _resetText(DateTime? resetAt) {
+    if (resetAt == null) return '恢复时间待同步';
+    return '恢复于 ${DateFormat('M月d日 HH:mm').format(resetAt.toLocal())}';
   }
 }
