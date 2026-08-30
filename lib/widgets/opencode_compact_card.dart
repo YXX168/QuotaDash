@@ -13,7 +13,7 @@ class OpenCodeCompactCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = quota.hasError ? AppTheme.warning : AppTheme.cyan;
     return Semantics(
-      label: 'OpenCode Go 额度',
+      label: 'OpenCode 额度',
       child: Container(
         key: const Key('opencode-compact-card'),
         clipBehavior: Clip.antiAlias,
@@ -34,23 +34,30 @@ class OpenCodeCompactCard extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              top: -7,
+              bottom: -9,
               left: 0,
               right: 0,
               child: Center(
                 child: Container(
-                  key: const Key('opencode-top-light-strip'),
+                  key: const Key('opencode-bottom-light-strip'),
                   width: 132,
-                  height: 1.5,
+                  height: 2,
                   decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(99),
                     gradient: LinearGradient(
                       colors: [
                         Colors.transparent,
-                        AppTheme.cyan.withValues(alpha: 0.70),
-                        AppTheme.violet.withValues(alpha: 0.62),
+                        AppTheme.cyan.withValues(alpha: 0.66),
+                        AppTheme.violet.withValues(alpha: 0.56),
                         Colors.transparent,
                       ],
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.cyan.withValues(alpha: 0.22),
+                        blurRadius: 7,
+                      ),
+                    ],
                   ),
                 ),
               ),

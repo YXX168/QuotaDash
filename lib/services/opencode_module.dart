@@ -8,10 +8,10 @@ import 'opencode_service.dart';
 import 'provider_field.dart';
 import 'quota_module.dart';
 
-/// Configuration keys owned by the OpenCode Go module.
+/// Configuration keys owned by the OpenCode module.
 const openCodeConfigKeys = <String>['openCodeApiKey'];
 
-/// OpenCode Go provider module.
+/// OpenCode provider module.
 class OpenCodeModule implements QuotaModule<ProviderModuleResult> {
   const OpenCodeModule({
     OpencodeService Function(String apiKey)? serviceFactory,

@@ -19,7 +19,7 @@ Quota Dash 是一个模块化的 Android 大模型额度仪表盘。每个供应
 ## 已接入的供应商
 
 - **CLIProxyAPI** - Codex OAuth 账号状态、额度窗口、重置时间与近期请求活动。
-- **OpenCode Go** - 滚动、周与月度额度窗口。
+- **OpenCode** - 滚动、周与月度额度窗口。
 
 ## 模块化架构
 

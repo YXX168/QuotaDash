@@ -360,19 +360,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     const SizedBox(height: 18),
                                     const SectionTitle(
                                       key: Key('opencode-section-title'),
-                                      title: 'OpenCode Go',
+                                      title: 'OpenCode',
                                     ),
                                     const SizedBox(height: 10),
                                     OpenCodeCompactCard(quota: openCodeQuota),
                                   ],
                                   if (_snapshot != null) ...[
                                     const SizedBox(height: 18),
-                                    SectionTitle(
-                                      key: const Key('codex-section-title'),
+                                    const SectionTitle(
+                                      key: Key('codex-section-title'),
                                       title: 'Codex',
-                                      subtitle: _snapshot!.accounts.isEmpty
-                                          ? '未找到启用的 Codex 认证文件'
-                                          : '${_snapshot!.totalAccounts} 个账号',
                                     ),
                                   ],
                                   if (_snapshot != null) ...[

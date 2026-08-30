@@ -57,7 +57,7 @@ class _FixedOpenCodeModule implements QuotaModule<ProviderModuleResult> {
   String get description => '';
 
   @override
-  String get displayName => 'OpenCode Go';
+  String get displayName => 'OpenCode';
 
   @override
   List<ProviderField> get fields => const [];
@@ -123,6 +123,8 @@ void main() {
     expect(find.byKey(const Key('account-card-0')), findsOneWidget);
     expect(find.byKey(const Key('energy-account-0')), findsNothing);
     expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
+    expect(find.text('OpenCode'), findsOneWidget);
+    expect(find.text('1 个账号'), findsNothing);
     expect(find.text('周均额度'), findsNothing);
     expect(find.text('平均剩余'), findsNothing);
     expect(find.byKey(const Key('quota-card-openCode')), findsNothing);

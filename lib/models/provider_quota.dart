@@ -3,7 +3,7 @@ final class QuotaProviderId {
   const QuotaProviderId(this.value, this.displayName);
 
   static const cliProxyApi = QuotaProviderId('cliProxyApi', 'CLIProxyAPI');
-  static const openCode = QuotaProviderId('openCode', 'OpenCode Go');
+  static const openCode = QuotaProviderId('openCode', 'OpenCode');
 
   final String value;
   final String displayName;

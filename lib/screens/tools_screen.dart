@@ -238,7 +238,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     ],
                     const SizedBox(height: 20),
                     const SectionTitle(
-                      title: 'OpenCode Go',
+                      title: 'OpenCode',
                       subtitle: '额度数据通过 API Key 同步',
                     ),
                     const SizedBox(height: 14),
@@ -290,7 +290,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         ),
                       )
                     else
-                      const _NotConnectedCard(providerName: 'OpenCode Go'),
+                      const _NotConnectedCard(providerName: 'OpenCode'),
                     if (_cliProxyConfigured) ...[
                       const SizedBox(height: 20),
                       Center(

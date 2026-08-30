@@ -36,7 +36,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
     expect(find.byKey(const Key('opencode-compact-values')), findsOneWidget);
-    expect(find.text('OpenCode Go'), findsNothing);
+    expect(find.text('OpenCode'), findsNothing);
     expect(find.text('5 小时额度'), findsOneWidget);
     expect(find.text('周限额度'), findsOneWidget);
     expect(find.text('月限额度'), findsOneWidget);
@@ -45,14 +45,14 @@ void main() {
     expect(find.text('套餐额度与恢复周期'), findsNothing);
     expect(find.text('月度周期'), findsNothing);
     final lightStrip = tester.getRect(
-      find.byKey(const Key('opencode-top-light-strip')),
+      find.byKey(const Key('opencode-bottom-light-strip')),
     );
     final card = tester.getRect(find.byKey(const Key('opencode-compact-card')));
     final values = tester.getRect(
       find.byKey(const Key('opencode-compact-values')),
     );
-    expect(lightStrip.top, greaterThanOrEqualTo(card.top + 4));
-    expect(lightStrip.bottom, lessThanOrEqualTo(values.top - 4));
+    expect(lightStrip.top, greaterThanOrEqualTo(values.bottom + 4));
+    expect(lightStrip.bottom, lessThanOrEqualTo(card.bottom - 3));
     expect(lightStrip.width, closeTo(132, 0.1));
   });
 
