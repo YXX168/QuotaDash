@@ -52,6 +52,35 @@ void main() {
     expect(camel.displayLabel, '5H额度');
   });
 
+  test('Codex account status uses weekly quota instead of window average', () {
+    const account = CodexAccount(
+      id: 'plus-account',
+      authIndex: '1',
+      name: 'masked@example.com',
+      email: 'masked@example.com',
+      plan: 'plus',
+      available: true,
+      limitReached: false,
+      primary: QuotaWindow(
+        usedPercent: 71,
+        remainingPercent: 29,
+        limitWindowSeconds: 18000,
+      ),
+      secondary: QuotaWindow(
+        usedPercent: 27,
+        remainingPercent: 73,
+        limitWindowSeconds: 604800,
+      ),
+      secondaryLabel: '周额度',
+      resetCredits: 0,
+      successRequests: 0,
+      failedRequests: 0,
+    );
+
+    expect(account.primaryLabel, '5H额度');
+    expect(account.weeklyRemainingPercent, 73);
+  });
+
   test('auth file uses reference priority and masks identity', () {
     final account = AuthFileAccount.fromJson({
       'id': 7,

@@ -12,9 +12,9 @@ class DashboardSnapshot {
       accounts.where((account) => account.isAvailable).length;
   int get errorAccounts => accounts.where((account) => account.hasError).length;
 
-  double? get averageRemainingPercent {
+  double? get averageWeeklyRemainingPercent {
     final values = accounts
-        .map((account) => account.averageRemainingPercent)
+        .map((account) => account.weeklyRemainingPercent)
         .whereType<double>()
         .toList();
     if (values.isEmpty) return null;

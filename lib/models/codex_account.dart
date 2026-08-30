@@ -44,13 +44,12 @@ class CodexAccount {
       error == null && available == true && limitReached != true;
   bool get hasError => error != null;
 
-  double? get averageRemainingPercent {
-    final values = [
-      primary?.remainingPercent,
-      secondary?.remainingPercent,
-    ].whereType<double>().toList();
-    if (values.isEmpty) return null;
-    return values.reduce((a, b) => a + b) / values.length;
+  /// The weekly window is the account's primary status. Short-term limits are
+  /// operational throttles and must not be averaged into this value.
+  double? get weeklyRemainingPercent {
+    if (primaryLabel.contains('周')) return primary?.remainingPercent;
+    if (secondaryLabel.contains('周')) return secondary?.remainingPercent;
+    return null;
   }
 
   int get recentSuccess =>

@@ -1041,7 +1041,7 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final remaining = snapshot.averageRemainingPercent;
+    final remaining = snapshot.averageWeeklyRemainingPercent;
     final cards = [
       _StatCard(
         label: '账号总数',
@@ -1056,9 +1056,9 @@ class _StatsGrid extends StatelessWidget {
         color: AppTheme.success,
       ),
       _StatCard(
-        label: '平均剩余',
+        label: '周均额度',
         value: remaining == null ? '--' : '${remaining.toStringAsFixed(0)}%',
-        icon: Icons.donut_large_rounded,
+        icon: Icons.calendar_view_week_rounded,
         color: AppTheme.violet,
       ),
       _StatCard(
@@ -1068,13 +1068,26 @@ class _StatsGrid extends StatelessWidget {
         color: snapshot.errorAccounts == 0 ? AppTheme.success : AppTheme.danger,
       ),
     ];
-    return Row(
-      children: [
-        for (var index = 0; index < cards.length; index++) ...[
-          if (index > 0) const SizedBox(width: 6),
-          Expanded(child: cards[index]),
+    return Container(
+      height: 62,
+      decoration: BoxDecoration(
+        gradient: AppTheme.cardGradient,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.cyan.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        children: [
+          for (var index = 0; index < cards.length; index++) ...[
+            if (index > 0)
+              Container(
+                width: 1,
+                height: 32,
+                color: AppTheme.cyan.withValues(alpha: 0.08),
+              ),
+            Expanded(child: cards[index]),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -1194,14 +1207,8 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 62,
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
-      decoration: BoxDecoration(
-        color: const Color(0x9C111827),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.16), width: 0.7),
-      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

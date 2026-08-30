@@ -43,14 +43,14 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
   @override
   Widget build(BuildContext context) {
     final account = widget.account;
-    final remaining = account.averageRemainingPercent;
+    final remaining = account.weeklyRemainingPercent;
     final color = _coreColor(account, remaining);
     final value = account.hasError
         ? '!'
         : remaining == null
         ? '--'
         : '${remaining.toStringAsFixed(0)}%';
-    final label = account.hasError ? '检查失败' : '综合剩余';
+    final label = account.hasError ? '检查失败' : '周额度';
 
     return UnconstrainedBox(
       alignment: Alignment.topCenter,

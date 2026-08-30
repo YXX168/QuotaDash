@@ -123,6 +123,8 @@ void main() {
     expect(find.byKey(const Key('account-card-0')), findsOneWidget);
     expect(find.byKey(const Key('energy-account-0')), findsNothing);
     expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
+    expect(find.text('周均额度'), findsOneWidget);
+    expect(find.text('平均剩余'), findsNothing);
     expect(find.byKey(const Key('quota-card-openCode')), findsNothing);
     expect(find.byKey(const Key('provider-energy-openCode')), findsNothing);
   });
@@ -238,6 +240,20 @@ void main() {
         closeTo(218, 0.1),
       );
       expect(find.byKey(const Key('energy-orb')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('energy-orb')),
+          matching: find.text('80%'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('energy-orb')),
+          matching: find.text('周额度'),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const Key('energy-quota-line-primary')),
         findsOneWidget,

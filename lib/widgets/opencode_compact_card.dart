@@ -34,24 +34,6 @@ class OpenCodeCompactCard extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              top: -50,
-              right: -28,
-              child: IgnorePointer(
-                child: Container(
-                  width: 130,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      colors: [
-                        accent.withValues(alpha: 0.10),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
               top: -7,
               left: 0,
               right: 0,
