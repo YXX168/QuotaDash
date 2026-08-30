@@ -344,11 +344,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ),
                                       error: _error,
                                     ),
-                                  if (_providerQuotas[QuotaProviderId.openCode]
-                                      case final openCodeQuota?) ...[
-                                    const SizedBox(height: 10),
-                                    OpenCodeCompactCard(quota: openCodeQuota),
-                                  ],
                                   if (_error != null) ...[
                                     const SizedBox(height: 10),
                                     _StaleDataBanner(
@@ -356,17 +351,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       onRetry: _refresh,
                                     ),
                                   ],
-                                  const SizedBox(height: 10),
-                                  if (_snapshot != null)
-                                    _StatsGrid(
-                                      key: const Key('summary-stats-grid'),
-                                      snapshot: _snapshot!,
-                                    ),
-                                  const SizedBox(height: 10),
                                   if (_snapshot != null) ...[
+                                    const SizedBox(height: 10),
                                     _TrafficPulsePanel(snapshot: _snapshot!),
+                                  ],
+                                  if (_providerQuotas[QuotaProviderId.openCode]
+                                      case final openCodeQuota?) ...[
+                                    const SizedBox(height: 18),
+                                    const SectionTitle(
+                                      key: Key('opencode-section-title'),
+                                      title: 'OpenCode Go',
+                                    ),
+                                    const SizedBox(height: 10),
+                                    OpenCodeCompactCard(quota: openCodeQuota),
+                                  ],
+                                  if (_snapshot != null) ...[
                                     const SizedBox(height: 18),
                                     SectionTitle(
+                                      key: const Key('codex-section-title'),
                                       title: 'Codex',
                                       subtitle: _snapshot!.accounts.isEmpty
                                           ? '未找到启用的 Codex 认证文件'
@@ -1034,64 +1036,6 @@ class _PulsingStatusDotState extends State<_PulsingStatusDot>
   }
 }
 
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.snapshot, super.key});
-
-  final DashboardSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final remaining = snapshot.averageWeeklyRemainingPercent;
-    final cards = [
-      _StatCard(
-        label: '账号总数',
-        value: '${snapshot.totalAccounts}',
-        icon: Icons.people_alt_rounded,
-        color: AppTheme.cyan,
-      ),
-      _StatCard(
-        label: '当前可用',
-        value: '${snapshot.availableAccounts}',
-        icon: Icons.bolt_rounded,
-        color: AppTheme.success,
-      ),
-      _StatCard(
-        label: '周均额度',
-        value: remaining == null ? '--' : '${remaining.toStringAsFixed(0)}%',
-        icon: Icons.calendar_view_week_rounded,
-        color: AppTheme.violet,
-      ),
-      _StatCard(
-        label: '异常账号',
-        value: '${snapshot.errorAccounts}',
-        icon: Icons.warning_amber_rounded,
-        color: snapshot.errorAccounts == 0 ? AppTheme.success : AppTheme.danger,
-      ),
-    ];
-    return Container(
-      height: 62,
-      decoration: BoxDecoration(
-        gradient: AppTheme.cardGradient,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppTheme.cyan.withValues(alpha: 0.16)),
-      ),
-      child: Row(
-        children: [
-          for (var index = 0; index < cards.length; index++) ...[
-            if (index > 0)
-              Container(
-                width: 1,
-                height: 32,
-                color: AppTheme.cyan.withValues(alpha: 0.08),
-              ),
-            Expanded(child: cards[index]),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _TrafficPulsePanel extends StatelessWidget {
   const _TrafficPulsePanel({required this.snapshot});
 
@@ -1101,6 +1045,7 @@ class _TrafficPulsePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final rate = snapshot.successRate;
     return GlassCard(
+      key: const Key('request-pulse-card'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       borderColor: AppTheme.cyan.withValues(alpha: 0.2),
       child: Column(
@@ -1188,63 +1133,6 @@ class _PulseMetric extends StatelessWidget {
           ).textTheme.bodySmall?.copyWith(fontSize: 8, height: 1),
         ),
       ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 13),
-              const SizedBox(width: 4),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    value,
-                    maxLines: 1,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontSize: 17,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontSize: 10, height: 1),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

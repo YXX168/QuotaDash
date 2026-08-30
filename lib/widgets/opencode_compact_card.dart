@@ -58,21 +58,6 @@ class OpenCodeCompactCard extends StatelessWidget {
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'OpenCode Go',
-                    key: Key('opencode-title'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.1,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 11),
                 if (quota.hasError)
                   const Align(
                     alignment: Alignment.centerLeft,

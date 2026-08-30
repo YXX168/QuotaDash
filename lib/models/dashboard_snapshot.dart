@@ -8,18 +8,6 @@ class DashboardSnapshot {
   final DateTime checkedAt;
 
   int get totalAccounts => accounts.length;
-  int get availableAccounts =>
-      accounts.where((account) => account.isAvailable).length;
-  int get errorAccounts => accounts.where((account) => account.hasError).length;
-
-  double? get averageWeeklyRemainingPercent {
-    final values = accounts
-        .map((account) => account.weeklyRemainingPercent)
-        .whereType<double>()
-        .toList();
-    if (values.isEmpty) return null;
-    return values.reduce((a, b) => a + b) / values.length;
-  }
 
   int get totalSuccessRequests =>
       accounts.fold(0, (total, account) => total + account.successRequests);

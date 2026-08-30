@@ -36,7 +36,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
     expect(find.byKey(const Key('opencode-compact-values')), findsOneWidget);
-    expect(find.text('OpenCode Go'), findsOneWidget);
+    expect(find.text('OpenCode Go'), findsNothing);
     expect(find.text('5 小时额度'), findsOneWidget);
     expect(find.text('周限额度'), findsOneWidget);
     expect(find.text('月限额度'), findsOneWidget);
@@ -48,9 +48,11 @@ void main() {
       find.byKey(const Key('opencode-top-light-strip')),
     );
     final card = tester.getRect(find.byKey(const Key('opencode-compact-card')));
-    final title = tester.getRect(find.byKey(const Key('opencode-title')));
+    final values = tester.getRect(
+      find.byKey(const Key('opencode-compact-values')),
+    );
     expect(lightStrip.top, greaterThanOrEqualTo(card.top + 4));
-    expect(lightStrip.bottom, lessThanOrEqualTo(title.top - 4));
+    expect(lightStrip.bottom, lessThanOrEqualTo(values.top - 4));
     expect(lightStrip.width, closeTo(132, 0.1));
   });
 
@@ -80,7 +82,7 @@ void main() {
     expect(card.width, closeTo(296, 0.1));
     expect(card.top, lessThanOrEqualTo(values.top));
     expect(values.bottom, lessThanOrEqualTo(card.bottom));
-    expect(card.height, lessThan(150));
+    expect(card.height, lessThan(100));
     expect(rollingTrack.width, closeTo(weeklyTrack.width, 0.1));
     expect(weeklyTrack.width, closeTo(monthlyTrack.width, 0.1));
     final rollingFill = tester.getSize(

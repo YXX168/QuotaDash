@@ -105,7 +105,6 @@ void main() {
         expect(account.primary!.remainingPercent, 87.5);
         expect(account.secondary!.remainingPercent, 60);
         expect(account.weeklyRemainingPercent, 87.5);
-        expect(snapshot.averageWeeklyRemainingPercent, 87.5);
         expect(account.resetCredits, 3);
         expect(account.successRequests, 24);
         expect(account.failedRequests, 2);

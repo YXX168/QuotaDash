@@ -114,16 +114,16 @@ Future<void> _pumpDashboard(WidgetTester tester, VisualMode mode) async {
 }
 
 void main() {
-  testWidgets('console mode renders account cards and keeps summary stats', (
+  testWidgets('console mode renders account cards without redundant summary', (
     tester,
   ) async {
     await _pumpDashboard(tester, VisualMode.console);
 
-    expect(find.byKey(const Key('summary-stats-grid')), findsOneWidget);
+    expect(find.byKey(const Key('summary-stats-grid')), findsNothing);
     expect(find.byKey(const Key('account-card-0')), findsOneWidget);
     expect(find.byKey(const Key('energy-account-0')), findsNothing);
     expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
-    expect(find.text('周均额度'), findsOneWidget);
+    expect(find.text('周均额度'), findsNothing);
     expect(find.text('平均剩余'), findsNothing);
     expect(find.byKey(const Key('quota-card-openCode')), findsNothing);
     expect(find.byKey(const Key('provider-energy-openCode')), findsNothing);
@@ -134,12 +134,25 @@ void main() {
   ) async {
     await _pumpDashboard(tester, VisualMode.energy);
 
-    expect(find.byKey(const Key('summary-stats-grid')), findsOneWidget);
+    expect(find.byKey(const Key('summary-stats-grid')), findsNothing);
     expect(find.byKey(const Key('account-card-0')), findsNothing);
     expect(find.byKey(const Key('energy-account-0')), findsOneWidget);
     expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
     expect(find.byKey(const Key('quota-card-openCode')), findsNothing);
     expect(find.byKey(const Key('provider-energy-openCode')), findsNothing);
+    final pulse = tester.getRect(find.byKey(const Key('request-pulse-card')));
+    final openCodeTitle = tester.getRect(
+      find.byKey(const Key('opencode-section-title')),
+    );
+    final openCodeCard = tester.getRect(
+      find.byKey(const Key('opencode-compact-card')),
+    );
+    final codexTitle = tester.getRect(
+      find.byKey(const Key('codex-section-title')),
+    );
+    expect(pulse.bottom, lessThan(openCodeTitle.top));
+    expect(openCodeTitle.bottom, lessThan(openCodeCard.top));
+    expect(openCodeCard.bottom, lessThan(codexTitle.top));
     expect(
       find.descendant(
         of: find.byKey(const Key('energy-account-0')),
