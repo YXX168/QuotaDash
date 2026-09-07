@@ -71,7 +71,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
         height: 218,
         child: Semantics(
           button: widget.onTap != null,
-          label: account.name + '，' + label + ' ' + value,
+          label: '${account.name}，$label $value',
           child: Material(
             color: Colors.transparent,
             child: InkWell(
@@ -359,7 +359,7 @@ class _QuotaReading extends StatelessWidget {
               ),
               const SizedBox(width: 5),
               Text(
-                remaining == null ? '--' : remaining!.toStringAsFixed(0) + '%',
+                remaining == null ? '--' : '${remaining!.toStringAsFixed(0)}%',
                 style: TextStyle(
                   color: valueColor,
                   fontSize: 12,
