@@ -203,12 +203,14 @@ class _WindowRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(
-              entry.label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isMonthly ? FontWeight.w800 : FontWeight.w600,
-                color: isMonthly ? Colors.white : const Color(0xFFB9C4DA),
+            Expanded(
+              child: Text(
+                entry.label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isMonthly ? FontWeight.w800 : FontWeight.w600,
+                  color: isMonthly ? Colors.white : const Color(0xFFB9C4DA),
+                ),
               ),
             ),
             if (isMonthly) ...[
@@ -230,7 +232,7 @@ class _WindowRow extends StatelessWidget {
                 ),
               ),
             ],
-            const Spacer(),
+            const SizedBox(width: 8),
             Text(
               remaining == null ? '--' : '可用 ${remaining.toStringAsFixed(0)}%',
               style: TextStyle(
@@ -251,8 +253,14 @@ class _WindowRow extends StatelessWidget {
                 height: isMonthly ? 9 : 7,
                 color: const Color(0x1E1B2947),
               ),
-              FractionallySizedBox(
-                widthFactor: progress,
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: progress, end: progress),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 520),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) =>
+                    FractionallySizedBox(widthFactor: value, child: child),
                 child: Container(
                   height: isMonthly ? 9 : 7,
                   decoration: BoxDecoration(

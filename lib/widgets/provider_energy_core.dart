@@ -18,6 +18,7 @@ class ProviderEnergyCore extends StatefulWidget {
     required this.description,
     required this.accentColor,
     required this.refreshing,
+    this.headline,
     super.key,
   });
 
@@ -26,6 +27,7 @@ class ProviderEnergyCore extends StatefulWidget {
   final String description;
   final Color accentColor;
   final bool refreshing;
+  final ProviderQuotaWindow? headline;
 
   @override
   State<ProviderEnergyCore> createState() => _ProviderEnergyCoreState();
@@ -47,6 +49,18 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _rotation.stop();
+      _pulse.stop();
+    } else {
+      if (!_rotation.isAnimating) _rotation.repeat();
+      if (!_pulse.isAnimating) _pulse.repeat(reverse: true);
+    }
   }
 
   @override
@@ -79,6 +93,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
   /// Monthly remaining when available (the account hard cap), otherwise the
   /// average across windows.
   double? get _headlineRemaining {
+    if (widget.headline != null) return widget.headline!.remainingPercent;
     for (final entry in widget.quota.windows) {
       if (entry.label.contains('月')) return entry.remainingPercent;
     }
@@ -110,6 +125,8 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
       valueText: valueText,
       valueLabel: quota.hasError
           ? '同步异常'
+          : widget.headline != null
+          ? widget.headline!.label
           : _headlineIsMonthly
           ? '本月可用'
           : '综合可用',
@@ -235,7 +252,9 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
             else
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final compact = constraints.maxWidth < 520;
+                  final compact =
+                      constraints.maxWidth < 520 ||
+                      MediaQuery.textScalerOf(context).scale(1) > 1.2;
                   final windows = Column(
                     key: const Key('provider-energy-windows'),
                     children: [
@@ -262,7 +281,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                     );
                   }
                   return SizedBox(
-                    height: 210,
+                    height: math.max(210.0, quota.windows.length * 88.0),
                     child: Row(
                       children: [
                         SizedBox(width: 190, child: orb),
@@ -356,7 +375,11 @@ class _OrbPanel extends StatelessWidget {
               ),
             ],
           ),
-          Positioned(
+          AnimatedPositioned(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 520),
+            curve: Curves.easeOutCubic,
             left: 14,
             right: 14,
             bottom: 12,
@@ -598,7 +621,6 @@ class _PlasmaPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final baseRadius = math.min(size.width, size.height) * 0.34;
-    final speedBoost = refreshing ? 1.8 : 1.0;
 
     // Outer atmosphere glow.
     canvas.drawCircle(
@@ -646,7 +668,7 @@ class _PlasmaPainter extends CustomPainter {
 
     // Counter-rotating dashed inner ring.
     final innerRadius = baseRadius * 0.80;
-    final dashAngle = -rotation * math.pi * 2 * 0.7 * speedBoost;
+    final dashAngle = -rotation * math.pi * 2;
     for (var index = 0; index < 18; index++) {
       final start = dashAngle + index * math.pi / 9;
       canvas.drawArc(
@@ -665,9 +687,7 @@ class _PlasmaPainter extends CustomPainter {
     final particleCount = hasError ? 2 : 3;
     for (var index = 0; index < particleCount; index++) {
       final angle =
-          rotation * math.pi * 2 * speedBoost +
-          index * math.pi * 2 / particleCount +
-          (hasError ? 0 : progress * math.pi * 2);
+          rotation * math.pi * 2 + index * math.pi * 2 / particleCount;
       final position = Offset(
         center.dx + math.cos(angle) * baseRadius,
         center.dy + math.sin(angle) * baseRadius,
@@ -725,7 +745,7 @@ class _PlasmaPainter extends CustomPainter {
       final random = math.Random(size.hashCode);
       final bolts = refreshing ? 3 : 2;
       for (var index = 0; index < bolts; index++) {
-        final phase = (rotation * speedBoost * 3 + index / bolts) % 1.0;
+        final phase = (rotation * 3 + index / bolts) % 1.0;
         if (phase > 0.82) {
           _paintBolt(canvas, center, coreRadius, baseRadius, accent, random);
         }

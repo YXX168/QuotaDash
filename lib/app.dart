@@ -130,6 +130,7 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
                 key: ValueKey(_config!.revision),
                 config: _config!,
                 repository: _repository,
+                registry: widget.registry,
                 visualMode: _visualMode,
                 onVisualModeChanged: _setVisualMode,
                 onEditConfig: () async {

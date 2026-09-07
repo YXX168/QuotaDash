@@ -13,6 +13,7 @@ import '../services/provider_registry.dart';
 import '../services/quota_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/account_card.dart';
+import '../widgets/antigravity_account_card.dart';
 import '../widgets/energy_core.dart';
 import '../widgets/glass_widgets.dart';
 import '../widgets/opencode_compact_card.dart';
@@ -48,11 +49,13 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with WidgetsBindingObserver {
   DashboardSnapshot? _snapshot;
   final Map<QuotaProviderId, ProviderQuota> _providerQuotas = {};
   final Map<QuotaProviderId, QuotaModule> _providerModules = {};
-  final Map<QuotaProviderId, Object> _fetchErrors = {};
+  int _requestVersion = 0;
+  bool _foreground = true;
   bool _cliProxyEnabled = false;
   Object? _error;
   bool _loading = true;
@@ -63,6 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _refresh();
     _scheduleAutoRefresh();
   }
@@ -70,7 +74,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void didUpdateWidget(covariant DashboardScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.repository != widget.repository) {
+    if (oldWidget.repository != widget.repository ||
+        oldWidget.config.revision != widget.config.revision ||
+        oldWidget.registry != widget.registry) {
+      _requestVersion++;
+      _refreshing = false;
+      _snapshot = null;
+      _providerQuotas.clear();
       _refresh();
     }
     if (oldWidget.autoRefreshInterval != widget.autoRefreshInterval) {
@@ -80,26 +90,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
   }
 
   void _scheduleAutoRefresh() {
     _timer?.cancel();
-    if (!_autoRefresh || widget.autoRefreshInterval <= Duration.zero) return;
+    if (!_foreground ||
+        !_autoRefresh ||
+        widget.autoRefreshInterval <= Duration.zero)
+      return;
     _timer = Timer.periodic(
       widget.autoRefreshInterval,
       (_) => _refresh(silent: true),
     );
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final foreground = state == AppLifecycleState.resumed;
+    if (_foreground == foreground) return;
+    setState(() => _foreground = foreground);
+    _scheduleAutoRefresh();
+  }
+
   Future<void> _refresh({bool silent = false}) async {
     if (_refreshing || !mounted) return;
+    final requestVersion = ++_requestVersion;
+    final config = widget.config;
+    final fetchErrors = <QuotaProviderId, Object>{};
     setState(() {
       _refreshing = true;
-      if (_snapshot == null && !silent) _loading = true;
+      if (_snapshot == null && _providerQuotas.isEmpty && !silent)
+        _loading = true;
       _error = null;
-      _fetchErrors.clear();
     });
     try {
       final modules = widget.registry.createModules(
@@ -110,9 +135,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _providerQuotas,
       );
       final results = await Future.wait<dynamic>([
-        for (final module in modules) _fetchModule(module),
+        for (final module in modules) _fetchModule(module, config, fetchErrors),
       ]);
-      if (!mounted) return;
+      if (!mounted || requestVersion != _requestVersion) return;
       setState(() {
         _providerModules
           ..clear()
@@ -149,7 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Surface the CLIProxyAPI failure reason when its module is the one
         // that broke; other provider sections stay untouched and cached
         // snapshot data keeps rendering with a stale banner.
-        final cliErrorEntry = _fetchErrors[QuotaProviderId.cliProxyApi];
+        final cliErrorEntry = fetchErrors[QuotaProviderId.cliProxyApi];
         final cliQuotaError = _providerQuotas[QuotaProviderId.cliProxyApi];
         final cliProxyError =
             cliErrorEntry ??
@@ -159,24 +184,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _error = cliProxyError;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestVersion != _requestVersion) return;
       setState(() {
         _error = error;
         _loading = false;
       });
     } finally {
-      if (mounted) setState(() => _refreshing = false);
+      if (mounted && requestVersion == _requestVersion)
+        setState(() => _refreshing = false);
     }
   }
 
-  Future<ModuleResult> _fetchModule(QuotaModule<dynamic> module) async {
-    if (!module.isEnabled(widget.config)) {
+  Future<ModuleResult> _fetchModule(
+    QuotaModule<dynamic> module,
+    AppConfig config,
+    Map<QuotaProviderId, Object> fetchErrors,
+  ) async {
+    if (!module.isEnabled(config)) {
       return const ProviderModuleResult(null);
     }
     try {
-      return await module.fetch(widget.config);
+      return await module.fetch(config);
     } catch (error) {
-      _fetchErrors[module.id] = error;
+      fetchErrors[module.id] = error;
       if (module.id == QuotaProviderId.cliProxyApi) {
         return const CodexModuleResult(null);
       }
@@ -249,154 +279,184 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AppBackdrop(
-        child: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _refreshWithFeedback,
-            color: AppTheme.cyan,
-            backgroundColor: const Color(0xFF11192A),
-            child: CustomScrollView(
-              key: const Key('dashboard-scroll'),
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
-                  sliver: SliverList.list(
-                    children: [
-                      _Header(
-                        refreshing: _refreshing,
-                        autoRefresh: _autoRefresh,
-                        onRefresh: _refreshWithFeedback,
-                        onAutoRefreshChanged: _toggleAutoRefresh,
-                        onEditConfig: widget.onEditConfig,
-                        visualMode: widget.visualMode,
-                        onVisualModeChanged: widget.onVisualModeChanged,
-                        onOpenTools: () {
-                          unawaited(HapticFeedback.lightImpact());
-                          Navigator.of(context).push(
-                            PageRouteBuilder<void>(
-                              transitionDuration: const Duration(
-                                milliseconds: 160,
+    return TickerMode(
+      enabled: _foreground,
+      child: Scaffold(
+        body: AppBackdrop(
+          child: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _refreshWithFeedback,
+              color: AppTheme.cyan,
+              backgroundColor: const Color(0xFF11192A),
+              child: CustomScrollView(
+                key: const Key('dashboard-scroll'),
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
+                    sliver: SliverList.list(
+                      children: [
+                        _Header(
+                          refreshing: _refreshing,
+                          autoRefresh: _autoRefresh,
+                          onRefresh: _refreshWithFeedback,
+                          onAutoRefreshChanged: _toggleAutoRefresh,
+                          onEditConfig: widget.onEditConfig,
+                          visualMode: widget.visualMode,
+                          onVisualModeChanged: widget.onVisualModeChanged,
+                          onOpenTools: () {
+                            unawaited(HapticFeedback.lightImpact());
+                            Navigator.of(context).push(
+                              PageRouteBuilder<void>(
+                                transitionDuration: const Duration(
+                                  milliseconds: 160,
+                                ),
+                                reverseTransitionDuration: const Duration(
+                                  milliseconds: 140,
+                                ),
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        ToolsScreen(config: widget.config),
+                                transitionsBuilder:
+                                    (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      final curved = CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                        reverseCurve: Curves.easeInCubic,
+                                      );
+                                      return FadeTransition(
+                                        opacity: curved,
+                                        child: child,
+                                      );
+                                    },
                               ),
-                              reverseTransitionDuration: const Duration(
-                                milliseconds: 140,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 620),
+                          reverseDuration: const Duration(milliseconds: 360),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeOutCubic,
+                          layoutBuilder: (currentChild, previousChildren) =>
+                              Stack(
+                                alignment: Alignment.topCenter,
+                                children: [...previousChildren, ?currentChild],
                               ),
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) =>
-                                      ToolsScreen(config: widget.config),
-                              transitionsBuilder:
-                                  (
-                                    context,
-                                    animation,
-                                    secondaryAnimation,
-                                    child,
-                                  ) {
-                                    final curved = CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutCubic,
-                                      reverseCurve: Curves.easeInCubic,
-                                    );
-                                    return FadeTransition(
-                                      opacity: curved,
-                                      child: child,
-                                    );
-                                  },
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 620),
-                        reverseDuration: const Duration(milliseconds: 360),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeOutCubic,
-                        layoutBuilder: (currentChild, previousChildren) =>
-                            Stack(
-                              alignment: Alignment.topCenter,
-                              children: [...previousChildren, ?currentChild],
-                            ),
-                        transitionBuilder: (child, animation) =>
-                            FadeTransition(opacity: animation, child: child),
-                        child: _loading
-                            ? SyncFlowLoader(
-                                key: const ValueKey('loading'),
-                                visualMode: widget.visualMode,
-                              )
-                            : _snapshot == null && _providerQuotas.isEmpty
-                            ? _FatalErrorPanel(
-                                key: const ValueKey('fatal'),
-                                error: _error,
-                                onRetry: _refresh,
-                              )
-                            : Column(
-                                key: const ValueKey('dashboard-content'),
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (_cliProxyEnabled || _snapshot != null)
-                                    _ServicePanel(
-                                      snapshot:
-                                          _snapshot ??
-                                          DashboardSnapshot(
-                                            accounts: const [],
-                                            checkedAt: DateTime.now(),
-                                          ),
-                                      error: _error,
-                                    ),
-                                  if (_error != null) ...[
-                                    const SizedBox(height: 10),
-                                    _StaleDataBanner(
-                                      error: _error!,
-                                      onRetry: _refresh,
-                                    ),
-                                  ],
-                                  if (_snapshot != null) ...[
-                                    const SizedBox(height: 10),
-                                    _TrafficPulsePanel(snapshot: _snapshot!),
-                                  ],
-                                  if (_providerQuotas[QuotaProviderId.openCode]
-                                      case final openCodeQuota?) ...[
-                                    const SizedBox(height: 18),
-                                    const SectionTitle(
-                                      key: Key('opencode-section-title'),
-                                      title: 'OpenCode',
-                                    ),
-                                    const SizedBox(height: 10),
-                                    OpenCodeCompactCard(quota: openCodeQuota),
-                                  ],
-                                  if (_snapshot != null) ...[
-                                    const SizedBox(height: 18),
-                                    const SectionTitle(
-                                      key: Key('codex-section-title'),
-                                      title: 'Codex',
-                                    ),
-                                  ],
-                                  if (_snapshot != null) ...[
-                                    const SizedBox(height: 10),
-                                    if (_snapshot!.accounts.isEmpty)
-                                      const _EmptyAccounts()
-                                    else if (widget.visualMode ==
-                                        VisualMode.energy)
-                                      _EnergyAccountGrid(
-                                        snapshot: _snapshot!,
-                                        refreshing: _refreshing,
-                                        onTap: _openAccount,
-                                      )
-                                    else
-                                      _AccountGrid(
-                                        snapshot: _snapshot!,
-                                        onTap: _openAccount,
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(opacity: animation, child: child),
+                          child: _loading
+                              ? SyncFlowLoader(
+                                  key: const ValueKey('loading'),
+                                  visualMode: widget.visualMode,
+                                )
+                              : _snapshot == null && _providerQuotas.isEmpty
+                              ? _FatalErrorPanel(
+                                  key: const ValueKey('fatal'),
+                                  error: _error,
+                                  onRetry: _refresh,
+                                )
+                              : Column(
+                                  key: const ValueKey('dashboard-content'),
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (_cliProxyEnabled || _snapshot != null)
+                                      _ServicePanel(
+                                        snapshot:
+                                            _snapshot ??
+                                            DashboardSnapshot(
+                                              accounts: const [],
+                                              checkedAt: DateTime.now(),
+                                            ),
+                                        error: _error,
                                       ),
+                                    if (_error != null) ...[
+                                      const SizedBox(height: 10),
+                                      _StaleDataBanner(
+                                        error: _error!,
+                                        onRetry: _refresh,
+                                      ),
+                                    ],
+                                    if (_snapshot != null) ...[
+                                      const SizedBox(height: 10),
+                                      _TrafficPulsePanel(snapshot: _snapshot!),
+                                    ],
+                                    if (_providerQuotas[QuotaProviderId
+                                            .openCode]
+                                        case final openCodeQuota?) ...[
+                                      const SizedBox(height: 18),
+                                      const SectionTitle(
+                                        key: Key('opencode-section-title'),
+                                        title: 'OpenCode',
+                                      ),
+                                      const SizedBox(height: 10),
+                                      OpenCodeCompactCard(quota: openCodeQuota),
+                                    ],
+                                    if (_snapshot != null) ...[
+                                      const SizedBox(height: 18),
+                                      const SectionTitle(
+                                        key: Key('codex-section-title'),
+                                        title: 'Codex',
+                                      ),
+                                    ],
+                                    if (_snapshot != null) ...[
+                                      const SizedBox(height: 10),
+                                      if (_snapshot!.accounts.isEmpty)
+                                        const _EmptyAccounts()
+                                      else if (widget.visualMode ==
+                                          VisualMode.energy)
+                                        _EnergyAccountGrid(
+                                          snapshot: _snapshot!,
+                                          refreshing: _refreshing,
+                                          onTap: _openAccount,
+                                        )
+                                      else
+                                        _AccountGrid(
+                                          snapshot: _snapshot!,
+                                          onTap: _openAccount,
+                                        ),
+                                    ],
+                                    ..._providerSections(),
+                                    if (_snapshot
+                                            ?.antigravityAccounts
+                                            .isNotEmpty ??
+                                        false) ...[
+                                      const SizedBox(height: 18),
+                                      const SectionTitle(
+                                        title: 'Antigravity',
+                                        subtitle: '按账号展示额度组与恢复时间',
+                                      ),
+                                      const SizedBox(height: 10),
+                                      for (final account
+                                          in _snapshot!.antigravityAccounts)
+                                        Padding(
+                                          key: ValueKey(
+                                            'antigravity-${account.auth.id}',
+                                          ),
+                                          padding: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
+                                          child: AntigravityAccountCard(
+                                            account: account,
+                                            visualMode: widget.visualMode,
+                                            refreshing: _refreshing,
+                                          ),
+                                        ),
+                                    ],
                                   ],
-                                  ..._providerSections(),
-                                ],
-                              ),
-                      ),
-                    ],
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

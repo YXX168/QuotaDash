@@ -30,8 +30,18 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 9),
+      duration: const Duration(seconds: 18),
     )..repeat();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -371,7 +381,11 @@ class _QuotaReading extends StatelessWidget {
                     const Positioned.fill(
                       child: ColoredBox(color: Color(0xFF1C2940)),
                     ),
-                    Positioned(
+                    AnimatedPositioned(
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 520),
+                      curve: Curves.easeOutCubic,
                       left: 0,
                       top: 0,
                       bottom: 0,
@@ -420,13 +434,15 @@ class _EnergyPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final phase = animation.value;
     final center = Offset(size.width / 2, size.height / 2 - 2);
-    final pulse = (math.sin(phase * math.pi * 2) + 1) / 2;
+    final pulse = (math.sin(phase * math.pi * 4) + 1) / 2;
     final ringRadius = math.min(
       53.0,
       math.min(size.width * 0.37, size.height * 0.38),
     );
     final glowRadius = ringRadius * (1.28 + pulse * 0.06);
-    final rotation = phase * math.pi * 2 * (refreshing ? 2.4 : 0.45);
+    // Whole revolutions keep the repeating controller seamless at 1 -> 0.
+    // Refresh state must not multiply the current phase and teleport the orbit.
+    final rotation = phase * math.pi * 2;
     final progressValue = progress.clamp(0.0, 1.0).toDouble();
 
     canvas.save();
@@ -466,7 +482,7 @@ class _EnergyPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..color = color.withValues(alpha: 0.34);
     for (var index = 0; index < 14; index++) {
-      final start = -rotation * 0.42 + index * math.pi * 2 / 14;
+      final start = -rotation + index * math.pi * 2 / 14;
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: ringRadius * 0.72),
         start,
@@ -505,7 +521,7 @@ class _EnergyPainter extends CustomPainter {
       ..color = color.withValues(alpha: 0.24);
     canvas.save();
     canvas.translate(center.dx, center.dy);
-    canvas.rotate(-rotation * 0.55);
+    canvas.rotate(-rotation);
     canvas.drawOval(
       Rect.fromCenter(
         center: Offset.zero,
