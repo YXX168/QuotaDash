@@ -5,7 +5,9 @@ import '../models/quota_window.dart';
 /// Missing or malformed fractions remain unknown, never a synthetic full quota.
 List<ProviderQuotaWindow> parseAntigravityQuota(Map<String, dynamic> payload) {
   final nested = payload['response'];
-  if (nested is Map) {
+  if (nested is Map &&
+      !payload.containsKey('groups') &&
+      !payload.containsKey('models')) {
     return parseAntigravityQuota(Map<String, dynamic>.from(nested));
   }
   final windows = <ProviderQuotaWindow>[];

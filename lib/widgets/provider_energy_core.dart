@@ -266,7 +266,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                         if (index > 0) const SizedBox(height: 8),
                         _WindowLine(
                           entry: quota.windows[index],
-                          accent: accent,
+                          accent: widget.accentColor,
                         ),
                       ],
                     ],
@@ -274,7 +274,11 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                   if (compact) {
                     return Column(
                       children: [
-                        SizedBox(height: 150, child: orb),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 150,
+                          child: orb,
+                        ),
                         const SizedBox(height: 12),
                         windows,
                       ],

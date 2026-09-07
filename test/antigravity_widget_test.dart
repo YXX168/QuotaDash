@@ -81,7 +81,19 @@ class _Pending implements QuotaRepository {
   Future<DashboardSnapshot> fetchDashboard() => result.future;
 }
 
-Widget _dashboard(QuotaRepository repository) => MaterialApp(
+class _Counting implements QuotaRepository {
+  int calls = 0;
+  @override
+  Future<DashboardSnapshot> fetchDashboard() async {
+    calls++;
+    return DashboardSnapshot(accounts: const [], checkedAt: DateTime.now());
+  }
+}
+
+Widget _dashboard(
+  QuotaRepository repository, {
+  Duration interval = Duration.zero,
+}) => MaterialApp(
   theme: AppTheme.dark,
   home: DashboardScreen(
     config: const AppConfig(
@@ -94,11 +106,29 @@ Widget _dashboard(QuotaRepository repository) => MaterialApp(
     visualMode: VisualMode.console,
     onVisualModeChanged: (_) async {},
     onEditConfig: () async {},
-    autoRefreshInterval: Duration.zero,
+    autoRefreshInterval: interval,
   ),
 );
 
 void main() {
+  testWidgets(
+    'automatic refresh pauses in background and resumes in foreground',
+    (tester) async {
+      final repository = _Counting();
+      await tester.pumpWidget(
+        _dashboard(repository, interval: const Duration(seconds: 2)),
+      );
+      await tester.pump();
+      final initial = repository.calls;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(seconds: 10));
+      expect(repository.calls, initial);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(seconds: 3));
+      expect(repository.calls, greaterThan(initial));
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   for (final mode in VisualMode.values) {
     for (final width in [320.0, 800.0]) {
       testWidgets('${mode.name} handles many quota groups at width $width', (
@@ -114,6 +144,18 @@ void main() {
         if (mode == VisualMode.energy) {
           expect(find.text('最低余量'), findsOneWidget);
           expect(find.text('综合可用'), findsNothing);
+          if (width < 520) {
+            expect(
+              tester
+                  .getSize(find.byKey(const Key('provider-energy-orb')))
+                  .width,
+              greaterThan(240),
+            );
+          }
+          expect(
+            tester.widget<Text>(find.text('可用 80%').first).style!.color,
+            AppTheme.cyan,
+          );
         }
         await tester.pumpWidget(const SizedBox.shrink());
       });
@@ -221,6 +263,20 @@ void main() {
             ),
           );
         await loader.load();
+      }
+      final flutterRoot = Platform.environment['FLUTTER_ROOT'];
+      if (flutterRoot != null) {
+        final icons = FontLoader('MaterialIcons')
+          ..addFont(
+            Future.value(
+              ByteData.sublistView(
+                File(
+                  '$flutterRoot/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+                ).readAsBytesSync(),
+              ),
+            ),
+          );
+        await icons.load();
       }
       await tester.binding.setSurfaceSize(const Size(420, 960));
       addTearDown(() => tester.binding.setSurfaceSize(null));

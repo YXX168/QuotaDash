@@ -35,6 +35,7 @@ class ProviderQuotaCard extends StatelessWidget {
   /// True only when the provider actually exposes a monthly window so the
   /// header badge never mislabels an average as the monthly hard cap.
   bool get _hasMonthlyWindow =>
+      quota.provider != QuotaProviderId.antigravity &&
       quota.windows.any((entry) => _isMonthly(entry.label));
 
   static bool _isMonthly(String label) => label.contains('月');
@@ -157,7 +158,9 @@ class ProviderQuotaCard extends StatelessWidget {
               _WindowRow(
                 entry: quota.windows[index],
                 accent: accent,
-                isMonthly: _isMonthly(quota.windows[index].label),
+                isMonthly:
+                    quota.provider != QuotaProviderId.antigravity &&
+                    _isMonthly(quota.windows[index].label),
               ),
             ],
           ],

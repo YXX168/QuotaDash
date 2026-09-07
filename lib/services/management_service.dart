@@ -121,9 +121,11 @@ class ManagementService implements QuotaRepository {
               checkedAt: DateTime.now(),
             ),
           );
-        } on ManagementException catch (error) {
+        } on Exception catch (error) {
           lastError = error;
-          if (error.statusCode == 401 || error.statusCode == 429) break;
+          if (error is ManagementException &&
+              (error.statusCode == 401 || error.statusCode == 429))
+            break;
         }
       }
       throw lastError ?? const ManagementException('未获取到 Antigravity 额度');

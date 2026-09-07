@@ -99,8 +99,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     _timer?.cancel();
     if (!_foreground ||
         !_autoRefresh ||
-        widget.autoRefreshInterval <= Duration.zero)
+        widget.autoRefreshInterval <= Duration.zero) {
       return;
+    }
     _timer = Timer.periodic(
       widget.autoRefreshInterval,
       (_) => _refresh(silent: true),
@@ -122,8 +123,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     final fetchErrors = <QuotaProviderId, Object>{};
     setState(() {
       _refreshing = true;
-      if (_snapshot == null && _providerQuotas.isEmpty && !silent)
+      if (_snapshot == null && _providerQuotas.isEmpty && !silent) {
         _loading = true;
+      }
       _error = null;
     });
     try {
@@ -190,8 +192,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         _loading = false;
       });
     } finally {
-      if (mounted && requestVersion == _requestVersion)
+      if (mounted && requestVersion == _requestVersion) {
         setState(() => _refreshing = false);
+      }
     }
   }
 

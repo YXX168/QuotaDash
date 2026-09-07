@@ -22,9 +22,7 @@ Quota Dash 是一个模块化的 Android 大模型额度仪表盘。每个供应
 - **Antigravity（通过 CLIProxyAPI）** - 自动发现已启用账号，逐个展示额度组、剩余百分比与恢复时间；兼容旧版模型额度响应。
 - **OpenCode** - 滚动、周与月度额度窗口。
 
-## 模块化架构
-
-### Antigravity 使用说明
+## Antigravity 使用说明
 
 使用现有 CLIProxyAPI 服务地址与管理密码，无需额外填写 Google Token。
 先在 CLIProxyAPI 中登录 Antigravity 账号，再刷新仪表盘即可显示。
@@ -39,7 +37,9 @@ Quota Dash 是一个模块化的 Android 大模型额度仪表盘。每个供应
 
 接口兼容性参考：[上游 Antigravity 数据层](https://github.com/router-for-me/Cli-Proxy-API-Management-Center/blob/main/src/features/quota/providers/antigravity/data.ts)。
 
-新增供应商只需三步，无需修改界面或存储层：
+## 模块化架构
+
+新增普通额度供应商只需三步，无需修改界面或存储层（CLIProxyAPI 的多账号数据由其账号仪表盘承载）：
 
 1. 实现 `QuotaModule` 接口（数据获取、名称、图标、强调色）；
 2. 用 `ProviderField` 声明所需的配置字段（配置页自动渲染）；
