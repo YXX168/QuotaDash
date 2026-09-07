@@ -63,6 +63,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _autoRefresh = true;
   Timer? _timer;
 
+  bool get _showCodexSection =>
+      _snapshot != null &&
+      (_snapshot!.accounts.isNotEmpty ||
+          _snapshot!.antigravityAccounts.isEmpty);
+
   @override
   void initState() {
     super.initState();
@@ -386,7 +391,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         onRetry: _refresh,
                                       ),
                                     ],
-                                    if (_snapshot != null) ...[
+                                    if (_showCodexSection) ...[
                                       const SizedBox(height: 10),
                                       _TrafficPulsePanel(snapshot: _snapshot!),
                                     ],
@@ -401,14 +406,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       const SizedBox(height: 10),
                                       OpenCodeCompactCard(quota: openCodeQuota),
                                     ],
-                                    if (_snapshot != null) ...[
+                                    if (_showCodexSection) ...[
                                       const SizedBox(height: 18),
                                       const SectionTitle(
                                         key: Key('codex-section-title'),
                                         title: 'Codex',
                                       ),
                                     ],
-                                    if (_snapshot != null) ...[
+                                    if (_showCodexSection) ...[
                                       const SizedBox(height: 10),
                                       if (_snapshot!.accounts.isEmpty)
                                         const _EmptyAccounts()
