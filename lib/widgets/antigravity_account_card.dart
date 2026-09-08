@@ -30,9 +30,10 @@ class AntigravityAccountCard extends StatelessWidget {
               '${unknown == 0 ? '' : ' · $unknown 个待同步'}';
     if (visualMode == VisualMode.energy) {
       final ranked = windows.toList()
-        ..sort((a, b) => (a.remainingPercent ?? 101).compareTo(
-          b.remainingPercent ?? 101,
-        ));
+        ..sort(
+          (a, b) =>
+              (a.remainingPercent ?? 101).compareTo(b.remainingPercent ?? 101),
+        );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

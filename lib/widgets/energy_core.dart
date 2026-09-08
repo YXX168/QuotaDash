@@ -88,26 +88,30 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
         : account!.weeklyRemainingPercent;
     final hasError = data?.hasError ?? account!.hasError;
     final name = data?.name ?? account!.name;
-    final caption = data?.caption ??
+    final caption =
+        data?.caption ??
         (account!.email.isEmpty ? 'Codex Account' : account.email);
-    final badge = data?.badge ??
+    final badge =
+        data?.badge ??
         (account!.plan.isEmpty ? 'CODEX' : account.plan.toUpperCase());
     final color = _coreColor(
       hasError,
       data != null || account!.isAvailable,
       remaining,
     );
-    final readings = data?.windows ?? [
-      ProviderQuotaWindow(
-        label: account!.primaryLabel,
-        remainingPercent: account.primary?.remainingPercent,
-      ),
-      if (account.secondary != null)
-        ProviderQuotaWindow(
-          label: account.secondaryLabel,
-          remainingPercent: account.secondary?.remainingPercent,
-        ),
-    ];
+    final readings =
+        data?.windows ??
+        [
+          ProviderQuotaWindow(
+            label: account!.primaryLabel,
+            remainingPercent: account.primary?.remainingPercent,
+          ),
+          if (account.secondary != null)
+            ProviderQuotaWindow(
+              label: account.secondaryLabel,
+              remainingPercent: account.secondary?.remainingPercent,
+            ),
+        ];
     final value = hasError
         ? '!'
         : remaining == null
@@ -281,7 +285,11 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                             child: Column(
                               key: const Key('energy-quota-row'),
                               children: [
-                                for (var i = 0; i < readings.length && i < 2; i++) ...[
+                                for (
+                                  var i = 0;
+                                  i < readings.length && i < 2;
+                                  i++
+                                ) ...[
                                   if (i > 0) const SizedBox(height: 7),
                                   Expanded(
                                     child: _QuotaReading(
@@ -292,7 +300,9 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                                       ),
                                       label: readings[i].label,
                                       remaining: readings[i].remainingPercent,
-                                      color: data == null ? color : AppTheme.cyan,
+                                      color: data == null
+                                          ? color
+                                          : AppTheme.cyan,
                                     ),
                                   ),
                                 ],
