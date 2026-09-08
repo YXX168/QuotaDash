@@ -4,6 +4,7 @@ final class QuotaProviderId {
 
   static const cliProxyApi = QuotaProviderId('cliProxyApi', 'CLIProxyAPI');
   static const openCode = QuotaProviderId('openCode', 'OpenCode');
+  static const antigravity = QuotaProviderId('antigravity', 'Antigravity');
 
   final String value;
   final String displayName;

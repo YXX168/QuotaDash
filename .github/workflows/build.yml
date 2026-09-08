@@ -20,6 +20,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.41.6'
@@ -32,7 +36,22 @@ jobs:
         run: flutter analyze --no-fatal-infos
       - name: Test
         run: flutter test --exclude-tags=golden
+      - name: Render Antigravity review images
+        env:
+          QUOTA_REVIEW_FONT: /tmp/quotadash-review.ttf
+        run: |
+          curl --fail --location --retry 3 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf' -o "$QUOTA_REVIEW_FONT"
+          flutter test test/antigravity_widget_test.dart --tags=golden --update-goldens
+      - name: Upload visual review
+        uses: actions/upload-artifact@v7
+        with:
+          name: QuotaDash-visual-review-${{ github.sha }}
+          path: build/visual-review/*.png
+          if-no-files-found: error
+          retention-days: 30
+      # Pull requests build with the existing debug-signing fallback; never expose release secrets.
       - name: Prepare stable signing key
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -67,7 +86,9 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      # Only trusted non-PR runs may publish a stable-signed release artifact.
       - name: Upload release APK
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: QuotaDash-release-${{ github.sha }}

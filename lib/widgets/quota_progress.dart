@@ -16,8 +16,13 @@ class QuotaProgress extends StatelessWidget {
     final target = remaining == null ? 0.0 : remaining / 100;
 
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: target.clamp(0.0, 1.0).toDouble()),
-      duration: const Duration(milliseconds: 850),
+      tween: Tween(
+        begin: target.clamp(0.0, 1.0).toDouble(),
+        end: target.clamp(0.0, 1.0).toDouble(),
+      ),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 520),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,7 +41,7 @@ class QuotaProgress extends StatelessWidget {
                 child: Text(
                   remaining == null
                       ? '--'
-                      : '${(value * 100).toStringAsFixed(0)}% 剩余',
+                      : '${remaining.toStringAsFixed(0)}% 剩余',
                 ),
               ),
             ],

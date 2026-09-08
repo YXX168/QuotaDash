@@ -3,7 +3,27 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../models/codex_account.dart';
+import '../models/provider_quota.dart';
 import '../theme/app_theme.dart';
+
+/// Provider-neutral values rendered by the same compact account card.
+class EnergyCoreData {
+  const EnergyCoreData({
+    required this.name,
+    required this.caption,
+    required this.badge,
+    required this.headline,
+    required this.windows,
+    this.hasError = false,
+  });
+
+  final String name;
+  final String caption;
+  final String badge;
+  final ProviderQuotaWindow headline;
+  final List<ProviderQuotaWindow> windows;
+  final bool hasError;
+}
 
 class EnergyAccountCore extends StatefulWidget {
   const EnergyAccountCore({
@@ -11,9 +31,18 @@ class EnergyAccountCore extends StatefulWidget {
     required this.refreshing,
     super.key,
     this.onTap,
-  });
+  }) : providerData = null;
 
-  final CodexAccount account;
+  const EnergyAccountCore.forProvider({
+    required EnergyCoreData data,
+    required this.refreshing,
+    super.key,
+    this.onTap,
+  }) : account = null,
+       providerData = data;
+
+  final CodexAccount? account;
+  final EnergyCoreData? providerData;
   final bool refreshing;
   final VoidCallback? onTap;
 
@@ -30,8 +59,18 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 9),
+      duration: const Duration(seconds: 18),
     )..repeat();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -43,14 +82,42 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
   @override
   Widget build(BuildContext context) {
     final account = widget.account;
-    final remaining = account.weeklyRemainingPercent;
-    final color = _coreColor(account, remaining);
-    final value = account.hasError
+    final data = widget.providerData;
+    final remaining = data != null
+        ? data.headline.remainingPercent
+        : account!.weeklyRemainingPercent;
+    final hasError = data?.hasError ?? account!.hasError;
+    final name = data?.name ?? account!.name;
+    final caption =
+        data?.caption ??
+        (account!.email.isEmpty ? 'Codex Account' : account.email);
+    final badge =
+        data?.badge ??
+        (account!.plan.isEmpty ? 'CODEX' : account.plan.toUpperCase());
+    final color = _coreColor(
+      hasError,
+      data != null || account!.isAvailable,
+      remaining,
+    );
+    final readings =
+        data?.windows ??
+        [
+          ProviderQuotaWindow(
+            label: account!.primaryLabel,
+            remainingPercent: account.primary?.remainingPercent,
+          ),
+          if (account.secondary != null)
+            ProviderQuotaWindow(
+              label: account.secondaryLabel,
+              remainingPercent: account.secondary?.remainingPercent,
+            ),
+        ];
+    final value = hasError
         ? '!'
         : remaining == null
         ? '--'
         : '${remaining.toStringAsFixed(0)}%';
-    final label = account.hasError ? '检查失败' : '周额度';
+    final label = hasError ? '检查失败' : data?.headline.label ?? '周额度';
 
     return UnconstrainedBox(
       alignment: Alignment.topCenter,
@@ -61,9 +128,11 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
         height: 218,
         child: Semantics(
           button: widget.onTap != null,
-          label: account.name + '，' + label + ' ' + value,
+          label: '$name，$label $value',
           child: Material(
             color: Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+            clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: widget.onTap,
               borderRadius: BorderRadius.circular(24),
@@ -112,7 +181,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              account.name.isEmpty ? '未命名账号' : account.name,
+                              name.isEmpty ? '未命名账号' : name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -123,7 +192,9 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            constraints: const BoxConstraints(maxWidth: 82),
+                            constraints: BoxConstraints(
+                              maxWidth: data == null ? 82 : 112,
+                            ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
@@ -133,9 +204,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              account.plan.isEmpty
-                                  ? 'CODEX'
-                                  : account.plan.toUpperCase(),
+                              badge,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -171,7 +240,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                                           progress:
                                               (remaining ?? 0).clamp(0, 100) /
                                               100,
-                                          hasError: account.hasError,
+                                          hasError: hasError,
                                           refreshing: widget.refreshing,
                                         ),
                                       ),
@@ -218,26 +287,24 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                             child: Column(
                               key: const Key('energy-quota-row'),
                               children: [
-                                Expanded(
-                                  child: _QuotaReading(
-                                    key: const Key('energy-quota-line-primary'),
-                                    label: account.primaryLabel,
-                                    remaining:
-                                        account.primary?.remainingPercent,
-                                    color: color,
-                                  ),
-                                ),
-                                if (account.secondary != null) ...[
-                                  const SizedBox(height: 7),
+                                for (
+                                  var i = 0;
+                                  i < readings.length && i < 2;
+                                  i++
+                                ) ...[
+                                  if (i > 0) const SizedBox(height: 7),
                                   Expanded(
                                     child: _QuotaReading(
-                                      key: const Key(
-                                        'energy-quota-line-secondary',
+                                      key: Key(
+                                        i == 0
+                                            ? 'energy-quota-line-primary'
+                                            : 'energy-quota-line-secondary',
                                       ),
-                                      label: account.secondaryLabel,
-                                      remaining:
-                                          account.secondary?.remainingPercent,
-                                      color: color,
+                                      label: readings[i].label,
+                                      remaining: readings[i].remainingPercent,
+                                      color: data == null
+                                          ? color
+                                          : AppTheme.cyan,
                                     ),
                                   ),
                                 ],
@@ -254,16 +321,14 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.alternate_email_rounded,
+                            Icons.info_outline_rounded,
                             size: 12,
                             color: Color(0xFF71809A),
                           ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              account.email.isEmpty
-                                  ? 'Codex Account'
-                                  : account.email,
+                              caption,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(
@@ -290,9 +355,9 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
     );
   }
 
-  static Color _coreColor(CodexAccount account, double? remaining) {
-    if (account.hasError) return AppTheme.danger;
-    if (!account.isAvailable) return AppTheme.warning;
+  static Color _coreColor(bool hasError, bool available, double? remaining) {
+    if (hasError) return AppTheme.danger;
+    if (!available) return AppTheme.warning;
     if (remaining == null) return AppTheme.cyan;
     if (remaining <= 15) return AppTheme.danger;
     if (remaining <= 35) return AppTheme.warning;
@@ -349,7 +414,7 @@ class _QuotaReading extends StatelessWidget {
               ),
               const SizedBox(width: 5),
               Text(
-                remaining == null ? '--' : remaining!.toStringAsFixed(0) + '%',
+                remaining == null ? '--' : '${remaining!.toStringAsFixed(0)}%',
                 style: TextStyle(
                   color: valueColor,
                   fontSize: 12,
@@ -371,7 +436,11 @@ class _QuotaReading extends StatelessWidget {
                     const Positioned.fill(
                       child: ColoredBox(color: Color(0xFF1C2940)),
                     ),
-                    Positioned(
+                    AnimatedPositioned(
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 520),
+                      curve: Curves.easeOutCubic,
                       left: 0,
                       top: 0,
                       bottom: 0,
@@ -420,13 +489,15 @@ class _EnergyPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final phase = animation.value;
     final center = Offset(size.width / 2, size.height / 2 - 2);
-    final pulse = (math.sin(phase * math.pi * 2) + 1) / 2;
+    final pulse = (math.sin(phase * math.pi * 4) + 1) / 2;
     final ringRadius = math.min(
       53.0,
       math.min(size.width * 0.37, size.height * 0.38),
     );
     final glowRadius = ringRadius * (1.28 + pulse * 0.06);
-    final rotation = phase * math.pi * 2 * (refreshing ? 2.4 : 0.45);
+    // Whole revolutions keep the repeating controller seamless at 1 -> 0.
+    // Refresh state must not multiply the current phase and teleport the orbit.
+    final rotation = phase * math.pi * 2;
     final progressValue = progress.clamp(0.0, 1.0).toDouble();
 
     canvas.save();
@@ -466,7 +537,7 @@ class _EnergyPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..color = color.withValues(alpha: 0.34);
     for (var index = 0; index < 14; index++) {
-      final start = -rotation * 0.42 + index * math.pi * 2 / 14;
+      final start = -rotation + index * math.pi * 2 / 14;
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: ringRadius * 0.72),
         start,
@@ -505,7 +576,7 @@ class _EnergyPainter extends CustomPainter {
       ..color = color.withValues(alpha: 0.24);
     canvas.save();
     canvas.translate(center.dx, center.dy);
-    canvas.rotate(-rotation * 0.55);
+    canvas.rotate(-rotation);
     canvas.drawOval(
       Rect.fromCenter(
         center: Offset.zero,

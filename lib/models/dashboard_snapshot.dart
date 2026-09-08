@@ -1,11 +1,17 @@
 import 'codex_account.dart';
+import 'antigravity_account.dart';
 import 'request_bucket.dart';
 
 class DashboardSnapshot {
-  const DashboardSnapshot({required this.accounts, required this.checkedAt});
+  const DashboardSnapshot({
+    required this.accounts,
+    required this.checkedAt,
+    this.antigravityAccounts = const [],
+  });
 
   final List<CodexAccount> accounts;
   final DateTime checkedAt;
+  final List<AntigravityAccount> antigravityAccounts;
 
   int get totalAccounts => accounts.length;
 

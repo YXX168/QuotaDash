@@ -35,6 +35,7 @@ class ProviderQuotaCard extends StatelessWidget {
   /// True only when the provider actually exposes a monthly window so the
   /// header badge never mislabels an average as the monthly hard cap.
   bool get _hasMonthlyWindow =>
+      quota.provider != QuotaProviderId.antigravity &&
       quota.windows.any((entry) => _isMonthly(entry.label));
 
   static bool _isMonthly(String label) => label.contains('月');
@@ -42,7 +43,7 @@ class ProviderQuotaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = quota.hasError ? AppTheme.warning : accentColor;
-    final monthly = _monthlyRemaining ?? quota.averageRemainingPercent;
+    final monthly = _monthlyRemaining;
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       borderColor: accent.withValues(alpha: 0.22),
@@ -75,6 +76,8 @@ class ProviderQuotaCard extends StatelessWidget {
                   children: [
                     Text(
                       displayName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w800,
@@ -147,17 +150,27 @@ class ProviderQuotaCard extends StatelessWidget {
                 style: const TextStyle(color: Color(0xFFFFA1B5), fontSize: 12),
               ),
             ),
-          ] else if (quota.windows.isEmpty) ...[
+          ],
+          if (quota.hasError && quota.windows.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Text(
+              '上次同步的额度 · 数据可能已过期',
+              style: TextStyle(color: AppTheme.warning, fontSize: 11),
+            ),
+          ],
+          if (!quota.hasError && quota.windows.isEmpty) ...[
             const SizedBox(height: 12),
             Text('暂未获取到套餐额度', style: Theme.of(context).textTheme.bodySmall),
-          ] else ...[
+          ] else if (quota.windows.isNotEmpty) ...[
             const SizedBox(height: 16),
             for (var index = 0; index < quota.windows.length; index++) ...[
               if (index > 0) const SizedBox(height: 14),
               _WindowRow(
                 entry: quota.windows[index],
-                accent: accent,
-                isMonthly: _isMonthly(quota.windows[index].label),
+                accent: accentColor,
+                isMonthly:
+                    quota.provider != QuotaProviderId.antigravity &&
+                    _isMonthly(quota.windows[index].label),
               ),
             ],
           ],
@@ -203,12 +216,14 @@ class _WindowRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(
-              entry.label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isMonthly ? FontWeight.w800 : FontWeight.w600,
-                color: isMonthly ? Colors.white : const Color(0xFFB9C4DA),
+            Expanded(
+              child: Text(
+                entry.label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isMonthly ? FontWeight.w800 : FontWeight.w600,
+                  color: isMonthly ? Colors.white : const Color(0xFFB9C4DA),
+                ),
               ),
             ),
             if (isMonthly) ...[
@@ -230,7 +245,7 @@ class _WindowRow extends StatelessWidget {
                 ),
               ),
             ],
-            const Spacer(),
+            const SizedBox(width: 8),
             Text(
               remaining == null ? '--' : '可用 ${remaining.toStringAsFixed(0)}%',
               style: TextStyle(
@@ -251,8 +266,14 @@ class _WindowRow extends StatelessWidget {
                 height: isMonthly ? 9 : 7,
                 color: const Color(0x1E1B2947),
               ),
-              FractionallySizedBox(
-                widthFactor: progress,
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: progress, end: progress),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 520),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) =>
+                    FractionallySizedBox(widthFactor: value, child: child),
                 child: Container(
                   height: isMonthly ? 9 : 7,
                   decoration: BoxDecoration(
