@@ -243,13 +243,21 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                     fontSize: 11,
                   ),
                 ),
-              )
-            else if (quota.windows.isEmpty)
+              ),
+            if (quota.hasError && quota.windows.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              const Text(
+                '上次同步的额度 · 数据可能已过期',
+                style: TextStyle(color: AppTheme.warning, fontSize: 11),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (!quota.hasError && quota.windows.isEmpty)
               const Text(
                 '暂未获取到套餐额度',
                 style: TextStyle(color: Color(0xFF75829B), fontSize: 10),
               )
-            else
+            else if (quota.windows.isNotEmpty)
               LayoutBuilder(
                 builder: (context, constraints) {
                   final compact =
@@ -444,8 +452,10 @@ class _SegmentedChargeBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final clamped = progress.clamp(0.0, 1.0);
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: clamped),
-      duration: const Duration(milliseconds: 1100),
+      tween: Tween(begin: clamped, end: clamped),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 520),
       curve: Curves.easeOutCubic,
       builder: (context, animated, _) {
         final litCount = (animated * _segmentCount).round();

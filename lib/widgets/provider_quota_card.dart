@@ -76,6 +76,8 @@ class ProviderQuotaCard extends StatelessWidget {
                   children: [
                     Text(
                       displayName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w800,
@@ -148,16 +150,24 @@ class ProviderQuotaCard extends StatelessWidget {
                 style: const TextStyle(color: Color(0xFFFFA1B5), fontSize: 12),
               ),
             ),
-          ] else if (quota.windows.isEmpty) ...[
+          ],
+          if (quota.hasError && quota.windows.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Text(
+              '上次同步的额度 · 数据可能已过期',
+              style: TextStyle(color: AppTheme.warning, fontSize: 11),
+            ),
+          ],
+          if (!quota.hasError && quota.windows.isEmpty) ...[
             const SizedBox(height: 12),
             Text('暂未获取到套餐额度', style: Theme.of(context).textTheme.bodySmall),
-          ] else ...[
+          ] else if (quota.windows.isNotEmpty) ...[
             const SizedBox(height: 16),
             for (var index = 0; index < quota.windows.length; index++) ...[
               if (index > 0) const SizedBox(height: 14),
               _WindowRow(
                 entry: quota.windows[index],
-                accent: accent,
+                accent: accentColor,
                 isMonthly:
                     quota.provider != QuotaProviderId.antigravity &&
                     _isMonthly(quota.windows[index].label),

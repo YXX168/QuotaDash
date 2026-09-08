@@ -35,7 +35,7 @@ List<ProviderQuotaWindow> parseAntigravityQuota(Map<String, dynamic> payload) {
         );
       }
     }
-    return windows;
+    if (windows.isNotEmpty) return windows;
   }
   final models = payload['models'];
   if (models is! Map) return windows;

@@ -33,6 +33,25 @@ ManagementService _service(MockClient client) => ManagementService(
 );
 
 void main() {
+  test('empty or malformed groups do not hide legacy model quotas', () {
+    for (final groups in [
+      [],
+      [
+        {'buckets': 'invalid'},
+      ],
+    ]) {
+      final windows = parseAntigravityQuota({
+        'groups': groups,
+        'models': {
+          'gemini': {
+            'quotaInfo': {'remainingFraction': 0.75},
+          },
+        },
+      });
+      expect(windows.single.remainingPercent, 75);
+    }
+  });
+
   test('groups preserve zero, unknown, fractional values and reset times', () {
     final windows = parseAntigravityQuota(_summary());
     expect(windows.map((w) => w.remainingPercent), [42, 0]);

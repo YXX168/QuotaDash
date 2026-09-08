@@ -13,6 +13,7 @@ import 'package:cliproxy_dash/services/quota_repository.dart';
 import 'package:cliproxy_dash/theme/app_theme.dart';
 import 'package:cliproxy_dash/widgets/antigravity_account_card.dart';
 import 'package:cliproxy_dash/widgets/provider_energy_core.dart';
+import 'package:cliproxy_dash/widgets/provider_quota_card.dart';
 import 'package:cliproxy_dash/widgets/quota_progress.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -110,6 +111,44 @@ Widget _dashboard(
 );
 
 void main() {
+  testWidgets('cached provider quotas remain visible with a stale warning', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ProviderQuotaCard(
+            quota: const ProviderQuota(
+              provider: QuotaProviderId.openCode,
+              error: 'Network unavailable',
+              windows: [
+                ProviderQuotaWindow(label: 'Weekly', remainingPercent: 80),
+              ],
+            ),
+            displayName: 'OpenCode',
+            description: 'Quota',
+            accentColor: AppTheme.cyan,
+            icon: Icons.bolt,
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Network unavailable'), findsOneWidget);
+    expect(find.text('上次同步的额度 · 数据可能已过期'), findsOneWidget);
+    expect(find.text('可用 80%'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reduced motion settles immediately with nonzero energy', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_card(VisualMode.energy, count: 1, reduced: true));
+    await tester.pump();
+    expect(tester.binding.transientCallbackCount, 0);
+    expect(find.text('42%'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets(
     'automatic refresh pauses in background and resumes in foreground',
     (tester) async {

@@ -22,7 +22,12 @@ class AntigravityAccountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = account.auth.name;
-    const description = 'Antigravity · 各额度组独立计算';
+    final windows = account.quota.windows;
+    final unknown = windows.where((w) => w.remainingPercent == null).length;
+    final description = windows.isEmpty
+        ? 'Antigravity · 各额度组独立计算'
+        : 'Antigravity · ${windows.length} 个额度窗口'
+              '${unknown == 0 ? '' : ' · $unknown 个待同步'}';
     if (visualMode == VisualMode.energy) {
       return ProviderEnergyCore(
         quota: account.quota,
