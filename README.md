@@ -68,8 +68,16 @@ DE:58:35:3C:54:25:C2:73:5B:B0:2C:18:D6:C2:59:1F:A7:B9:71:D3:66:96:EE:FB:A8:AA:33
 
 ### GitHub Actions
 
-`main` 分支的成功构建会保留 30 天调试 Artifact；推送 `v*` 标签会自动构建
-正式签名版本（需在仓库 Secrets 中配置签名密钥）。
+`main` 分支的成功构建会保留 30 天的 Debug APK、稳定签名 Release APK 和
+Antigravity 视觉审阅截图，附件名称包含对应构建提交 SHA。
+
+PR 同样执行格式检查、静态分析、测试以及 Debug / Release 模式编译，但不读取正式
+签名密钥；PR 的 Release 模式编译仅用于验证，使用调试签名回退，不上传正式签名
+Release 附件。PR 提供的 Debug APK 和视觉截图不等同于正式发布。
+
+推送与 `pubspec.yaml` 版本一致的 `v*` 标签会自动构建正式签名版本，并创建 GitHub
+Release，附 ARM64 APK 与 SHA-256 校验文件（需在仓库 Secrets 中配置签名密钥）。
+正式发布状态以 GitHub Releases 页面为准，成功的 Actions Artifact 本身不代表已发布。
 
 ## 隐私与安全
 
