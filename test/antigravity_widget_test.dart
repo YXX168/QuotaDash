@@ -145,7 +145,7 @@ void main() {
     await tester.pumpWidget(_card(VisualMode.energy, count: 1, reduced: true));
     await tester.pump();
     expect(tester.binding.transientCallbackCount, 0);
-    expect(find.text('42%'), findsOneWidget);
+    expect(find.text('42%'), findsNWidgets(2));
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
