@@ -43,7 +43,7 @@ class ProviderQuotaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = quota.hasError ? AppTheme.warning : accentColor;
-    final monthly = _monthlyRemaining ?? quota.averageRemainingPercent;
+    final monthly = _monthlyRemaining;
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       borderColor: accent.withValues(alpha: 0.22),

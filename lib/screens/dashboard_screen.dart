@@ -288,7 +288,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     return TickerMode(
-      enabled: _foreground,
+      enabled: _foreground && !MediaQuery.disableAnimationsOf(context),
       child: Scaffold(
         body: AppBackdrop(
           child: SafeArea(
@@ -1328,6 +1328,12 @@ class _AnimatedAccountCardState extends State<_AnimatedAccountCard>
         if (mounted) _controller.forward();
       },
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) _controller.value = 1;
   }
 
   @override

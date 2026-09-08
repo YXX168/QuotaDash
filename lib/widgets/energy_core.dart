@@ -3,7 +3,27 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../models/codex_account.dart';
+import '../models/provider_quota.dart';
 import '../theme/app_theme.dart';
+
+/// Provider-neutral values rendered by the same compact account card.
+class EnergyCoreData {
+  const EnergyCoreData({
+    required this.name,
+    required this.caption,
+    required this.badge,
+    required this.headline,
+    required this.windows,
+    this.hasError = false,
+  });
+
+  final String name;
+  final String caption;
+  final String badge;
+  final ProviderQuotaWindow headline;
+  final List<ProviderQuotaWindow> windows;
+  final bool hasError;
+}
 
 class EnergyAccountCore extends StatefulWidget {
   const EnergyAccountCore({
@@ -11,9 +31,18 @@ class EnergyAccountCore extends StatefulWidget {
     required this.refreshing,
     super.key,
     this.onTap,
-  });
+  }) : providerData = null;
 
-  final CodexAccount account;
+  const EnergyAccountCore.forProvider({
+    required EnergyCoreData data,
+    required this.refreshing,
+    super.key,
+    this.onTap,
+  }) : account = null,
+       providerData = data;
+
+  final CodexAccount? account;
+  final EnergyCoreData? providerData;
   final bool refreshing;
   final VoidCallback? onTap;
 
@@ -53,14 +82,38 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
   @override
   Widget build(BuildContext context) {
     final account = widget.account;
-    final remaining = account.weeklyRemainingPercent;
-    final color = _coreColor(account, remaining);
-    final value = account.hasError
+    final data = widget.providerData;
+    final remaining = data != null
+        ? data.headline.remainingPercent
+        : account!.weeklyRemainingPercent;
+    final hasError = data?.hasError ?? account!.hasError;
+    final name = data?.name ?? account!.name;
+    final caption = data?.caption ??
+        (account!.email.isEmpty ? 'Codex Account' : account.email);
+    final badge = data?.badge ??
+        (account!.plan.isEmpty ? 'CODEX' : account.plan.toUpperCase());
+    final color = _coreColor(
+      hasError,
+      data != null || account!.isAvailable,
+      remaining,
+    );
+    final readings = data?.windows ?? [
+      ProviderQuotaWindow(
+        label: account!.primaryLabel,
+        remainingPercent: account.primary?.remainingPercent,
+      ),
+      if (account.secondary != null)
+        ProviderQuotaWindow(
+          label: account.secondaryLabel,
+          remainingPercent: account.secondary?.remainingPercent,
+        ),
+    ];
+    final value = hasError
         ? '!'
         : remaining == null
         ? '--'
         : '${remaining.toStringAsFixed(0)}%';
-    final label = account.hasError ? '检查失败' : '周额度';
+    final label = hasError ? '检查失败' : data?.headline.label ?? '周额度';
 
     return UnconstrainedBox(
       alignment: Alignment.topCenter,
@@ -71,7 +124,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
         height: 218,
         child: Semantics(
           button: widget.onTap != null,
-          label: '${account.name}，$label $value',
+          label: '$name，$label $value',
           child: Material(
             color: Colors.transparent,
             child: InkWell(
@@ -122,7 +175,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              account.name.isEmpty ? '未命名账号' : account.name,
+                              name.isEmpty ? '未命名账号' : name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -133,7 +186,9 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            constraints: const BoxConstraints(maxWidth: 82),
+                            constraints: BoxConstraints(
+                              maxWidth: data == null ? 82 : 112,
+                            ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
@@ -143,9 +198,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              account.plan.isEmpty
-                                  ? 'CODEX'
-                                  : account.plan.toUpperCase(),
+                              badge,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -181,7 +234,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                                           progress:
                                               (remaining ?? 0).clamp(0, 100) /
                                               100,
-                                          hasError: account.hasError,
+                                          hasError: hasError,
                                           refreshing: widget.refreshing,
                                         ),
                                       ),
@@ -228,26 +281,18 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                             child: Column(
                               key: const Key('energy-quota-row'),
                               children: [
-                                Expanded(
-                                  child: _QuotaReading(
-                                    key: const Key('energy-quota-line-primary'),
-                                    label: account.primaryLabel,
-                                    remaining:
-                                        account.primary?.remainingPercent,
-                                    color: color,
-                                  ),
-                                ),
-                                if (account.secondary != null) ...[
-                                  const SizedBox(height: 7),
+                                for (var i = 0; i < readings.length && i < 2; i++) ...[
+                                  if (i > 0) const SizedBox(height: 7),
                                   Expanded(
                                     child: _QuotaReading(
-                                      key: const Key(
-                                        'energy-quota-line-secondary',
+                                      key: Key(
+                                        i == 0
+                                            ? 'energy-quota-line-primary'
+                                            : 'energy-quota-line-secondary',
                                       ),
-                                      label: account.secondaryLabel,
-                                      remaining:
-                                          account.secondary?.remainingPercent,
-                                      color: color,
+                                      label: readings[i].label,
+                                      remaining: readings[i].remainingPercent,
+                                      color: data == null ? color : AppTheme.cyan,
                                     ),
                                   ),
                                 ],
@@ -264,16 +309,14 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.alternate_email_rounded,
+                            Icons.info_outline_rounded,
                             size: 12,
                             color: Color(0xFF71809A),
                           ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              account.email.isEmpty
-                                  ? 'Codex Account'
-                                  : account.email,
+                              caption,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(
@@ -300,9 +343,9 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
     );
   }
 
-  static Color _coreColor(CodexAccount account, double? remaining) {
-    if (account.hasError) return AppTheme.danger;
-    if (!account.isAvailable) return AppTheme.warning;
+  static Color _coreColor(bool hasError, bool available, double? remaining) {
+    if (hasError) return AppTheme.danger;
+    if (!available) return AppTheme.warning;
     if (remaining == null) return AppTheme.cyan;
     if (remaining <= 15) return AppTheme.danger;
     if (remaining <= 35) return AppTheme.warning;

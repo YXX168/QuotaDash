@@ -12,7 +12,7 @@ import 'package:cliproxy_dash/screens/dashboard_screen.dart';
 import 'package:cliproxy_dash/services/quota_repository.dart';
 import 'package:cliproxy_dash/theme/app_theme.dart';
 import 'package:cliproxy_dash/widgets/antigravity_account_card.dart';
-import 'package:cliproxy_dash/widgets/provider_energy_core.dart';
+import 'package:cliproxy_dash/widgets/energy_core.dart';
 import 'package:cliproxy_dash/widgets/provider_quota_card.dart';
 import 'package:cliproxy_dash/widgets/quota_progress.dart';
 import 'package:flutter/material.dart';
@@ -177,19 +177,20 @@ void main() {
         await tester.pumpWidget(_card(mode, count: 8));
         await tester.pump(const Duration(seconds: 1));
         expect(tester.takeException(), isNull);
+        if (mode == VisualMode.energy) {
+          expect(find.byType(EnergyAccountCore), findsOneWidget);
+          expect(
+            tester.getSize(find.byKey(const Key('energy-core-card'))).height,
+            218,
+          );
+          await tester.tap(find.byKey(const Key('antigravity-details')));
+          await tester.pump(const Duration(seconds: 1));
+        }
         expect(find.text('可用 0%'), findsNWidgets(2));
         expect(find.text('--'), findsNWidgets(2));
         if (mode == VisualMode.energy) {
           expect(find.text('最低余量'), findsOneWidget);
           expect(find.text('综合可用'), findsNothing);
-          if (width < 520) {
-            expect(
-              tester
-                  .getSize(find.byKey(const Key('provider-energy-orb')))
-                  .width,
-              greaterThan(240),
-            );
-          }
           expect(
             tester.widget<Text>(find.text('可用 80%').first).style!.color,
             AppTheme.cyan,
@@ -216,7 +217,7 @@ void main() {
     await tester.pumpWidget(_card(VisualMode.energy, reduced: true));
     await tester.pump(const Duration(seconds: 1));
     expect(tester.binding.transientCallbackCount, 0);
-    expect(find.byType(ProviderEnergyCore), findsOneWidget);
+    expect(find.byType(EnergyAccountCore), findsOneWidget);
     await tester.pumpWidget(_card(VisualMode.energy));
     await tester.pump();
     expect(tester.binding.transientCallbackCount, greaterThan(0));

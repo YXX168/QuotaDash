@@ -136,6 +136,8 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
 
     return Material(
       color: Colors.transparent,
+      borderRadius: BorderRadius.circular(26),
+      clipBehavior: Clip.antiAlias,
       child: Ink(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
