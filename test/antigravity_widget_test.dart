@@ -329,6 +329,17 @@ void main() {
           '../build/visual-review/antigravity_${mode.name}.png',
         ),
       );
+      if (mode == VisualMode.energy) {
+        await tester.tap(find.byKey(const Key('antigravity-details')));
+        await tester.pump(const Duration(seconds: 1));
+        expect(tester.takeException(), isNull);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile(
+            '../build/visual-review/antigravity_energy_expanded.png',
+          ),
+        );
+      }
       await tester.pumpWidget(const SizedBox.shrink());
     }, tags: ['golden']);
   }

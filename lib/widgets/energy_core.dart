@@ -131,6 +131,8 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
           label: '$name，$label $value',
           child: Material(
             color: Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+            clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: widget.onTap,
               borderRadius: BorderRadius.circular(24),
