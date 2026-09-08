@@ -331,7 +331,9 @@ void main() {
       );
       if (mode == VisualMode.energy) {
         await tester.tap(find.byKey(const Key('antigravity-details')));
+        await tester.pump();
         await tester.pump(const Duration(seconds: 1));
+        expect(find.text('可用 80%').hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
         await expectLater(
           find.byType(Scaffold),
