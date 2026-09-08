@@ -49,7 +49,8 @@ class QuotaWindow {
     );
   }
 
-  double get progress => ((usedPercent ?? 0) / 100).clamp(0, 1);
+  double get progress =>
+      ((usedPercent ?? (100 - (remainingPercent ?? 100))) / 100).clamp(0, 1);
 
   /// Labels the actual server-reported window without assuming a five-hour slot.
   String get displayLabel {
@@ -57,14 +58,20 @@ class QuotaWindow {
     if (seconds == null) return '周额度';
     if (seconds >= _monthWindowSeconds) return '月度额度';
     if (seconds >= _weekWindowSeconds) return '周额度';
-    return '5H额度';
+    if (seconds % 3600 == 0) return '${seconds ~/ 3600}H额度';
+    if (seconds % 60 == 0) return '${seconds ~/ 60}分钟额度';
+    return '$seconds 秒额度';
   }
 
   static DateTime? parseResetTime(Object? value) {
-    if (value is num && value > 0) {
+    if (value is num &&
+        value.isFinite &&
+        value > 0 &&
+        value <= 8640000000000000) {
       final milliseconds = value > 100000000000
           ? value.toInt()
           : value.toInt() * 1000;
+      if (milliseconds > 8640000000000000) return null;
       return DateTime.fromMillisecondsSinceEpoch(milliseconds);
     }
     if (value is String) {
@@ -76,13 +83,14 @@ class QuotaWindow {
   }
 
   static double? _asDouble(Object? value) {
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '');
+    final parsed = value is num
+        ? value.toDouble()
+        : double.tryParse(value?.toString() ?? '');
+    return parsed != null && parsed.isFinite ? parsed : null;
   }
 
   static int? _asInt(Object? value) {
-    if (value is num) return value.toInt();
-    return double.tryParse(value?.toString() ?? '')?.toInt();
+    return _asDouble(value)?.toInt();
   }
 
   static int? _positiveInt(int? value) {

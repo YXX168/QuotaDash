@@ -19,11 +19,27 @@ Quota Dash 是一个模块化的 Android 大模型额度仪表盘。每个供应
 ## 已接入的供应商
 
 - **CLIProxyAPI** - Codex OAuth 账号状态、额度窗口、重置时间与近期请求活动。
+- **Antigravity（通过 CLIProxyAPI）** - 自动发现已启用账号，逐个展示额度组、剩余百分比与恢复时间；兼容旧版模型额度响应。
 - **OpenCode** - 滚动、周与月度额度窗口。
+
+## Antigravity 使用说明
+
+使用现有 CLIProxyAPI 服务地址与管理密码，无需额外填写 Google Token。
+先在 CLIProxyAPI 中登录 Antigravity 账号，再刷新仪表盘即可显示。
+优先读取 `retrieveUserQuotaSummary`，必要时回退到 `fetchAvailableModels`。
+项目 ID 从账号元数据读取；旧版服务未公开该字段时，仅在内存中读取认证文件以提取项目 ID。
+客户端不会保存 Google Token。缺少项目 ID 时会提示重新登录该账号。
+
+每个额度组分别展示，能量模式主值为该账号已知额度中的「最低余量」，不代表总余额。
+未返回的百分比显示 `--`；查询失败显示账号错误，不影响其他账号。
+额度接口的剩余量不保证模型请求一定成功，模型可用性仍取决于上游限制。
+请求趋势卡目前统计 Codex 账号的近期请求。
+
+接口兼容性参考：[上游 Antigravity 数据层](https://github.com/router-for-me/Cli-Proxy-API-Management-Center/blob/main/src/features/quota/providers/antigravity/data.ts)。
 
 ## 模块化架构
 
-新增供应商只需三步，无需修改界面或存储层：
+新增普通额度供应商只需三步，无需修改界面或存储层（CLIProxyAPI 的多账号数据由其账号仪表盘承载）：
 
 1. 实现 `QuotaModule` 接口（数据获取、名称、图标、强调色）；
 2. 用 `ProviderField` 声明所需的配置字段（配置页自动渲染）；
@@ -47,7 +63,7 @@ Quota Dash 是一个模块化的 Android 大模型额度仪表盘。每个供应
 正式版签名证书 SHA-256：
 
 ```text
-C4:32:2F:65:9C:61:DF:7F:50:46:10:DD:FE:3B:37:E1:7C:26:1C:55:1A:6D:A3:1E:A0:AB:AC:3C:1D:2E:B9:91
+DE:58:35:3C:54:25:C2:73:5B:B0:2C:18:D6:C2:59:1F:A7:B9:71:D3:66:96:EE:FB:A8:AA:33:2B:26:55:77:83
 ```
 
 ### GitHub Actions

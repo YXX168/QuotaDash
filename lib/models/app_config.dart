@@ -7,7 +7,7 @@ class AppConfig {
   const AppConfig({this.values = const <String, String>{}});
 
   /// App version string — keep in sync with `pubspec.yaml`.
-  static const appVersion = '2.0.16';
+  static const appVersion = '2.1.0';
 
   final Map<String, String> values;
 
