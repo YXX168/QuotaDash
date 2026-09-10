@@ -19,4 +19,48 @@ class AntigravityAccount {
     }
     return lowest;
   }
+
+  /// Weekly quota window for Gemini Models.
+  ProviderQuotaWindow? get geminiWeeklyWindow {
+    for (final window in quota.windows) {
+      final label = window.label.toLowerCase();
+      if (label.contains('gemini') &&
+          (label.contains('周') ||
+              label.contains('168') ||
+              label.contains('week'))) {
+        return window;
+      }
+    }
+    for (final window in quota.windows) {
+      final label = window.label.toLowerCase();
+      if (label.contains('周') ||
+          label.contains('168') ||
+          label.contains('week')) {
+        return window;
+      }
+    }
+    return quota.windows.isNotEmpty ? quota.windows.first : null;
+  }
+
+  /// 5-hour quota window for Gemini Models.
+  ProviderQuotaWindow? get gemini5HWindow {
+    for (final window in quota.windows) {
+      final label = window.label.toLowerCase();
+      if (label.contains('gemini') &&
+          (label.contains('5h') ||
+              label.contains('session') ||
+              label.contains('5 hour'))) {
+        return window;
+      }
+    }
+    for (final window in quota.windows) {
+      final label = window.label.toLowerCase();
+      if (label.contains('5h') ||
+          label.contains('session') ||
+          label.contains('5 hour')) {
+        return window;
+      }
+    }
+    return quota.windows.length > 1 ? quota.windows[1] : null;
+  }
 }

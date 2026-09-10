@@ -34,10 +34,10 @@ AntigravityAccount _account({
             count,
             (index) => ProviderQuotaWindow(
               label: [
-                'Claude · Weekly',
-                'Claude · Session',
-                'Gemini Pro · Weekly',
-                'Gemini Flash · Session',
+                'Gemini Models 周额度',
+                'Gemini Models 5H额度',
+                'Claude and GPT 周额度',
+                'Claude and GPT 5H额度',
               ][index % 4],
               remainingPercent: [42.0, 0.0, 80.0, null][index % 4],
               resetAt: DateTime.utc(2026, 9, 15, 8),
@@ -183,14 +183,15 @@ void main() {
             tester.getSize(find.byKey(const Key('energy-core-card'))).height,
             218,
           );
+          expect(find.text('周额度'), findsOneWidget);
+          expect(find.text('综合可用'), findsNothing);
           await tester.tap(find.byKey(const Key('antigravity-details')));
+          await tester.pump();
           await tester.pump(const Duration(seconds: 1));
         }
         expect(find.text('可用 0%'), findsNWidgets(2));
         expect(find.text('--'), findsNWidgets(2));
         if (mode == VisualMode.energy) {
-          expect(find.text('最低余量'), findsOneWidget);
-          expect(find.text('综合可用'), findsNothing);
           expect(
             tester.widget<Text>(find.text('可用 80%').first).style!.color,
             AppTheme.cyan,

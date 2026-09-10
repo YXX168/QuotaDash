@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../models/antigravity_account.dart';
 import '../models/app_config.dart';
 import '../models/dashboard_snapshot.dart';
 import '../models/provider_quota.dart';
@@ -23,6 +24,7 @@ import '../widgets/quantum_emblem.dart';
 import '../widgets/request_activity.dart';
 import '../widgets/sync_flow_loader.dart';
 import 'account_detail_screen.dart';
+import 'antigravity_detail_screen.dart';
 import 'tools_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -285,6 +287,15 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  void _openAntigravityAccount(AntigravityAccount account) {
+    unawaited(HapticFeedback.lightImpact());
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AntigravityDetailScreen(account: account),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return TickerMode(
@@ -436,10 +447,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             .isNotEmpty ??
                                         false) ...[
                                       const SizedBox(height: 18),
-                                      const SectionTitle(
-                                        title: 'Antigravity',
-                                        subtitle: '按账号展示额度组与恢复时间',
-                                      ),
+                                      const SectionTitle(title: 'Antigravity'),
                                       const SizedBox(height: 10),
                                       for (final account
                                           in _snapshot!.antigravityAccounts)
@@ -454,6 +462,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             account: account,
                                             visualMode: widget.visualMode,
                                             refreshing: _refreshing,
+                                            onTap: () =>
+                                                _openAntigravityAccount(
+                                                  account,
+                                                ),
                                           ),
                                         ),
                                     ],
