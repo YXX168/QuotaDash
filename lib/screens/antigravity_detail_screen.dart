@@ -441,11 +441,10 @@ class _ErrorCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value, this.valueColor});
+  const _InfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
-  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -459,7 +458,7 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: SelectableText(
             value.isEmpty ? '--' : value,
-            style: TextStyle(color: valueColor ?? const Color(0xFFDCE5F7)),
+            style: const TextStyle(color: Color(0xFFDCE5F7)),
           ),
         ),
       ],
