@@ -200,6 +200,11 @@ class _AntigravityQuotaProgress extends StatelessWidget {
                   remaining == null
                       ? '--'
                       : '可用 ${remaining.toStringAsFixed(0)}%',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ],
