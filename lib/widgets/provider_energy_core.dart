@@ -611,8 +611,17 @@ class _WindowLine extends StatelessWidget {
   }
 
   static String _resetText(DateTime? resetAt) {
-    if (resetAt == null) return '恢复时间待同步';
-    return '恢复于 ${DateFormat('M月d日 HH:mm').format(resetAt.toLocal())}';
+    if (resetAt == null) return '重置时间未知';
+    final diff = resetAt.difference(DateTime.now());
+    if (diff.isNegative) return '距重置待刷新';
+    final days = diff.inDays;
+    final hours = diff.inHours.remainder(24);
+    final minutes = diff.inMinutes.remainder(60);
+    final seconds = diff.inSeconds.remainder(60);
+    final value = days > 0
+        ? '$days天 ${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}'
+        : '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    return '距重置 $value';
   }
 }
 

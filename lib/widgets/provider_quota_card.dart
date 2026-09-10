@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../models/provider_quota.dart';
 import '../theme/app_theme.dart';
 import 'glass_widgets.dart';
+import 'request_activity.dart';
 
 /// Generic quota panel card for any provider module.
 ///
@@ -17,6 +17,7 @@ class ProviderQuotaCard extends StatelessWidget {
     required this.accentColor,
     required this.icon,
     super.key,
+    this.onTap,
   });
 
   final ProviderQuota quota;
@@ -24,6 +25,7 @@ class ProviderQuotaCard extends StatelessWidget {
   final String description;
   final Color accentColor;
   final IconData icon;
+  final VoidCallback? onTap;
 
   double? get _monthlyRemaining {
     for (final entry in quota.windows) {
@@ -45,6 +47,7 @@ class ProviderQuotaCard extends StatelessWidget {
     final accent = quota.hasError ? AppTheme.warning : accentColor;
     final monthly = _monthlyRemaining;
     return GlassCard(
+      onTap: onTap,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       borderColor: accent.withValues(alpha: 0.22),
       child: Column(
@@ -95,6 +98,14 @@ class ProviderQuotaCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (onTap != null) ...[
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: Color(0xFF8390AA),
+                ),
+              ],
               if (!quota.hasError && _hasMonthlyWindow && monthly != null)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -287,18 +298,22 @@ class _WindowRow extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Text(
-          _resetText(entry.resetAt),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 9.5),
-        ),
+        ResetCountdown(target: entry.resetAt, prefix: '距重置'),
       ],
     );
   }
 
   static String _resetText(DateTime? resetAt) {
-    if (resetAt == null) return '恢复时间待同步';
-    return '恢复于 ${DateFormat('M月d日 HH:mm').format(resetAt.toLocal())}';
+    if (resetAt == null) return '重置时间未知';
+    final diff = resetAt.difference(DateTime.now());
+    if (diff.isNegative) return '距重置待刷新';
+    final days = diff.inDays;
+    final hours = diff.inHours.remainder(24);
+    final minutes = diff.inMinutes.remainder(60);
+    final seconds = diff.inSeconds.remainder(60);
+    final value = days > 0
+        ? '$days天 ${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}'
+        : '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    return '距重置 $value';
   }
 }

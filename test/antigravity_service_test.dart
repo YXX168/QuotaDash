@@ -55,7 +55,7 @@ void main() {
   test('groups preserve zero, unknown, fractional values and reset times', () {
     final windows = parseAntigravityQuota(_summary());
     expect(windows.map((w) => w.remainingPercent), [42, 0]);
-    expect(windows.first.label, 'Claude · Weekly');
+    expect(windows.first.label, 'Claude and GPT 周额度');
     expect(windows.first.resetAt!.toUtc(), DateTime.utc(2026, 9, 15));
     final legacy = parseAntigravityQuota({
       'response': {
@@ -75,6 +75,36 @@ void main() {
     expect(legacy.map((w) => w.label), ['Gemini', 'b']);
     expect(parseAntigravityQuota({'models': 'invalid'}), isEmpty);
   });
+
+  test(
+    'formats group and bucket names to concise Chinese labels in priority order',
+    () {
+      final windows = parseAntigravityQuota({
+        'groups': [
+          {
+            'displayName': 'Claude and GPT Models',
+            'buckets': [
+              {'displayName': 'Weekly', 'remainingFraction': 0.5},
+              {'displayName': '5 hours', 'remainingFraction': 0.8},
+            ],
+          },
+          {
+            'displayName': 'Gemini Models',
+            'buckets': [
+              {'window': '5h', 'remainingFraction': 0.9},
+              {'window': '168h', 'remainingFraction': 0.7},
+            ],
+          },
+        ],
+      });
+      expect(windows.map((w) => w.label), [
+        'Gemini Models 周额度',
+        'Gemini Models 5H额度',
+        'Claude and GPT 周额度',
+        'Claude and GPT 5H额度',
+      ]);
+    },
+  );
 
   test(
     'discovers Antigravity and Codex, skips disabled, uses token substitution',
