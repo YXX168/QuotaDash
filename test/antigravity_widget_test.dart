@@ -184,6 +184,7 @@ void main() {
             218,
           );
           await tester.tap(find.byKey(const Key('antigravity-details')));
+          await tester.pump();
           await tester.pump(const Duration(seconds: 1));
         }
         expect(find.text('可用 0%'), findsNWidgets(2));
