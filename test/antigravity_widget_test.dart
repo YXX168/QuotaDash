@@ -183,6 +183,8 @@ void main() {
             tester.getSize(find.byKey(const Key('energy-core-card'))).height,
             218,
           );
+          expect(find.text('周额度'), findsOneWidget);
+          expect(find.text('综合可用'), findsNothing);
           await tester.tap(find.byKey(const Key('antigravity-details')));
           await tester.pump();
           await tester.pump(const Duration(seconds: 1));
@@ -190,8 +192,6 @@ void main() {
         expect(find.text('可用 0%'), findsNWidgets(2));
         expect(find.text('--'), findsNWidgets(2));
         if (mode == VisualMode.energy) {
-          expect(find.text('周额度'), findsOneWidget);
-          expect(find.text('综合可用'), findsNothing);
           expect(
             tester.widget<Text>(find.text('可用 80%').first).style!.color,
             AppTheme.cyan,
