@@ -54,7 +54,8 @@ class AntigravityDetailScreen extends StatelessWidget {
                             style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(fontWeight: FontWeight.w800),
                           ),
-                          if (auth.email.isNotEmpty && auth.email != auth.name) ...[
+                          if (auth.email.isNotEmpty &&
+                              auth.email != auth.name) ...[
                             const SizedBox(height: 5),
                             Text(
                               auth.email,
@@ -94,15 +95,19 @@ class AntigravityDetailScreen extends StatelessWidget {
                               subtitle: 'Google Antigravity 各额度组独立计算',
                             ),
                             const SizedBox(height: 24),
-                            for (var i = 0;
-                                i < account.quota.windows.length;
-                                i++) ...[
+                            for (
+                              var i = 0;
+                              i < account.quota.windows.length;
+                              i++
+                            ) ...[
                               if (i > 0) const SizedBox(height: 20),
                               _AntigravityQuotaProgress(
                                 window: account.quota.windows[i],
                               ),
                             ],
-                            if (account.quota.windows.any((w) => w.resetAt != null)) ...[
+                            if (account.quota.windows.any(
+                              (w) => w.resetAt != null,
+                            )) ...[
                               const SizedBox(height: 24),
                               const Divider(height: 1),
                               const SizedBox(height: 20),
@@ -123,7 +128,8 @@ class AntigravityDetailScreen extends StatelessWidget {
                           _InfoRow(label: '认证 ID', value: auth.id),
                           const Divider(height: 24),
                           _InfoRow(label: 'Auth Index', value: auth.authIndex),
-                          if (auth.successRequests > 0 || auth.failedRequests > 0) ...[
+                          if (auth.successRequests > 0 ||
+                              auth.failedRequests > 0) ...[
                             const Divider(height: 24),
                             _InfoRow(
                               label: '成功请求',
@@ -246,20 +252,23 @@ class _AntigravityResetTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final events = windows
-        .where((w) => w.resetAt != null)
-        .map(
-          (w) => _ResetTimelineEntry(
-            label: w.label,
-            time: w.resetAt!,
-            color: w.label.contains('Gemini') ? AppTheme.cyan : AppTheme.violet,
-            icon: w.label.contains('5H')
-                ? Icons.bolt_rounded
-                : Icons.calendar_month_rounded,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => a.time.compareTo(b.time));
+    final events =
+        windows
+            .where((w) => w.resetAt != null)
+            .map(
+              (w) => _ResetTimelineEntry(
+                label: w.label,
+                time: w.resetAt!,
+                color: w.label.contains('Gemini')
+                    ? AppTheme.cyan
+                    : AppTheme.violet,
+                icon: w.label.contains('5H')
+                    ? Icons.bolt_rounded
+                    : Icons.calendar_month_rounded,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => a.time.compareTo(b.time));
 
     if (events.isEmpty) return const SizedBox.shrink();
 

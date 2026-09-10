@@ -447,9 +447,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             .isNotEmpty ??
                                         false) ...[
                                       const SizedBox(height: 18),
-                                      const SectionTitle(
-                                        title: 'Antigravity',
-                                      ),
+                                      const SectionTitle(title: 'Antigravity'),
                                       const SizedBox(height: 10),
                                       for (final account
                                           in _snapshot!.antigravityAccounts)
@@ -464,7 +462,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             account: account,
                                             visualMode: widget.visualMode,
                                             refreshing: _refreshing,
-                                            onTap: () => _openAntigravityAccount(account),
+                                            onTap: () =>
+                                                _openAntigravityAccount(
+                                                  account,
+                                                ),
                                           ),
                                         ),
                                     ],
