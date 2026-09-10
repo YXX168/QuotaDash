@@ -388,12 +388,15 @@ class _ResetTimelineItem extends StatelessWidget {
                     Expanded(
                       child: Text(
                         event.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 6),
                     Text(
                       absoluteTime,
                       style: TextStyle(
