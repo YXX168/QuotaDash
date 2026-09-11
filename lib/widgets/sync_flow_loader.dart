@@ -353,8 +353,20 @@ class _DataGatewayPainter extends CustomPainter {
 
     canvas.save();
     canvas.clipPath(Path()..addOval(globeRect));
-    _drawSphereWireframe(canvas, center: center, radius: radius, unit: unit, phase: phase);
-    _drawSphereScan(canvas, center: center, radius: radius, unit: unit, phase: phase);
+    _drawSphereWireframe(
+      canvas,
+      center: center,
+      radius: radius,
+      unit: unit,
+      phase: phase,
+    );
+    _drawSphereScan(
+      canvas,
+      center: center,
+      radius: radius,
+      unit: unit,
+      phase: phase,
+    );
     _drawSphereGloss(canvas, center: center, radius: radius, unit: unit);
     canvas.restore();
 
@@ -365,12 +377,7 @@ class _DataGatewayPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.8 * unit
         ..shader = SweepGradient(
-          colors: [
-            primary,
-            AppTheme.violet,
-            AppTheme.magenta,
-            primary,
-          ],
+          colors: [primary, AppTheme.violet, AppTheme.magenta, primary],
         ).createShader(globeRect),
     );
 
@@ -524,12 +531,7 @@ class _DataGatewayPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = radius * 0.085
       ..shader = SweepGradient(
-        colors: [
-          primary,
-          AppTheme.violet,
-          AppTheme.magenta,
-          primary,
-        ],
+        colors: [primary, AppTheme.violet, AppTheme.magenta, primary],
       ).createShader(rect)
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 0.1);
     final crispPaint = Paint()
@@ -537,12 +539,7 @@ class _DataGatewayPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = radius * 0.038
       ..shader = SweepGradient(
-        colors: [
-          primary,
-          AppTheme.violet,
-          AppTheme.magenta,
-          primary,
-        ],
+        colors: [primary, AppTheme.violet, AppTheme.magenta, primary],
       ).createShader(rect);
 
     if (front) {

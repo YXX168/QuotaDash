@@ -160,8 +160,8 @@ class _BootstrapView extends StatelessWidget {
       body: DecoratedBox(
         decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: Center(
-         child: Column(
-           mainAxisSize: MainAxisSize.min,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               const GlowingGlobeMark(size: 88),
               const SizedBox(height: 24),
