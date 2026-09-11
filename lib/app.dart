@@ -10,7 +10,7 @@ import 'services/provider_registry.dart';
 import 'services/quota_repository.dart';
 import 'services/visual_mode_store.dart';
 import 'theme/app_theme.dart';
-import 'widgets/quantum_emblem.dart';
+import 'widgets/glowing_globe_mark.dart';
 
 class CliProxyDashApp extends StatefulWidget {
   const CliProxyDashApp({
@@ -163,7 +163,7 @@ class _BootstrapView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const QuantumEmblem(size: 72),
+              const GlowingGlobeMark(size: 88),
               const SizedBox(height: 24),
               Text(
                 'Quota Dash',

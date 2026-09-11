@@ -122,7 +122,7 @@ class _DataGatewayPainter extends CustomPainter {
     _drawPerspectiveGrid(canvas, size, center, unit);
     _drawOuterGate(canvas, center, unit, phase);
     _drawDataRails(canvas, center, unit, phase);
-    _drawPrism(canvas, center, unit, phase, wave);
+    _drawEnergySphere(canvas, center, unit, phase, wave);
     _drawPackets(canvas, center, unit, phase);
   }
 
@@ -149,25 +149,39 @@ class _DataGatewayPainter extends CustomPainter {
     Offset center,
     double unit,
   ) {
-    final grid = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.7 * unit
-      ..color = primary.withValues(alpha: 0.075);
     for (var i = -4; i <= 4; i++) {
       final offset = i * 26 * unit;
+      final xTop = center.dx + offset * 0.34;
+      final yTop = center.dy - 104 * unit;
+      final xBottom = center.dx + offset;
+      final yBottom = center.dy + 112 * unit;
       canvas.drawLine(
-        Offset(center.dx + offset * 0.34, center.dy - 104 * unit),
-        Offset(center.dx + offset, center.dy + 112 * unit),
-        grid,
+        Offset(xTop, yTop),
+        Offset(xBottom, yBottom),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.7 * unit
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              primary.withValues(alpha: 0.02),
+              primary.withValues(alpha: 0.08),
+            ],
+          ).createShader(Rect.fromLTRB(xTop, yTop, xBottom, yBottom)),
       );
     }
     for (var i = 0; i < 6; i++) {
       final y = center.dy - 82 * unit + i * 35 * unit;
       final spread = 42 * unit + i * 22 * unit;
+      final alpha = 0.025 + i * 0.015;
       canvas.drawLine(
         Offset(center.dx - spread, y),
         Offset(center.dx + spread, y),
-        grid,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.7 * unit
+          ..color = primary.withValues(alpha: alpha),
       );
     }
   }
@@ -208,7 +222,7 @@ class _DataGatewayPainter extends CustomPainter {
     final rail = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.1 * unit
-      ..color = primary.withValues(alpha: 0.24);
+      ..color = primary.withValues(alpha: 0.22);
     for (final direction in [-1.0, 1.0]) {
       for (var lane = -1; lane <= 1; lane++) {
         final path = Path()
@@ -226,101 +240,353 @@ class _DataGatewayPainter extends CustomPainter {
           );
         canvas.drawPath(path, rail);
 
-        final t = (phase * (0.72 + lane.abs() * 0.12) + lane * 0.16) % 1;
+        final rawT = (phase * (0.72 + lane.abs() * 0.12) + lane * 0.16) % 1;
+        final t = Curves.easeInQuad.transform(rawT);
         final metric = path.computeMetrics().first;
         final tangent = metric.getTangentForOffset(metric.length * t);
         if (tangent == null) continue;
+        final glowSize = (5 + t * 4) * unit;
         canvas.drawCircle(
           tangent.position,
-          7 * unit,
+          glowSize,
           Paint()
-            ..color = primary.withValues(alpha: 0.32)
-            ..maskFilter = MaskFilter.blur(BlurStyle.normal, 7 * unit),
+            ..color = primary.withValues(alpha: 0.25 + t * 0.35)
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, glowSize),
         );
         canvas.drawCircle(
           tangent.position,
-          2.1 * unit,
+          (1.8 + t * 0.8) * unit,
           Paint()..color = Colors.white,
         );
       }
     }
   }
 
-  void _drawPrism(
+  void _drawEnergySphere(
     Canvas canvas,
     Offset center,
     double unit,
     double phase,
     double wave,
   ) {
-    final radius = 49 * unit;
-    final bounds = Rect.fromCircle(center: center, radius: radius);
-    final glowPath = _diamond(center, radius * (1.02 + wave * 0.035));
-    canvas.drawPath(
-      glowPath,
-      Paint()
-        ..color = primary.withValues(alpha: 0.3)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 18 * unit),
-    );
-    canvas.drawPath(
-      _diamond(center, radius),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: const [
-            Color(0xFFDEFCFF),
-            Color(0xFF61E5F7),
-            Color(0xFF5B55B9),
-            Color(0xFF10162E),
-          ],
-          stops: const [0, 0.28, 0.7, 1],
-        ).createShader(bounds),
-    );
-    canvas.drawPath(
-      _diamond(center.translate(0, 2 * unit), radius * 0.69),
+    final radius = 50 * unit;
+    final orbitRadius = radius * 1.5;
+    const orbitVerticalScale = 0.32;
+    final orbitRotation = -0.32 + math.sin(phase * math.pi * 2) * 0.05;
+
+    final auraRadius = radius * (1.65 + wave * 0.1);
+    canvas.drawCircle(
+      center,
+      auraRadius,
       Paint()
         ..shader = RadialGradient(
-          center: const Alignment(-0.3, -0.35),
           colors: [
-            Colors.white.withValues(alpha: 0.42),
-            const Color(0xFF132546).withValues(alpha: 0.94),
-            const Color(0xFF070B17),
+            primary.withValues(alpha: 0.35 + wave * 0.08),
+            AppTheme.violet.withValues(alpha: 0.14),
+            Colors.transparent,
           ],
-        ).createShader(bounds),
+          stops: const [0, 0.45, 1],
+        ).createShader(Rect.fromCircle(center: center, radius: auraRadius)),
     );
 
-    final sweepY = center.dy - radius * 0.62 + radius * 1.24 * phase;
-    canvas.save();
-    canvas.clipPath(_diamond(center, radius * 0.69));
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(center.dx, sweepY),
-        width: radius * 1.4,
-        height: 7 * unit,
-      ),
-      Paint()
-        ..shader = LinearGradient(
-          colors: [
-            Colors.transparent,
-            primary.withValues(alpha: 0.9),
-            Colors.white,
-            primary.withValues(alpha: 0.9),
-            Colors.transparent,
-          ],
-        ).createShader(bounds)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 3 * unit),
+    _drawTiltedOrbit(
+      canvas,
+      center: center,
+      radius: orbitRadius,
+      rotation: orbitRotation,
+      verticalScale: orbitVerticalScale,
+      primary: primary,
+      front: false,
     );
+    _drawOrbitFlare(
+      canvas,
+      center: center,
+      radius: orbitRadius,
+      rotation: orbitRotation,
+      verticalScale: orbitVerticalScale,
+      phase: phase,
+      unit: unit,
+      primary: primary,
+      front: false,
+    );
+
+    final dashPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3 * unit
+      ..strokeCap = StrokeCap.round
+      ..color = primary.withValues(alpha: 0.32);
+    for (var index = 0; index < 14; index++) {
+      final start = -phase * math.pi * 2 + index * math.pi * 2 / 14;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius * 1.18),
+        start,
+        math.pi / 28,
+        false,
+        dashPaint,
+      );
+    }
+
+    final globeRect = Rect.fromCircle(center: center, radius: radius);
+    canvas.drawCircle(
+      center,
+      radius * 1.08,
+      Paint()
+        ..color = primary.withValues(alpha: 0.28)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 12 * unit),
+    );
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.35, -0.38),
+          radius: 1.08,
+          colors: [
+            Color.lerp(primary, Colors.white, 0.45)!,
+            primary.withValues(alpha: 0.8),
+            const Color(0xFF142046),
+            const Color(0xFF070B18),
+          ],
+          stops: const [0, 0.3, 0.68, 1],
+        ).createShader(globeRect),
+    );
+
+    canvas.save();
+    canvas.clipPath(Path()..addOval(globeRect));
+    _drawSphereWireframe(
+      canvas,
+      center: center,
+      radius: radius,
+      unit: unit,
+      phase: phase,
+    );
+    _drawSphereScan(
+      canvas,
+      center: center,
+      radius: radius,
+      unit: unit,
+      phase: phase,
+    );
+    _drawSphereGloss(canvas, center: center, radius: radius, unit: unit);
     canvas.restore();
 
-    final facet = Paint()
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8 * unit
+        ..shader = SweepGradient(
+          colors: [primary, AppTheme.violet, AppTheme.magenta, primary],
+        ).createShader(globeRect),
+    );
+
+    _drawTiltedOrbit(
+      canvas,
+      center: center,
+      radius: orbitRadius,
+      rotation: orbitRotation,
+      verticalScale: orbitVerticalScale,
+      primary: primary,
+      front: true,
+    );
+    _drawOrbitFlare(
+      canvas,
+      center: center,
+      radius: orbitRadius,
+      rotation: orbitRotation,
+      verticalScale: orbitVerticalScale,
+      phase: phase,
+      unit: unit,
+      primary: primary,
+      front: true,
+    );
+  }
+
+  void _drawSphereWireframe(
+    Canvas canvas, {
+    required Offset center,
+    required double radius,
+    required double unit,
+    required double phase,
+  }) {
+    final lineWidth = math.max(0.6, 0.85 * unit);
+    final meridianPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.9 * unit
-      ..color = Colors.white.withValues(alpha: 0.25);
-    canvas.drawLine(center.translate(0, -radius), center, facet);
-    canvas.drawLine(center.translate(radius * 0.72, 0), center, facet);
-    canvas.drawLine(center.translate(0, radius), center, facet);
-    canvas.drawLine(center.translate(-radius * 0.72, 0), center, facet);
+      ..strokeWidth = lineWidth
+      ..strokeCap = StrokeCap.round
+      ..color = primary.withValues(alpha: 0.45);
+    final latitudePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = lineWidth
+      ..strokeCap = StrokeCap.round
+      ..color = AppTheme.violet.withValues(alpha: 0.4);
+
+    for (var index = -2; index <= 2; index++) {
+      if (index == 0) continue;
+      final latitude = index * 0.38;
+      final width =
+          radius * 2 * math.sqrt(math.max(0.08, 1 - latitude * latitude));
+      final height = radius * (0.18 + (1 - latitude.abs()) * 0.12);
+      final rect = Rect.fromCenter(
+        center: Offset(center.dx, center.dy + latitude * radius),
+        width: width,
+        height: height,
+      );
+      canvas.drawOval(rect, latitudePaint);
+    }
+
+    for (var index = -2; index <= 2; index++) {
+      final angle = phase * math.pi * 2 + index * math.pi / 3;
+      final width =
+          radius * 2 * math.max(0.06, math.cos(angle).abs()).toDouble();
+      final rect = Rect.fromCenter(
+        center: center,
+        width: width,
+        height: radius * 2.05,
+      );
+      canvas.drawOval(rect, meridianPaint);
+    }
+  }
+
+  void _drawSphereScan(
+    Canvas canvas, {
+    required Offset center,
+    required double radius,
+    required double unit,
+    required double phase,
+  }) {
+    final scanAngle = phase * math.pi * 2.8 - math.pi / 2;
+    final scanPoint =
+        center +
+        Offset(
+          math.cos(scanAngle) * radius * 0.78,
+          math.sin(scanAngle) * radius * 0.78,
+        );
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius * 0.85),
+      scanAngle - 0.5,
+      0.55,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = 2.4 * unit
+        ..color = primary.withValues(alpha: 0.85)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 2.2 * unit),
+    );
+    canvas.drawCircle(
+      scanPoint,
+      3.8 * unit,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.95)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 3.2 * unit),
+    );
+    canvas.drawCircle(scanPoint, 1.5 * unit, Paint()..color = Colors.white);
+  }
+
+  void _drawSphereGloss(
+    Canvas canvas, {
+    required Offset center,
+    required double radius,
+    required double unit,
+  }) {
+    final highlight = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.36),
+          primary.withValues(alpha: 0.08),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center.translate(-radius * 0.28, -radius * 0.28),
+        width: radius * 0.76,
+        height: radius * 0.35,
+      ),
+      highlight,
+    );
+  }
+
+  void _drawTiltedOrbit(
+    Canvas canvas, {
+    required Offset center,
+    required double radius,
+    required double rotation,
+    required double verticalScale,
+    required Color primary,
+    required bool front,
+  }) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+    canvas.scale(1, verticalScale);
+
+    final rect = Rect.fromCircle(center: Offset.zero, radius: radius);
+    final glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = radius * 0.085
+      ..shader = SweepGradient(
+        colors: [primary, AppTheme.violet, AppTheme.magenta, primary],
+      ).createShader(rect)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 0.1);
+    final crispPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = radius * 0.038
+      ..shader = SweepGradient(
+        colors: [primary, AppTheme.violet, AppTheme.magenta, primary],
+      ).createShader(rect);
+
+    if (front) {
+      canvas.drawArc(rect, 0, math.pi, false, glowPaint);
+      canvas.drawArc(rect, 0, math.pi, false, crispPaint);
+    } else {
+      canvas.drawArc(rect, math.pi, math.pi, false, glowPaint);
+      canvas.drawArc(rect, math.pi, math.pi, false, crispPaint);
+    }
+    canvas.restore();
+  }
+
+  void _drawOrbitFlare(
+    Canvas canvas, {
+    required Offset center,
+    required double radius,
+    required double rotation,
+    required double verticalScale,
+    required double phase,
+    required double unit,
+    required Color primary,
+    required bool front,
+  }) {
+    for (var i = 0; i < 2; i++) {
+      final flareAngle = (phase * math.pi * 2 + i * math.pi) % (math.pi * 2);
+      final isFront = math.sin(flareAngle) >= 0;
+      if (isFront != front) continue;
+
+      final dx0 = math.cos(flareAngle) * radius;
+      final dy0 = math.sin(flareAngle) * radius * verticalScale;
+      final flarePoint =
+          center +
+          Offset(
+            dx0 * math.cos(rotation) - dy0 * math.sin(rotation),
+            dx0 * math.sin(rotation) + dy0 * math.cos(rotation),
+          );
+
+      final color = i == 0 ? primary : AppTheme.violet;
+      canvas.drawCircle(
+        flarePoint,
+        5.2 * unit,
+        Paint()
+          ..color = color.withValues(alpha: 0.85)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4.5 * unit),
+      );
+      canvas.drawCircle(flarePoint, 1.8 * unit, Paint()..color = Colors.white);
+    }
   }
 
   void _drawPackets(Canvas canvas, Offset center, double unit, double phase) {
@@ -357,13 +623,6 @@ class _DataGatewayPainter extends CustomPainter {
     ..lineTo(center.dx - width * 0.45, center.dy + height)
     ..lineTo(center.dx - width, center.dy + height * 0.22)
     ..lineTo(center.dx - width * 0.78, center.dy - height * 0.5)
-    ..close();
-
-  Path _diamond(Offset center, double radius) => Path()
-    ..moveTo(center.dx, center.dy - radius)
-    ..lineTo(center.dx + radius * 0.72, center.dy)
-    ..lineTo(center.dx, center.dy + radius)
-    ..lineTo(center.dx - radius * 0.72, center.dy)
     ..close();
 
   @override
