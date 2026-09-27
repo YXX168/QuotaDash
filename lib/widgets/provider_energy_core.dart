@@ -75,7 +75,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
     if (remaining == null) return widget.accentColor;
     if (remaining <= 15) return AppTheme.danger;
     if (remaining <= 35) return AppTheme.warning;
-    if (remaining <= 65) return AppTheme.violet;
+    if (remaining <= 65) return AppTheme.success;
     return widget.accentColor;
   }
 
@@ -572,7 +572,7 @@ class _WindowLine extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: color == AppTheme.cyan
-                                ? const [AppTheme.cyan, AppTheme.violet]
+                                ? const [AppTheme.cyan, AppTheme.success]
                                 : [color.withValues(alpha: 0.82), color],
                           ),
                         ),

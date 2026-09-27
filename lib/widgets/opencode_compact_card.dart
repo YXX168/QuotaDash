@@ -48,7 +48,7 @@ class OpenCodeCompactCard extends StatelessWidget {
                       colors: [
                         Colors.transparent,
                         AppTheme.cyan.withValues(alpha: 0.66),
-                        AppTheme.violet.withValues(alpha: 0.56),
+                        AppTheme.success.withValues(alpha: 0.56),
                         Colors.transparent,
                       ],
                     ),
@@ -183,7 +183,7 @@ class _QuotaValue extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: color == AppTheme.cyan
-                                ? const [AppTheme.cyan, AppTheme.violet]
+                                ? const [AppTheme.cyan, AppTheme.success]
                                 : [color, color.withValues(alpha: 0.82)],
                           ),
                         ),

@@ -215,7 +215,7 @@ class _WindowRow extends StatelessWidget {
   Color get _tailColor {
     final r = entry.remainingPercent;
     if (r == null || r <= 35) return _color;
-    return AppTheme.violet;
+    return AppTheme.success;
   }
 
   @override

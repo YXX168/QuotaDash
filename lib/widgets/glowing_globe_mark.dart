@@ -97,7 +97,7 @@ class _GlowingGlobePainter extends CustomPainter {
         ..shader = RadialGradient(
           colors: [
             AppTheme.cyan.withValues(alpha: 0.14),
-            AppTheme.violet.withValues(alpha: 0.08),
+            AppTheme.success.withValues(alpha: 0.08),
             Colors.transparent,
           ],
           stops: const [0, 0.48, 1],
@@ -175,8 +175,8 @@ class _GlowingGlobePainter extends CustomPainter {
         ..shader = const SweepGradient(
           colors: [
             AppTheme.cyan,
-            AppTheme.violet,
-            AppTheme.magenta,
+            AppTheme.success,
+            AppTheme.cyan,
             AppTheme.cyan,
           ],
         ).createShader(globeRect),
@@ -208,7 +208,7 @@ class _GlowingGlobePainter extends CustomPainter {
       flarePoint,
       side * 0.055,
       Paint()
-        ..color = AppTheme.violet.withValues(alpha: 0.8)
+        ..color = AppTheme.cyan.withValues(alpha: 0.85)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, side * 0.065),
     );
     canvas.drawCircle(flarePoint, side * 0.018, Paint()..color = Colors.white);
@@ -230,7 +230,7 @@ class _GlowingGlobePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = lineWidth
       ..strokeCap = StrokeCap.round
-      ..color = AppTheme.violet.withValues(alpha: 0.5);
+      ..color = AppTheme.success.withValues(alpha: 0.45);
 
     for (var index = -2; index <= 2; index++) {
       final latitude = index * 0.34;
@@ -296,12 +296,7 @@ class _GlowingGlobePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = radius * 0.095
       ..shader = const SweepGradient(
-        colors: [
-          AppTheme.cyan,
-          AppTheme.violet,
-          AppTheme.magenta,
-          AppTheme.cyan,
-        ],
+        colors: [AppTheme.cyan, AppTheme.success, AppTheme.cyan, AppTheme.cyan],
       ).createShader(rect)
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 0.12);
     final crispPaint = Paint()
@@ -309,12 +304,7 @@ class _GlowingGlobePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = radius * 0.045
       ..shader = const SweepGradient(
-        colors: [
-          AppTheme.cyan,
-          AppTheme.violet,
-          AppTheme.magenta,
-          AppTheme.cyan,
-        ],
+        colors: [AppTheme.cyan, AppTheme.success, AppTheme.cyan, AppTheme.cyan],
       ).createShader(rect);
 
     if (front) {
