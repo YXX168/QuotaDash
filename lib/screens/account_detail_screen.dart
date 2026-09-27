@@ -78,7 +78,7 @@ class AccountDetailScreen extends StatelessWidget {
                               ),
                               StatusPill(
                                 label: account.plan.toUpperCase(),
-                                color: AppTheme.violet,
+                                color: AppTheme.cyan,
                                 icon: Icons.workspace_premium_rounded,
                               ),
                             ],
@@ -179,7 +179,7 @@ class _ResetTimeline extends StatelessWidget {
         _ResetEvent(
           label: account.secondaryLabel,
           time: account.secondary?.resetAt,
-          color: AppTheme.violet,
+          color: AppTheme.success,
           icon: Icons.calendar_month_rounded,
         ),
       );
@@ -391,7 +391,7 @@ class _ActivityCard extends StatelessWidget {
                 label: '近期失败',
                 value: '${account.recentFailed}',
                 color: account.recentFailed == 0
-                    ? AppTheme.violet
+                    ? AppTheme.success
                     : AppTheme.danger,
               ),
             ],
@@ -466,7 +466,7 @@ class _MetricsCard extends StatelessWidget {
         label: '主动重置',
         value: account.resetCredits?.toString() ?? '--',
         icon: Icons.bolt_rounded,
-        color: AppTheme.violet,
+        color: AppTheme.success,
       ),
     ];
     return GlassCard(

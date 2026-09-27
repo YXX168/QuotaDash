@@ -258,7 +258,7 @@ class _AntigravityResetTimeline extends StatelessWidget {
                 time: w.resetAt!,
                 color: w.label.contains('Gemini')
                     ? AppTheme.cyan
-                    : AppTheme.violet,
+                    : AppTheme.success,
                 icon: w.label.contains('5H')
                     ? Icons.bolt_rounded
                     : Icons.calendar_month_rounded,

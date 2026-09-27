@@ -361,7 +361,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
     if (remaining == null) return AppTheme.cyan;
     if (remaining <= 15) return AppTheme.danger;
     if (remaining <= 35) return AppTheme.warning;
-    if (remaining <= 65) return AppTheme.violet;
+    if (remaining <= 65) return AppTheme.success;
     return AppTheme.cyan;
   }
 }
@@ -450,7 +450,7 @@ class _QuotaReading extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: valueColor == AppTheme.cyan
-                                ? const [AppTheme.cyan, AppTheme.violet]
+                                ? const [AppTheme.cyan, AppTheme.success]
                                 : [
                                     valueColor.withValues(alpha: 0.82),
                                     valueColor,

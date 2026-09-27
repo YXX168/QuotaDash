@@ -53,7 +53,7 @@ class _SyncFlowLoaderState extends State<SyncFlowLoader>
   @override
   Widget build(BuildContext context) {
     final energyMode = widget.visualMode == VisualMode.energy;
-    final primary = energyMode ? AppTheme.violet : AppTheme.cyan;
+    final primary = energyMode ? AppTheme.success : AppTheme.cyan;
 
     return Semantics(
       liveRegion: true,
@@ -135,7 +135,7 @@ class _DataGatewayPainter extends CustomPainter {
         ..shader = RadialGradient(
           colors: [
             primary.withValues(alpha: 0.12 + wave * 0.025),
-            AppTheme.violet.withValues(alpha: 0.045),
+            AppTheme.success.withValues(alpha: 0.045),
             Colors.transparent,
           ],
           stops: const [0, 0.46, 1],
@@ -282,7 +282,7 @@ class _DataGatewayPainter extends CustomPainter {
         ..shader = RadialGradient(
           colors: [
             primary.withValues(alpha: 0.35 + wave * 0.08),
-            AppTheme.violet.withValues(alpha: 0.14),
+            AppTheme.success.withValues(alpha: 0.14),
             Colors.transparent,
           ],
           stops: const [0, 0.45, 1],
@@ -377,7 +377,7 @@ class _DataGatewayPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.8 * unit
         ..shader = SweepGradient(
-          colors: [primary, AppTheme.violet, AppTheme.magenta, primary],
+          colors: [primary, AppTheme.cyan, AppTheme.success, primary],
         ).createShader(globeRect),
     );
 
@@ -420,7 +420,7 @@ class _DataGatewayPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = lineWidth
       ..strokeCap = StrokeCap.round
-      ..color = AppTheme.violet.withValues(alpha: 0.4);
+      ..color = AppTheme.success.withValues(alpha: 0.4);
 
     for (var index = -2; index <= 2; index++) {
       if (index == 0) continue;
@@ -531,7 +531,7 @@ class _DataGatewayPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = radius * 0.085
       ..shader = SweepGradient(
-        colors: [primary, AppTheme.violet, AppTheme.magenta, primary],
+        colors: [primary, AppTheme.cyan, AppTheme.success, primary],
       ).createShader(rect)
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 0.1);
     final crispPaint = Paint()
@@ -539,7 +539,7 @@ class _DataGatewayPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = radius * 0.038
       ..shader = SweepGradient(
-        colors: [primary, AppTheme.violet, AppTheme.magenta, primary],
+        colors: [primary, AppTheme.cyan, AppTheme.success, primary],
       ).createShader(rect);
 
     if (front) {
@@ -577,7 +577,7 @@ class _DataGatewayPainter extends CustomPainter {
             dx0 * math.sin(rotation) + dy0 * math.cos(rotation),
           );
 
-      final color = i == 0 ? primary : AppTheme.violet;
+      final color = i == 0 ? primary : AppTheme.cyan;
       canvas.drawCircle(
         flarePoint,
         5.2 * unit,
