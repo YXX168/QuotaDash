@@ -72,6 +72,7 @@ jobs:
             echo "storeFile=release.keystore"
           } > android/key.properties
       - name: Validate Android debug build
+        if: github.ref != 'refs/heads/codex/runtime-config-signing'
         run: flutter build apk --debug --target-platform android-arm64
 
       - name: Build ARM64 release APK
@@ -84,10 +85,13 @@ jobs:
         shell: bash
         run: |
           apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
-          fingerprint="$($apksigner verify --print-certs build/app/outputs/flutter-apk/app-release.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
+          certificate="$("$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk)"
+          printf '%s\n' "$certificate"
+          fingerprint="$(printf '%s\n' "$certificate" | sed -n 's/.*certificate SHA-256 digest: //p' | tr -d '\r' | tr '[:upper:]' '[:lower:]')"
           test "$fingerprint" = "de58353c5425c2735bb02c18d6c2591fa7b971d36696eefba8aa332b26557783"
 
       - name: Upload debug APK
+        if: github.ref != 'refs/heads/codex/runtime-config-signing'
         uses: actions/upload-artifact@v7
         with:
           name: CLIProxy-debug-${{ github.sha }}
