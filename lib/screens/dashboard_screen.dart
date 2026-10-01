@@ -70,6 +70,11 @@ class _DashboardScreenState extends State<DashboardScreen>
       (_snapshot!.accounts.isNotEmpty ||
           _snapshot!.antigravityAccounts.isEmpty);
 
+  bool get _showRequestSection =>
+      _snapshot != null &&
+      (_snapshot!.accounts.isNotEmpty ||
+          _snapshot!.antigravityAccounts.isNotEmpty);
+
   @override
   void initState() {
     super.initState();
@@ -402,7 +407,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         onRetry: _refresh,
                                       ),
                                     ],
-                                    if (_showCodexSection) ...[
+                                    if (_showRequestSection) ...[
                                       const SizedBox(height: 10),
                                       _TrafficPulsePanel(snapshot: _snapshot!),
                                     ],
@@ -1140,9 +1145,11 @@ class _TrafficPulsePanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'REQUEST PULSE',
+                  snapshot.antigravityAccounts.isEmpty
+                      ? 'REQUEST PULSE'
+                      : 'REQUEST PULSE · CODEX + ANTIGRAVITY',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -1167,11 +1174,23 @@ class _TrafficPulsePanel extends StatelessWidget {
           Text(
             snapshot.recentRequestBuckets.isEmpty
                 ? '等待 CLIProxyAPI 返回近期请求时间桶'
-                : '青色曲线表示请求流量，红点表示该时段存在失败请求',
+                : snapshot.antigravityAccounts.isEmpty
+                ? '青色曲线表示请求流量，红点表示该时段存在失败请求'
+                : '合并 Codex 与 Antigravity 请求流量，红点表示该时段存在失败请求',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(fontSize: 10),
           ),
+          if (snapshot.antigravityAccounts.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Codex ${snapshot.codexRecentRequests} · Antigravity ${snapshot.antigravityRecentRequests}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 10,
+                color: const Color(0xFF9BA8BD),
+              ),
+            ),
+          ],
         ],
       ),
     );

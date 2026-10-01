@@ -72,6 +72,13 @@ jobs:
       - name: Build ARM64 release APK
         run: flutter build apk --release --target-platform android-arm64
 
+      - name: Verify release certificate
+        shell: bash
+        run: |
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          fingerprint="$($apksigner verify --print-certs build/app/outputs/flutter-apk/app-release.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
+          test "$fingerprint" = "de58353c5425c2735bb02c18d6c2591fa7b971d36696eefba8aa332b26557783"
+
       - name: Package release files
         shell: bash
         run: |

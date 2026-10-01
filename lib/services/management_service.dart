@@ -10,6 +10,10 @@ import '../models/quota_window.dart';
 import 'quota_repository.dart';
 import 'antigravity_quota.dart';
 
+/// Management API service for CLIProxyAPI.
+///
+/// New connections use the v8 route names. Explicit v0 URLs remain supported
+/// so the app can be upgraded before the proxy server is upgraded.
 class ManagementService implements QuotaRepository {
   ManagementService({
     required this.baseUri,
@@ -34,9 +38,13 @@ class ManagementService implements QuotaRepository {
   final String managementKey;
   final http.Client _client;
 
+  bool get usesV8 => baseUri.path.contains('/v8/management');
+
   @override
   Future<DashboardSnapshot> fetchDashboard() async {
-    final response = await _getJson(_endpoint('auth-files'));
+    final response = await _getJson(
+      _endpoint(usesV8 ? 'credentials' : 'auth-files'),
+    );
     final files = response['files'];
     if (files is! List) {
       throw const ManagementException('管理接口返回缺少 files 列表');
@@ -88,7 +96,7 @@ class ManagementService implements QuotaRepository {
         if (name.isNotEmpty) {
           final metadata = await _getJson(
             _endpoint(
-              'auth-files/download',
+              usesV8 ? 'credentials/download' : 'auth-files/download',
             ).replace(queryParameters: {'name': name}),
           );
           project = _projectId(metadata);
@@ -248,13 +256,14 @@ class ManagementService implements QuotaRepository {
         'Originator': 'Codex Desktop',
       });
     }
-    final response = await _postJson(_endpoint('api-call'), {
-      'authIndex': authIndex,
-      'method': data == null ? 'GET' : 'POST',
-      'url': url,
-      'header': header,
-      if (data != null) 'data': jsonEncode(data),
-    });
+    final response =
+        await _postJson(_endpoint(usesV8 ? 'requests/api-call' : 'api-call'), {
+          'authIndex': authIndex,
+          'method': data == null ? 'GET' : 'POST',
+          'url': url,
+          'header': header,
+          if (data != null) 'data': jsonEncode(data),
+        });
     final status = _asInt(response['status_code']) ?? 0;
     if (status < 200 || status >= 300) {
       throw ManagementException('上游接口返回 HTTP $status', statusCode: status);

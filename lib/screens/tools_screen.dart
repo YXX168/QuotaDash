@@ -10,6 +10,7 @@ import '../widgets/glass_widgets.dart';
 import '../widgets/quantum_emblem.dart';
 import 'api_keys_screen.dart';
 import 'models_screen.dart';
+import 'runtime_settings_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({required this.config, super.key});
@@ -158,6 +159,18 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         onTap: () =>
                             _navigate(ApiKeysScreen(service: _service!)),
                       ),
+                      if (_service!.usesV8) ...[
+                        const SizedBox(height: 10),
+                        _ToolCard(
+                          icon: Icons.toggle_on_rounded,
+                          iconColor: AppTheme.violet,
+                          title: '运行开关',
+                          subtitle: '热更新 CLIProxyAPI v8 开关与配置文件',
+                          onTap: () => _navigate(
+                            RuntimeSettingsScreen(service: _service),
+                          ),
+                        ),
+                      ],
                     ] else ...[
                       const SectionTitle(
                         title: 'CLIProxyAPI',

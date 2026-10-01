@@ -2,7 +2,7 @@ name: Validate Android
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/runtime-config-signing]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -49,7 +49,6 @@ jobs:
           path: build/visual-review/*.png
           if-no-files-found: error
           retention-days: 30
-      # Pull requests build with the existing debug-signing fallback; never expose release secrets.
       - name: Prepare stable signing key
         if: github.event_name != 'pull_request'
         shell: bash
@@ -76,7 +75,17 @@ jobs:
         run: flutter build apk --debug --target-platform android-arm64
 
       - name: Build ARM64 release APK
+        env:
+          ORG_GRADLE_PROJECT_allowDebugReleaseSigning: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
         run: flutter build apk --release --target-platform android-arm64
+
+      - name: Verify stable release certificate
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          fingerprint="$($apksigner verify --print-certs build/app/outputs/flutter-apk/app-release.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
+          test "$fingerprint" = "de58353c5425c2735bb02c18d6c2591fa7b971d36696eefba8aa332b26557783"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
