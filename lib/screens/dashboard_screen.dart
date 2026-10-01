@@ -1145,11 +1145,9 @@ class _TrafficPulsePanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
+              const Expanded(
                 child: Text(
-                  snapshot.antigravityAccounts.isEmpty
-                      ? 'REQUEST PULSE'
-                      : 'REQUEST PULSE · CODEX + ANTIGRAVITY',
+                  '请求趋势',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -1170,27 +1168,6 @@ class _TrafficPulsePanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           RequestSparkline(buckets: snapshot.recentRequestBuckets, height: 62),
-          const SizedBox(height: 6),
-          Text(
-            snapshot.recentRequestBuckets.isEmpty
-                ? '等待 CLIProxyAPI 返回近期请求时间桶'
-                : snapshot.antigravityAccounts.isEmpty
-                ? '青色曲线表示请求流量，红点表示该时段存在失败请求'
-                : '合并 Codex 与 Antigravity 请求流量，红点表示该时段存在失败请求',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontSize: 10),
-          ),
-          if (snapshot.antigravityAccounts.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Codex ${snapshot.codexRecentRequests} · Antigravity ${snapshot.antigravityRecentRequests}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 10,
-                color: const Color(0xFF9BA8BD),
-              ),
-            ),
-          ],
         ],
       ),
     );
