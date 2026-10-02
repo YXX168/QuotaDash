@@ -6,8 +6,9 @@ import '../models/model_info.dart';
 
 /// Extended management API service for CLIProxyAPI.
 ///
-/// Provides access to model lists, API key management and version checking
-/// through the `/v0/management` endpoints.
+/// Provides access to model lists, API key management, runtime configuration
+/// and version checking. v8 URLs use the new management API tree while an
+/// explicitly configured v0 URL keeps the legacy contract.
 class ProxyApiService {
   ProxyApiService({
     required this.baseUri,
@@ -19,6 +20,8 @@ class ProxyApiService {
   final String managementKey;
   final http.Client _client;
 
+  bool get usesV8 => baseUri.path.contains('/v8/management');
+
   /// Releases the HTTP client resources.
   void dispose() => _client.close();
 
@@ -27,7 +30,8 @@ class ProxyApiService {
     final config = await _getJson(_endpoint('config'));
     final groups = <String, _ProviderAccumulator>{};
 
-    // Map provider config keys to display names.
+    // Map legacy provider config keys to display names. v8 additionally
+    // exposes upstream groups under api-keys/<provider>.
     const providerMap = {
       'gemini-api-key': 'Gemini',
       'interactions-api-key': 'Google Interactions',
@@ -39,7 +43,7 @@ class ProxyApiService {
     };
 
     for (final entry in providerMap.entries) {
-      final rawList = config[entry.key];
+      final rawList = _configList(config, entry.key);
       if (rawList is! List) continue;
 
       if (entry.key == 'openai-compatibility') {
@@ -64,7 +68,13 @@ class ProxyApiService {
       }
     }
 
-    _mergeOAuthExclusions(groups, config['oauth-excluded-models']);
+    _mergeOAuthExclusions(
+      groups,
+      usesV8
+          ? _nestedValue(config, ['oauth', 'excluded-models']) ??
+                config['oauth-excluded-models']
+          : config['oauth-excluded-models'],
+    );
     await _mergeOAuthModels(groups);
 
     final providers =
@@ -121,7 +131,9 @@ class ProxyApiService {
   ) async {
     Map<String, dynamic> authResponse;
     try {
-      authResponse = await _getJson(_endpoint('auth-files'));
+      authResponse = await _getJson(
+        _endpoint(usesV8 ? 'credentials' : 'auth-files'),
+      );
     } on Exception {
       // Older servers may not expose runtime model discovery. Configured
       // models remain useful, so keep them available in that case.
@@ -157,7 +169,7 @@ class ProxyApiService {
   ) async {
     try {
       final uri = _endpoint(
-        'auth-files/models',
+        usesV8 ? 'credentials/models' : 'auth-files/models',
       ).replace(queryParameters: {'name': lookup});
       final response = await _getJson(uri);
       final models = response['models'];
@@ -179,15 +191,23 @@ class ProxyApiService {
 
   /// Fetches the list of client API keys.
   Future<List<String>> fetchApiKeys() async {
-    final response = await _getJson(_endpoint('api-keys'));
-    final keys = response['api-keys'];
-    if (keys is! List) return const [];
+    final decoded = await _getValue(
+      _endpoint(usesV8 ? 'config/access/api-keys' : 'api-keys'),
+    );
+    final keys = decoded is List
+        ? decoded
+        : decoded is Map
+        ? (decoded['api-keys'] ?? decoded['api_keys'])
+        : null;
+    if (keys is! List) {
+      throw const ProxyApiException('管理接口返回了无法识别的 API Key 列表');
+    }
     return keys.map((e) => e.toString()).toList();
   }
 
   /// Replaces the full list of client API keys (PUT /api-keys).
   Future<void> replaceApiKeys(List<String> keys) async {
-    final uri = _endpoint('api-keys');
+    final uri = _endpoint(usesV8 ? 'config/access/api-keys' : 'api-keys');
     final response = await _client
         .put(uri, headers: _headers, body: jsonEncode(keys))
         .timeout(const Duration(seconds: 25));
@@ -195,8 +215,14 @@ class ProxyApiService {
   }
 
   /// Adds a client API key without replacing the complete server-side list.
-  Future<void> addApiKey(String value) {
-    return updateApiKey(oldValue: value, newValue: value);
+  Future<void> addApiKey(String value) async {
+    if (usesV8) {
+      final keys = await fetchApiKeys();
+      keys.add(value);
+      await replaceApiKeys(keys);
+      return;
+    }
+    await updateApiKey(oldValue: value, newValue: value);
   }
 
   /// Adds or replaces a single client API key (PATCH /api-keys).
@@ -220,6 +246,21 @@ class ProxyApiService {
     if (byIndex && (index == null || value == null)) {
       throw ArgumentError('index and value must be provided together');
     }
+    if (usesV8) {
+      final keys = await fetchApiKeys();
+      if (byOldNew) {
+        final position = keys.indexOf(oldValue!);
+        if (position < 0) throw const ProxyApiException('找不到要修改的 API Key');
+        keys[position] = newValue!;
+      } else {
+        if (index! < 0 || index >= keys.length) {
+          throw const ProxyApiException('API Key 下标超出范围');
+        }
+        keys[index] = value!;
+      }
+      await replaceApiKeys(keys);
+      return;
+    }
     final Map<String, Object?> body = byOldNew
         ? {'old': oldValue, 'new': newValue}
         : {'index': index, 'value': value};
@@ -235,6 +276,16 @@ class ProxyApiService {
     if ((value == null) == (index == null)) {
       throw ArgumentError('provide exactly one of value or index');
     }
+    if (usesV8) {
+      final keys = await fetchApiKeys();
+      final position = value != null ? keys.indexOf(value) : index!;
+      if (position < 0 || position >= keys.length) {
+        throw const ProxyApiException('找不到要删除的 API Key');
+      }
+      keys.removeAt(position);
+      await replaceApiKeys(keys);
+      return;
+    }
     final query = value != null ? {'value': value} : {'index': '$index'};
     final uri = _endpoint('api-keys').replace(queryParameters: query);
     final response = await _client
@@ -246,12 +297,73 @@ class ProxyApiService {
   /// Fetches the latest version from GitHub releases.
   Future<String?> fetchLatestVersion() async {
     try {
-      final response = await _getJson(_endpoint('latest-version'));
+      final response = await _getJson(
+        _endpoint(usesV8 ? 'server/latest-version' : 'latest-version'),
+      );
       return response['latest-version']?.toString() ??
           response['latestVersion']?.toString();
     } catch (_) {
       return null;
     }
+  }
+
+  /// Reads a v8 configuration node as its native JSON value.
+  Future<Map<String, dynamic>> fetchRuntimeConfig() async {
+    if (!usesV8) throw const ProxyApiException('运行开关需要 CLIProxyAPI v8');
+    final decoded = await _getValue(_endpoint('config'));
+    if (decoded is! Map) {
+      throw const ProxyApiException('CLIProxyAPI 返回的配置不是对象');
+    }
+    return Map<String, dynamic>.from(decoded);
+  }
+
+  /// Reads a v8 configuration node as its native JSON value.
+  Future<Object?> readConfigPath(String path) async {
+    if (!usesV8) throw const ProxyApiException('运行开关需要 CLIProxyAPI v8');
+    final normalized = path.trim().replaceAll(RegExp(r'^/+|/+$'), '');
+    if (normalized.isEmpty) throw const ProxyApiException('配置路径不能为空');
+    return _getValue(_endpoint('config/$normalized'));
+  }
+
+  /// Replaces a v8 configuration node. Writes are hot-reloaded by the proxy.
+  Future<void> writeConfigPath(String path, Object? value) async {
+    if (!usesV8) throw const ProxyApiException('运行开关需要 CLIProxyAPI v8');
+    final normalized = path.trim().replaceAll(RegExp(r'^/+|/+$'), '');
+    if (normalized.isEmpty) throw const ProxyApiException('配置路径不能为空');
+    final response = await _client
+        .put(
+          _endpoint('config/$normalized'),
+          headers: _headers,
+          body: jsonEncode(value),
+        )
+        .timeout(const Duration(seconds: 25));
+    _checkResponse(response);
+  }
+
+  /// Downloads the persisted v8 YAML configuration file.
+  Future<String> fetchConfigYaml() async {
+    if (!usesV8) throw const ProxyApiException('配置文件需要 CLIProxyAPI v8');
+    final response = await _client
+        .get(
+          _endpoint('config.yaml'),
+          headers: {..._headers, 'Accept': 'application/yaml'},
+        )
+        .timeout(const Duration(seconds: 25));
+    _checkResponse(response);
+    return utf8.decode(response.bodyBytes);
+  }
+
+  /// Replaces the persisted v8 YAML configuration file.
+  Future<void> replaceConfigYaml(String yaml) async {
+    if (!usesV8) throw const ProxyApiException('配置文件需要 CLIProxyAPI v8');
+    final response = await _client
+        .put(
+          _endpoint('config.yaml'),
+          headers: {..._headers, 'Content-Type': 'application/yaml'},
+          body: yaml,
+        )
+        .timeout(const Duration(seconds: 25));
+    _checkResponse(response);
   }
 
   // ── Internal helpers ──────────────────────────────────────────
@@ -269,20 +381,63 @@ class ProxyApiService {
   }
 
   Future<Map<String, dynamic>> _getJson(Uri uri) async {
+    final decoded = await _getValue(uri);
+    if (decoded is! Map) {
+      throw const ProxyApiException('管理接口返回了无法识别的数据');
+    }
+    return Map<String, dynamic>.from(decoded);
+  }
+
+  Future<Object?> _getValue(Uri uri) async {
     final response = await _client
         .get(uri, headers: _headers)
         .timeout(const Duration(seconds: 25));
     _checkResponse(response);
-    if (response.body.trim().isEmpty) return const {};
+    if (response.body.trim().isEmpty) return null;
     try {
-      final decoded = jsonDecode(response.body);
-      if (decoded is! Map) {
-        throw const ProxyApiException('管理接口返回了无法识别的数据');
-      }
-      return Map<String, dynamic>.from(decoded);
+      return jsonDecode(utf8.decode(response.bodyBytes));
     } on FormatException {
       throw const ProxyApiException('管理接口返回了无效 JSON');
     }
+  }
+
+  List<Object?>? _configList(Map<String, dynamic> config, String key) {
+    final legacy = config[key];
+    if (legacy is List) return legacy;
+    if (!usesV8) return null;
+    final provider = _v8ProviderKey(key);
+    final nested = _nestedValue(config, ['api-keys', provider]);
+    return nested is List ? nested : null;
+  }
+
+  static String _v8ProviderKey(String key) {
+    switch (key) {
+      case 'gemini-api-key':
+        return 'gemini';
+      case 'interactions-api-key':
+        return 'interactions';
+      case 'codex-api-key':
+        return 'codex';
+      case 'claude-api-key':
+        return 'claude';
+      case 'xai-api-key':
+        return 'xai';
+      case 'vertex-api-key':
+        return 'vertex';
+      case 'openai-compatibility':
+        return 'openai-compatibility';
+      default:
+        return key;
+    }
+  }
+
+  static Object? _nestedValue(Map<String, dynamic> map, List<String> path) {
+    Object? current = map;
+    for (final segment in path) {
+      if (current is! Map) return null;
+      current = current[segment];
+    }
+    return current;
   }
 
   void _checkResponse(http.Response response) {

@@ -10,6 +10,7 @@ import '../widgets/glass_widgets.dart';
 import '../widgets/quantum_emblem.dart';
 import 'api_keys_screen.dart';
 import 'models_screen.dart';
+import 'runtime_settings_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({required this.config, super.key});
@@ -117,12 +118,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
                                     ?.copyWith(letterSpacing: -0.25),
                               ),
                               const Text(
-                                'PROXY MANAGEMENT TOOLS',
+                                '服务维护与调试',
                                 style: TextStyle(
                                   color: Color(0xFF748198),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.05,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -158,6 +158,18 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         onTap: () =>
                             _navigate(ApiKeysScreen(service: _service!)),
                       ),
+                      if (_service!.usesV8) ...[
+                        const SizedBox(height: 10),
+                        _ToolCard(
+                          icon: Icons.toggle_on_rounded,
+                          iconColor: AppTheme.violet,
+                          title: '运行开关',
+                          subtitle: '热更新 CLIProxyAPI v8 开关与配置文件',
+                          onTap: () => _navigate(
+                            RuntimeSettingsScreen(service: _service),
+                          ),
+                        ),
+                      ],
                     ] else ...[
                       const SectionTitle(
                         title: 'CLIProxyAPI',
@@ -169,8 +181,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     const SizedBox(height: 20),
                     if (_cliProxyConfigured) ...[
                       const SectionTitle(
-                        title: '版本信息',
-                        subtitle: '检查 CLIProxyAPI 最新版本',
+                        title: '版本检查',
+                        subtitle: '与 GitHub 最新发布版本比对',
                       ),
                       const SizedBox(height: 14),
                       GlassCard(
@@ -207,7 +219,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    '最新版本',
+                                    'CLIProxyAPI 服务版本',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                     ),

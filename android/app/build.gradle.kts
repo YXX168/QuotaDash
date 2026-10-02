@@ -12,6 +12,20 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use(keystoreProperties::load)
 }
+// Only validation builds may explicitly opt into a debug-signed release.
+val allowDebugReleaseSigning = providers.gradleProperty("allowDebugReleaseSigning")
+    .map { it.toBoolean() }.getOrElse(false)
+
+gradle.taskGraph.whenReady {
+    if (allTasks.any { it.name.contains("Release") } &&
+        !keystorePropertiesFile.exists() && !allowDebugReleaseSigning) {
+        throw GradleException(
+            "Release signing is required. Configure android/key.properties with the " +
+                "existing QuotaDash release key, or use the trusted GitHub Actions build. " +
+                "Debug signing is only allowed with -PallowDebugReleaseSigning=true for validation."
+        )
+    }
+}
 
 android {
     namespace = "cn.imyxx.cliproxy_dash"
@@ -50,8 +64,10 @@ android {
         release {
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
-            } else {
+            } else if (allowDebugReleaseSigning) {
                 signingConfigs.getByName("debug")
+            } else {
+                signingConfigs.getByName("release")
             }
         }
     }

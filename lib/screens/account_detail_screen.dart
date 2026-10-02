@@ -206,16 +206,6 @@ class _ResetTimeline extends StatelessWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontSize: 15),
             ),
-            const Spacer(),
-            const Text(
-              'NEXT WINDOWS',
-              style: TextStyle(
-                color: Color(0xFF6F7E96),
-                fontSize: 8,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.9,
-              ),
-            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -354,7 +344,7 @@ class _ActivityCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionTitle(
-            title: '请求脉冲',
+            title: '请求趋势',
             subtitle: account.recentRequests.isEmpty
                 ? '当前服务端没有返回近期时间桶'
                 : '最近 ${account.recentRequests.length} 个统计窗口',

@@ -85,7 +85,15 @@ class _ConfigScreenState extends State<ConfigScreen>
     final values = {...?widget.initialConfig?.values};
     for (final entry in _fieldControllers.entries) {
       var value = entry.value.text.trim();
-      if (entry.key == 'baseUrl') value = _managementUrl(value);
+      if (entry.key == 'baseUrl' && value.isNotEmpty) {
+        final previousUrl = widget.initialConfig?.value('baseUrl') ?? '';
+        value = _managementUrl(
+          value,
+          defaultSuffix: _managementApiSuffix(
+            Uri.tryParse(previousUrl)?.path ?? '',
+          ),
+        );
+      }
       if (value.isEmpty) {
         values.remove(entry.key);
       } else {
@@ -287,9 +295,12 @@ String _normalizeUrl(String value) {
   return value.trim().replaceFirst(RegExp(r'/+$'), '');
 }
 
-String _managementUrl(String value) {
+String _managementUrl(String value, {String? defaultSuffix}) {
   final uri = Uri.parse(_normalizeUrl(value));
-  const suffix = '/v0/management';
+  // New CLIProxyAPI installations use the v8 management API. Keep an
+  // explicitly entered v0/v8 path intact so existing deployments continue to
+  // work and only append v8 for an origin-only address.
+  final suffix = _managementApiSuffix(uri.path, defaultSuffix: defaultSuffix);
   final path = uri.path.endsWith(suffix)
       ? uri.path
       : '${uri.path.replaceFirst(RegExp(r'/+$'), '')}$suffix';
@@ -299,14 +310,23 @@ String _managementUrl(String value) {
 String _originOnly(String value) {
   final uri = Uri.tryParse(value);
   if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
-  const suffix = '/v0/management';
-  final path = uri.path.endsWith(suffix)
-      ? uri.path.substring(0, uri.path.length - suffix.length)
-      : uri.path;
+  var path = uri.path;
+  for (final suffix in const ['/v0/management', '/v8/management']) {
+    if (path.endsWith(suffix)) {
+      path = path.substring(0, path.length - suffix.length);
+      break;
+    }
+  }
   return uri
       .replace(path: path, query: null, fragment: null)
       .toString()
       .replaceFirst(RegExp(r'/+$'), '');
+}
+
+String _managementApiSuffix(String path, {String? defaultSuffix}) {
+  if (path.contains('/v0/management')) return '/v0/management';
+  if (path.contains('/v8/management')) return '/v8/management';
+  return defaultSuffix ?? '/v8/management';
 }
 
 String? _validateUrl(String? value) {

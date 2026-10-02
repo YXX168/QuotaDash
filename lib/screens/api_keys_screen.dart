@@ -214,12 +214,11 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const Text(
-                            'CLIENT CREDENTIALS',
+                            '客户端访问凭据',
                             style: TextStyle(
                               color: Color(0xFF748198),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.05,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -340,15 +339,11 @@ class _InfoBar extends StatelessWidget {
                 const SizedBox(height: 2),
                 const Row(
                   children: [
-                    Icon(
-                      Icons.lock_outline_rounded,
-                      size: 12,
-                      color: AppTheme.warning,
-                    ),
+                    Icon(Icons.shield_outlined, size: 12, color: AppTheme.cyan),
                     SizedBox(width: 5),
                     Expanded(
                       child: Text(
-                        '仅查看模式，修改请通过服务端配置',
+                        '支持添加、删除与长按复制密钥',
                         style: TextStyle(
                           color: Color(0xFF8F9BB1),
                           fontSize: 11,
@@ -477,19 +472,6 @@ class _ApiKeyCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.touch_app_rounded,
-                        size: 12,
-                        color: Color(0xFF8F9BB1),
-                      ),
-                      const SizedBox(width: 5),
-                      const Text(
-                        '长按复制',
-                        style: TextStyle(
-                          color: Color(0xFF8F9BB1),
-                          fontSize: 11,
-                        ),
-                      ),
                       const Spacer(),
                       InkWell(
                         onTap: onCopy,

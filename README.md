@@ -2,7 +2,7 @@
 
 # Quota Dash
 
-**A privacy-conscious Android quota dashboard for multiple AI model providers.**
+**A privacy-conscious quota dashboard for multiple AI model providers.**
 
 [![Android Build](https://github.com/YXX168/QuotaDash/actions/workflows/build.yml/badge.svg)](https://github.com/YXX168/QuotaDash/actions/workflows/build.yml)
 [![Flutter](https://img.shields.io/badge/Flutter-3.41.6-02569B?logo=flutter)](https://flutter.dev/)
@@ -10,7 +10,8 @@
 
 </div>
 
-Quota Dash 是一个模块化的 Android 大模型额度仪表盘。每个供应商以独立模块接入，
+Quota Dash 是一个模块化的大模型额度仪表盘。Android 版提供完整的移动端界面，
+macOS 版提供菜单栏面板；每个供应商以独立模块接入，
 互不干扰；应用内置两种显示模式（卡片模式与能量球模式），并统一展示各供应商的
 额度窗口与同步状态。
 
@@ -33,7 +34,11 @@ Quota Dash 是一个模块化的 Android 大模型额度仪表盘。每个供应
 每个额度组分别展示，能量模式主值为该账号已知额度中的「最低余量」，不代表总余额。
 未返回的百分比显示 `--`；查询失败显示账号错误，不影响其他账号。
 额度接口的剩余量不保证模型请求一定成功，模型可用性仍取决于上游限制。
-请求趋势卡目前统计 Codex 账号的近期请求。
+请求趋势卡会合并 Codex 与 Antigravity 账号的近期请求时间桶，并在存在失败请求的时间段标出红点。
+
+当服务地址使用新版 CLIProxyAPI 的 `/v8/management` 接口时，工具箱会显示“运行开关”，
+可直接热更新局域网发现、远程管理、会话粘滞、日志、用量统计、插件等开关，也可以查看和编辑
+完整 YAML 配置文件。应用仍兼容手动填写的旧 `/v0/management` 地址。
 
 接口兼容性参考：[上游 Antigravity 数据层](https://github.com/router-for-me/Cli-Proxy-API-Management-Center/blob/main/src/features/quota/providers/antigravity/data.ts)。
 
@@ -54,7 +59,27 @@ Quota Dash 是一个模块化的 Android 大模型额度仪表盘。每个供应
 
 两种模式对所有已接入的供应商统一生效，可在设置中随时切换。
 
-## 安装
+## macOS 菜单栏面板
+
+仓库内的 `macos-panel` 是一个不依赖 Flutter 的原生 macOS 桌面小组件，直接读取
+CLIProxyAPI v8 管理接口，展示所有凭证的短时/周额度、刷新时间和主动重置次数；
+禁用凭证也会单独标出。小组件可拖动、置顶并跨桌面空间显示，菜单栏摘要按供应商显示
+最低剩余额度（例如 `C 43% · A 91%`）。管理密钥只写入 macOS 钥匙串，面板不会把地址或密钥写进源码。
+
+在 macOS 上构建并启动：
+
+```bash
+cd macos-panel
+./build.sh
+open dist/QuotaDash.app
+```
+
+启动后会直接显示桌面小组件；点击菜单栏的 Quota Dash 图标可以隐藏或重新显示它。
+首次使用时，在连接配置中填入 CLIProxyAPI 服务地址和管理密钥。
+地址可以填服务根地址，面板会自动补全 `/v8/management`；兼容显式填写的
+`/v0/management`。面板每 5 分钟自动刷新，也可以手动刷新。
+
+## 安装 Android 版
 
 ### GitHub Releases
 
@@ -72,7 +97,7 @@ DE:58:35:3C:54:25:C2:73:5B:B0:2C:18:D6:C2:59:1F:A7:B9:71:D3:66:96:EE:FB:A8:AA:33
 Antigravity 视觉审阅截图，附件名称包含对应构建提交 SHA。
 
 PR 同样执行格式检查、静态分析、测试以及 Debug / Release 模式编译，但不读取正式
-签名密钥；PR 的 Release 模式编译仅用于验证，使用调试签名回退，不上传正式签名
+签名密钥；PR 的 Release 模式编译仅用于验证，显式允许调试签名，不上传正式签名
 Release 附件。PR 提供的 Debug APK 和视觉截图不等同于正式发布。
 
 推送与 `pubspec.yaml` 版本一致的 `v*` 标签会自动构建正式签名版本，并创建 GitHub
@@ -94,6 +119,11 @@ Release，附 ARM64 APK 与 SHA-256 校验文件（需在仓库 Secrets 中配�
 - Android SDK, JDK 17
 
 ### 本地验证
+
+正式 APK 必须使用原来的发布密钥。在 `android/key.properties` 配置 `storeFile`、
+`storePassword`、`keyAlias` 和 `keyPassword`；密钥路径相对于 `android/app`。
+缺少正式签名时，Release 构建会报错。没有本地密钥时使用 GitHub Actions 的正式签名构建。
+安装前应使用 Android SDK 的 `apksigner verify --print-certs` 核对上面的证书指纹。
 
 ```bash
 flutter pub get

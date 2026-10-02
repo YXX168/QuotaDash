@@ -70,6 +70,11 @@ class _DashboardScreenState extends State<DashboardScreen>
       (_snapshot!.accounts.isNotEmpty ||
           _snapshot!.antigravityAccounts.isEmpty);
 
+  bool get _showRequestSection =>
+      _snapshot != null &&
+      (_snapshot!.accounts.isNotEmpty ||
+          _snapshot!.antigravityAccounts.isNotEmpty);
+
   @override
   void initState() {
     super.initState();
@@ -402,7 +407,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         onRetry: _refresh,
                                       ),
                                     ],
-                                    if (_showCodexSection) ...[
+                                    if (_showRequestSection) ...[
                                       const SizedBox(height: 10),
                                       _TrafficPulsePanel(snapshot: _snapshot!),
                                     ],
@@ -413,6 +418,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       const SectionTitle(
                                         key: Key('opencode-section-title'),
                                         title: 'OpenCode',
+                                        subtitle: '代码模型额度',
                                       ),
                                       const SizedBox(height: 10),
                                       OpenCodeCompactCard(quota: openCodeQuota),
@@ -422,6 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       const SectionTitle(
                                         key: Key('codex-section-title'),
                                         title: 'Codex',
+                                        subtitle: 'ChatGPT 账号额度',
                                       ),
                                     ],
                                     if (_showCodexSection) ...[
@@ -447,7 +454,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             .isNotEmpty ??
                                         false) ...[
                                       const SizedBox(height: 18),
-                                      const SectionTitle(title: 'Antigravity'),
+                                      const SectionTitle(
+                                        title: 'Antigravity',
+                                        subtitle: 'Google 账号额度',
+                                      ),
                                       const SizedBox(height: 10),
                                       for (final account
                                           in _snapshot!.antigravityAccounts)
@@ -526,12 +536,11 @@ class _Header extends StatelessWidget {
                   ).textTheme.titleMedium?.copyWith(letterSpacing: -0.25),
                 ),
                 const Text(
-                  'MULTI-PROVIDER QUOTA',
+                  '多服务额度看板',
                   style: TextStyle(
                     color: Color(0xFF748198),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.05,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -716,12 +725,11 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const Text(
-                        'DISPLAY & CONNECTION',
+                        '显示模式与连接偏好',
                         style: TextStyle(
                           color: Color(0xFF75839A),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.05,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -1142,7 +1150,7 @@ class _TrafficPulsePanel extends StatelessWidget {
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
-                  'REQUEST PULSE',
+                  '请求趋势',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -1163,15 +1171,6 @@ class _TrafficPulsePanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           RequestSparkline(buckets: snapshot.recentRequestBuckets, height: 62),
-          const SizedBox(height: 6),
-          Text(
-            snapshot.recentRequestBuckets.isEmpty
-                ? '等待 CLIProxyAPI 返回近期请求时间桶'
-                : '青色曲线表示请求流量，红点表示该时段存在失败请求',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontSize: 10),
-          ),
         ],
       ),
     );
