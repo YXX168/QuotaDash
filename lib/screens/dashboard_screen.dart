@@ -418,6 +418,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       const SectionTitle(
                                         key: Key('opencode-section-title'),
                                         title: 'OpenCode',
+                                        subtitle: '代码模型额度',
                                       ),
                                       const SizedBox(height: 10),
                                       OpenCodeCompactCard(quota: openCodeQuota),
@@ -427,6 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       const SectionTitle(
                                         key: Key('codex-section-title'),
                                         title: 'Codex',
+                                        subtitle: 'ChatGPT 账号额度',
                                       ),
                                     ],
                                     if (_showCodexSection) ...[
@@ -452,7 +454,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             .isNotEmpty ??
                                         false) ...[
                                       const SizedBox(height: 18),
-                                      const SectionTitle(title: 'Antigravity'),
+                                      const SectionTitle(
+                                        title: 'Antigravity',
+                                        subtitle: 'Google 账号额度',
+                                      ),
                                       const SizedBox(height: 10),
                                       for (final account
                                           in _snapshot!.antigravityAccounts)
@@ -531,12 +536,11 @@ class _Header extends StatelessWidget {
                   ).textTheme.titleMedium?.copyWith(letterSpacing: -0.25),
                 ),
                 const Text(
-                  'MULTI-PROVIDER QUOTA',
+                  '多服务额度看板',
                   style: TextStyle(
                     color: Color(0xFF748198),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.05,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -721,12 +725,11 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const Text(
-                        'DISPLAY & CONNECTION',
+                        '显示模式与连接偏好',
                         style: TextStyle(
                           color: Color(0xFF75839A),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.05,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],

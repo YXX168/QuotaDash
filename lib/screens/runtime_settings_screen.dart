@@ -6,85 +6,125 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_widgets.dart';
 import '../widgets/quantum_emblem.dart';
 
-/// Runtime switches exposed by the CLIProxyAPI v8 configuration tree.
-const runtimeToggleDefinitions = <RuntimeToggleDefinition>[
-  RuntimeToggleDefinition(
-    path: 'server/discovery/enabled',
-    label: '局域网服务发现',
-    description: '通过 mDNS 广播当前 CLIProxyAPI 服务',
-    icon: Icons.wifi_tethering_rounded,
-    color: AppTheme.cyan,
+class RuntimeToggleGroup {
+  const RuntimeToggleGroup({
+    required this.title,
+    required this.subtitle,
+    required this.definitions,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<RuntimeToggleDefinition> definitions;
+}
+
+/// Runtime switch groups exposed by the CLIProxyAPI v8 configuration tree.
+const runtimeToggleGroups = <RuntimeToggleGroup>[
+  RuntimeToggleGroup(
+    title: '网络与安全',
+    subtitle: '局域网广播与访问权限控制',
+    definitions: [
+      RuntimeToggleDefinition(
+        path: 'server/discovery/enabled',
+        label: '局域网服务发现',
+        description: '通过 mDNS 广播当前 CLIProxyAPI 服务',
+        icon: Icons.wifi_tethering_rounded,
+        color: AppTheme.cyan,
+      ),
+      RuntimeToggleDefinition(
+        path: 'management/allow-remote',
+        label: '允许远程管理',
+        description: '允许非本机访问管理接口，请确认密钥安全',
+        icon: Icons.public_rounded,
+        color: AppTheme.warning,
+      ),
+    ],
   ),
-  RuntimeToggleDefinition(
-    path: 'management/allow-remote',
-    label: '允许远程管理',
-    description: '允许非本机访问管理接口，请确认密钥安全',
-    icon: Icons.public_rounded,
-    color: AppTheme.warning,
+  RuntimeToggleGroup(
+    title: '路由与调度',
+    subtitle: '账号黏性、前缀过滤与调度策略',
+    definitions: [
+      RuntimeToggleDefinition(
+        path: 'routing/session-affinity',
+        label: '会话粘滞路由',
+        description: '同一会话尽量复用同一个上游账号',
+        icon: Icons.link_rounded,
+        color: AppTheme.violet,
+      ),
+      RuntimeToggleDefinition(
+        path: 'routing/force-model-prefix',
+        label: '强制模型前缀',
+        description: '无前缀模型请求只使用无前缀凭据',
+        icon: Icons.route_rounded,
+        color: AppTheme.magenta,
+      ),
+      RuntimeToggleDefinition(
+        path: 'routing/cooldown/disable-cooling',
+        label: '关闭账号冷却',
+        description: '关闭失败后的凭据冷却调度',
+        icon: Icons.ac_unit_rounded,
+        color: AppTheme.cyan,
+      ),
+      RuntimeToggleDefinition(
+        path: 'requests/passthrough-headers',
+        label: '透传上游响应头',
+        description: '将筛选后的上游响应头转发给客户端',
+        icon: Icons.swap_horiz_rounded,
+        color: AppTheme.success,
+      ),
+    ],
   ),
-  RuntimeToggleDefinition(
-    path: 'routing/session-affinity',
-    label: '会话粘滞路由',
-    description: '同一会话尽量复用同一个上游账号',
-    icon: Icons.link_rounded,
-    color: AppTheme.violet,
+  RuntimeToggleGroup(
+    title: '日志与监控',
+    subtitle: '调试输出、文件日志与用量统计',
+    definitions: [
+      RuntimeToggleDefinition(
+        path: 'observability/logs/debug',
+        label: '调试日志',
+        description: '输出更详细的服务运行日志',
+        icon: Icons.bug_report_outlined,
+        color: AppTheme.warning,
+      ),
+      RuntimeToggleDefinition(
+        path: 'observability/logs/logging-to-file',
+        label: '写入日志文件',
+        description: '将应用日志写入滚动文件',
+        icon: Icons.description_outlined,
+        color: AppTheme.violet,
+      ),
+      RuntimeToggleDefinition(
+        path: 'observability/logs/request-log',
+        label: '记录请求日志',
+        description: '记录代理请求与响应（管理请求除外）',
+        icon: Icons.receipt_long_outlined,
+        color: AppTheme.magenta,
+      ),
+      RuntimeToggleDefinition(
+        path: 'observability/usage/usage-statistics-enabled',
+        label: '启用用量统计',
+        description: '保留内存中的请求用量聚合数据',
+        icon: Icons.insights_rounded,
+        color: AppTheme.success,
+      ),
+    ],
   ),
-  RuntimeToggleDefinition(
-    path: 'routing/force-model-prefix',
-    label: '强制模型前缀',
-    description: '无前缀模型请求只使用无前缀凭据',
-    icon: Icons.route_rounded,
-    color: AppTheme.magenta,
+  RuntimeToggleGroup(
+    title: '扩展系统',
+    subtitle: 'CLIProxyAPI 插件与扩展加载',
+    definitions: [
+      RuntimeToggleDefinition(
+        path: 'plugins/enabled',
+        label: '启用插件系统',
+        description: '允许 CLIProxyAPI 加载已配置的插件',
+        icon: Icons.extension_rounded,
+        color: AppTheme.cyan,
+      ),
+    ],
   ),
-  RuntimeToggleDefinition(
-    path: 'routing/cooldown/disable-cooling',
-    label: '关闭账号冷却',
-    description: '关闭失败后的凭据冷却调度',
-    icon: Icons.ac_unit_rounded,
-    color: AppTheme.cyan,
-  ),
-  RuntimeToggleDefinition(
-    path: 'requests/passthrough-headers',
-    label: '透传上游响应头',
-    description: '将筛选后的上游响应头转发给客户端',
-    icon: Icons.swap_horiz_rounded,
-    color: AppTheme.success,
-  ),
-  RuntimeToggleDefinition(
-    path: 'observability/logs/debug',
-    label: '调试日志',
-    description: '输出更详细的服务运行日志',
-    icon: Icons.bug_report_outlined,
-    color: AppTheme.warning,
-  ),
-  RuntimeToggleDefinition(
-    path: 'observability/logs/logging-to-file',
-    label: '写入日志文件',
-    description: '将应用日志写入滚动文件',
-    icon: Icons.description_outlined,
-    color: AppTheme.violet,
-  ),
-  RuntimeToggleDefinition(
-    path: 'observability/logs/request-log',
-    label: '记录请求日志',
-    description: '记录代理请求与响应（管理请求除外）',
-    icon: Icons.receipt_long_outlined,
-    color: AppTheme.magenta,
-  ),
-  RuntimeToggleDefinition(
-    path: 'observability/usage/usage-statistics-enabled',
-    label: '启用用量统计',
-    description: '保留内存中的请求用量聚合数据',
-    icon: Icons.insights_rounded,
-    color: AppTheme.success,
-  ),
-  RuntimeToggleDefinition(
-    path: 'plugins/enabled',
-    label: '启用插件系统',
-    description: '允许 CLIProxyAPI 加载已配置的插件',
-    icon: Icons.extension_rounded,
-    color: AppTheme.cyan,
-  ),
+];
+
+final runtimeToggleDefinitions = <RuntimeToggleDefinition>[
+  for (final group in runtimeToggleGroups) ...group.definitions,
 ];
 
 class RuntimeToggleDefinition {
@@ -234,12 +274,11 @@ class _RuntimeSettingsScreenState extends State<RuntimeSettingsScreen> {
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const Text(
-                                'CLIPROXYAPI V8 CONFIG',
+                                '热更新服务运行参数',
                                 style: TextStyle(
                                   color: Color(0xFF748198),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.05,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -277,23 +316,30 @@ class _RuntimeSettingsScreenState extends State<RuntimeSettingsScreen> {
                         ),
                       )
                     else ...[
+                      for (final group in runtimeToggleGroups) ...[
+                        SectionTitle(
+                          title: group.title,
+                          subtitle: group.subtitle,
+                        ),
+                        const SizedBox(height: 12),
+                        for (final definition in group.definitions) ...[
+                          _ToggleCard(
+                            definition: definition,
+                            value: _values[definition.path] ?? false,
+                            saving: _savingPath == definition.path,
+                            onChanged: _savingPath == null
+                                ? (value) => _toggle(definition, value)
+                                : null,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        const SizedBox(height: 12),
+                      ],
                       const SectionTitle(
-                        title: '运行开关',
-                        subtitle: '修改后由 CLIProxyAPI 热加载',
+                        title: '高级配置',
+                        subtitle: '直接编辑并热加载服务完整 YAML 配置',
                       ),
                       const SizedBox(height: 12),
-                      for (final definition in runtimeToggleDefinitions) ...[
-                        _ToggleCard(
-                          definition: definition,
-                          value: _values[definition.path] ?? false,
-                          saving: _savingPath == definition.path,
-                          onChanged: _savingPath == null
-                              ? (value) => _toggle(definition, value)
-                              : null,
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-                      const SizedBox(height: 8),
                       _YamlCard(
                         onTap: _savingPath == null ? _openYamlEditor : null,
                       ),

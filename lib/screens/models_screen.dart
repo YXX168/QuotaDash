@@ -90,12 +90,11 @@ class _ModelsScreenState extends State<ModelsScreen> {
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const Text(
-                            'CONFIGURED MODELS',
+                            '当前已配置的 AI 模型与别名',
                             style: TextStyle(
                               color: Color(0xFF748198),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.05,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
