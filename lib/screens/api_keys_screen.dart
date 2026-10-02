@@ -214,11 +214,12 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const Text(
-                            '客户端访问凭据',
+                            'CLIENT CREDENTIALS',
                             style: TextStyle(
                               color: Color(0xFF748198),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.05,
                             ),
                           ),
                         ],

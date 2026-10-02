@@ -51,7 +51,7 @@ class AntigravityAccountCard extends StatelessWidget {
         data: EnergyCoreData(
           name: name,
           caption: description,
-          badge: 'ANTIGRAVITY',
+          badge: 'PRO',
           headline: ProviderQuotaWindow(
             label: '周额度',
             remainingPercent: geminiWeekly?.remainingPercent,

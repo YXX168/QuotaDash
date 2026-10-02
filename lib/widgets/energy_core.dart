@@ -88,9 +88,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
         : account!.weeklyRemainingPercent;
     final hasError = data?.hasError ?? account!.hasError;
     final name = data?.name ?? account!.name;
-    final caption =
-        data?.caption ??
-        (account!.email.isEmpty ? 'Codex Account' : account.email);
+    final caption = data?.caption ?? 'Codex';
     final badge =
         data?.badge ??
         (account!.plan.isEmpty ? 'CODEX' : account.plan.toUpperCase());

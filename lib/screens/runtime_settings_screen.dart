@@ -274,11 +274,12 @@ class _RuntimeSettingsScreenState extends State<RuntimeSettingsScreen> {
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const Text(
-                                '热更新服务运行参数',
+                                'CLIPROXYAPI V8 CONFIG',
                                 style: TextStyle(
                                   color: Color(0xFF748198),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.05,
                                 ),
                               ),
                             ],

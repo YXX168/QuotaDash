@@ -283,6 +283,16 @@ class _AntigravityResetTimeline extends StatelessWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontSize: 15),
             ),
+            const Spacer(),
+            const Text(
+              'NEXT WINDOWS',
+              style: TextStyle(
+                color: Color(0xFF6F7E96),
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.9,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),

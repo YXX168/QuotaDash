@@ -292,13 +292,18 @@ void main() {
       expect(weeklyFill.width, closeTo(weeklyTrack.width * 0.8, 0.1));
       expect(monthlyFill.width, closeTo(monthlyTrack.width * 0.6, 0.1));
       expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Text &&
-              widget.data == 'very-long-account-name@example.com' &&
-              widget.maxLines == 1,
+        find.descendant(
+          of: find.byKey(const Key('energy-header')),
+          matching: find.text('very-long-account-name@example.com'),
         ),
-        findsNWidgets(2),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('energy-account-email')),
+          matching: find.text('Codex'),
+        ),
+        findsOneWidget,
       );
     },
   );

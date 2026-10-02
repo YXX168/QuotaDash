@@ -118,11 +118,12 @@ class _ToolsScreenState extends State<ToolsScreen> {
                                     ?.copyWith(letterSpacing: -0.25),
                               ),
                               const Text(
-                                '服务维护与调试',
+                                'PROXY MANAGEMENT TOOLS',
                                 style: TextStyle(
                                   color: Color(0xFF748198),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.05,
                                 ),
                               ),
                             ],

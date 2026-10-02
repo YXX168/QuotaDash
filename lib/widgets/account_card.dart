@@ -53,7 +53,7 @@ class AccountCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      account.email.isEmpty ? 'Codex Account' : account.email,
+                      'Codex',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall,
