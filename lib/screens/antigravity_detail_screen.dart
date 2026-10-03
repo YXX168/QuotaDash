@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/antigravity_account.dart';
+import '../services/private_http.dart';
 import '../models/provider_quota.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_widgets.dart';
@@ -84,7 +85,7 @@ class AntigravityDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 18),
                     if (hasError)
-                      _ErrorCard(message: '${account.quota.error}')
+                      _ErrorCard(message: safeErrorMessage(account.quota.error))
                     else
                       GlassCard(
                         child: Column(

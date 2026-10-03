@@ -12,6 +12,7 @@ import '../models/visual_mode.dart';
 import '../services/quota_module.dart';
 import '../services/provider_registry.dart';
 import '../services/quota_repository.dart';
+import '../services/private_http.dart';
 import '../theme/app_theme.dart';
 import '../widgets/account_card.dart';
 import '../widgets/antigravity_account_card.dart';
@@ -23,6 +24,7 @@ import '../widgets/provider_quota_card.dart';
 import '../widgets/quantum_emblem.dart';
 import '../widgets/request_activity.dart';
 import '../widgets/sync_flow_loader.dart';
+import '../widgets/workbuddy_account_card.dart';
 import 'account_detail_screen.dart';
 import 'antigravity_detail_screen.dart';
 import 'tools_screen.dart';
@@ -68,12 +70,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool get _showCodexSection =>
       _snapshot != null &&
       (_snapshot!.accounts.isNotEmpty ||
-          _snapshot!.antigravityAccounts.isEmpty);
+          (_snapshot!.antigravityAccounts.isEmpty &&
+              _snapshot!.workBuddyAccounts.isEmpty));
 
   bool get _showRequestSection =>
       _snapshot != null &&
       (_snapshot!.accounts.isNotEmpty ||
-          _snapshot!.antigravityAccounts.isNotEmpty);
+          _snapshot!.antigravityAccounts.isNotEmpty ||
+          _snapshot!.workBuddyAccounts.isNotEmpty);
 
   @override
   void initState() {
@@ -447,6 +451,32 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         ),
                                     ],
                                     ..._providerSections(),
+                                    if (_snapshot
+                                            ?.workBuddyAccounts
+                                            .isNotEmpty ??
+                                        false) ...[
+                                      const SizedBox(height: 18),
+                                      const SectionTitle(
+                                        key: Key('workbuddy-section-title'),
+                                        title: 'WorkBuddy',
+                                      ),
+                                      const SizedBox(height: 10),
+                                      for (final account
+                                          in _snapshot!.workBuddyAccounts)
+                                        Padding(
+                                          key: ValueKey(
+                                            'workbuddy-${account.auth.authIndex}',
+                                          ),
+                                          padding: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
+                                          child: WorkBuddyAccountCard(
+                                            account: account,
+                                            visualMode: widget.visualMode,
+                                            refreshing: _refreshing,
+                                          ),
+                                        ),
+                                    ],
                                     if (_snapshot
                                             ?.antigravityAccounts
                                             .isNotEmpty ??
@@ -1387,7 +1417,7 @@ class _FatalErrorPanel extends StatelessWidget {
           ),
           const SizedBox(height: 9),
           Text(
-            error?.toString() ?? '未知错误',
+            safeErrorMessage(error),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -1421,7 +1451,7 @@ class _StaleDataBanner extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '刷新失败，保留上次数据：$error',
+              '刷新失败，保留上次数据：${safeErrorMessage(error)}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),

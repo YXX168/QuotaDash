@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/private_http.dart';
 
 import '../models/app_config.dart';
 import '../models/model_info.dart';
@@ -459,7 +460,7 @@ class _ErrorView extends StatelessWidget {
           Text('加载模型列表失败', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 9),
           Text(
-            error.toString(),
+            safeErrorMessage(error),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),

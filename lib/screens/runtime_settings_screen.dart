@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/private_http.dart';
 
 import '../services/proxy_api_service.dart';
 import '../theme/app_theme.dart';
@@ -192,7 +193,7 @@ class _RuntimeSettingsScreenState extends State<RuntimeSettingsScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = error.toString();
+        _error = safeErrorMessage(error);
       });
     }
   }
@@ -209,9 +210,9 @@ class _RuntimeSettingsScreenState extends State<RuntimeSettingsScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _values[definition.path] = previous);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('保存失败：$error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('保存失败：${safeErrorMessage(error)}')),
+      );
     } finally {
       if (mounted) setState(() => _savingPath = null);
     }
@@ -222,9 +223,9 @@ class _RuntimeSettingsScreenState extends State<RuntimeSettingsScreen> {
       _yamlController.text = await widget.service.fetchConfigYaml();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('读取配置文件失败：$error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('读取配置文件失败：${safeErrorMessage(error)}')),
+      );
       return;
     }
     if (!mounted) return;
@@ -490,7 +491,7 @@ class _YamlEditorDialogState extends State<_YamlEditorDialog> {
       await widget.onSave();
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted) setState(() => _error = safeErrorMessage(error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -523,6 +524,7 @@ class _YamlEditorDialogState extends State<_YamlEditorDialog> {
                 textAlignVertical: TextAlignVertical.top,
                 autocorrect: false,
                 enableSuggestions: false,
+                enableIMEPersonalizedLearning: false,
                 style: const TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 12,

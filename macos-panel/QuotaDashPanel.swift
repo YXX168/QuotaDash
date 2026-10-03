@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import Darwin
 import Foundation
 import Security
 
@@ -41,6 +42,50 @@ private enum SecretStore {
             throw PanelError.message("无法写入 macOS 钥匙串")
         }
     }
+
+    static func remove(_ account: String) throws {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw PanelError.message("无法更新 macOS 钥匙串，请重新保存连接配置")
+        }
+    }
+}
+
+private struct ConnectionStorage {
+    var readSecret: (String) -> String? = SecretStore.read
+    var writeSecret: (String, String) throws -> Void = { try SecretStore.write($0, account: $1) }
+    var removeSecret: (String) throws -> Void = SecretStore.remove
+    var readLegacyURL: () -> String? = { UserDefaults.standard.string(forKey: "baseURL") }
+    var removeLegacyURL: () -> Void = { UserDefaults.standard.removeObject(forKey: "baseURL") }
+
+    func loadBaseURL() throws -> String {
+        let saved = readSecret("baseURL")
+        guard let legacy = readLegacyURL() else { return saved ?? "" }
+        let value = saved ?? legacy
+        // A failed migration must leave the old value available for retry.
+        try writeSecret(value, "baseURL")
+        removeLegacyURL()
+        return value
+    }
+
+    func save(baseURL: String, key: String) throws {
+        let previousURL = readSecret("baseURL")
+        try writeSecret(baseURL, "baseURL")
+        do {
+            try writeSecret(key, "managementKey")
+        } catch {
+            // Avoid pairing the previous key with a new service address.
+            if let previousURL { try? writeSecret(previousURL, "baseURL") }
+            else { try? removeSecret("baseURL") }
+            throw PanelError.message("连接配置未完整保存到钥匙串，请重新保存后重试")
+        }
+        removeLegacyURL()
+    }
 }
 
 // MARK: - Data types
@@ -52,6 +97,50 @@ private struct QuotaWindow: Identifiable {
     let resetAt: Date?
 }
 
+private struct WorkBuddyPackage {
+    let name: String
+    let remain: Double?
+    let used: Double?
+    let size: Double?
+    let cycleStart: Date?
+    let cycleEnd: Date?
+}
+
+private struct WorkBuddyCredits {
+    let totalRemain: Double?
+    let totalUsed: Double?
+    let totalSize: Double?
+    let packCount: Int?
+    let fetchedAt: Date?
+    let packages: [WorkBuddyPackage]
+
+    var remainingPercentage: Double? {
+        guard let totalRemain, let totalSize, totalSize > 0 else { return nil }
+        let percentage = totalRemain / totalSize * 100
+        return percentage.isFinite ? max(0, min(100, percentage)) : nil
+    }
+
+    init(_ object: [String: Any]) {
+        packCount = asInt(object["pack_count"])
+        fetchedAt = date(object["fetched_at"])
+        packages = (object["packages"] as? [[String: Any]] ?? []).map {
+            WorkBuddyPackage(name: string($0["name"]) ?? "积分包",
+                             remain: asDouble($0["remain"]), used: asDouble($0["used"]),
+                             size: asDouble($0["size"]), cycleStart: date($0["cycle_start"]),
+                             cycleEnd: date($0["cycle_end"]))
+        }
+        let remain = asDouble(object["total_remain"])
+        let used = asDouble(object["total_used"])
+        let size = asDouble(object["total_size"])
+        // The plugin treats an all-zero snapshot without packages as no data,
+        // rather than an exhausted quota. Keep it unknown in the panel too.
+        let noData = remain == 0 && used == 0 && size == 0 && packages.isEmpty && (packCount ?? 0) == 0
+        totalRemain = noData ? nil : remain
+        totalUsed = noData ? nil : used
+        totalSize = noData ? nil : size
+    }
+}
+
 private struct CredentialQuota: Identifiable {
     let id: String
     let provider: String
@@ -61,18 +150,76 @@ private struct CredentialQuota: Identifiable {
     let windows: [QuotaWindow]
     let resetCredits: Int?
     let error: String?
+    var workBuddyCredits: WorkBuddyCredits? = nil
+    var region: String? = nil
+    var exhausted: Bool = false
 
     var minimumRemaining: Double? {
-        windows.compactMap(\.remaining).min()
+        if disabled || error != nil { return nil }
+        if provider == "workbuddy" { return workBuddyCredits?.remainingPercentage }
+        return windows.compactMap(\.remaining).min()
     }
+
+    var providerLabel: String { provider == "workbuddy" ? "WorkBuddy" : provider.uppercased() }
+    var displayIdentity: String { maskedIdentity(email, providerLabel: providerLabel) }
+    var providerSymbol: String { provider == "workbuddy" ? "W" : provider == "codex" ? "✦" : "◇" }
+    var providerColor: NSColor { provider == "workbuddy" ? .systemPurple : provider == "codex" ? .systemMint : .systemCyan }
 }
+
+private enum APIService { case management, upstream, workBuddy }
 
 private enum PanelError: LocalizedError {
     case message(String)
+    case httpStatus(Int, APIService)
 
     var errorDescription: String? {
-        if case let .message(text) = self { return text }
-        return nil
+        switch self {
+        case let .message(text): return text
+        case let .httpStatus(status, service):
+            let label = service == .upstream ? "额度服务" : service == .workBuddy ? "WorkBuddy 管理接口" : "管理接口"
+            let guidance: String
+            switch status {
+            case 401, 403:
+                guidance = service == .upstream ? "请在管理端检查账号授权后重试" : "请检查管理密钥和访问权限后重试"
+            case 404:
+                guidance = service == .workBuddy ? "请在管理端检查 WorkBuddy 插件是否启用及路由配置" : "请检查管理地址和服务版本"
+            case 429: guidance = "请求过于频繁，请稍后重试"
+            case 500...599: guidance = "服务暂时不可用，请稍后重试或检查管理端状态"
+            case 300...399: guidance = "请在连接配置中填写最终管理地址后重试"
+            default: guidance = "请检查管理端状态后重试"
+            }
+            return "\(label)返回 HTTP \(status)。\(guidance)"
+        }
+    }
+}
+
+private func safeErrorMessage(_ error: Error) -> String {
+    if let error = error as? PanelError { return error.errorDescription ?? "读取失败，请稍后重试" }
+    if let error = error as? URLError {
+        switch error.code {
+        case .timedOut: return "连接超时，请检查网络和管理服务后重试"
+        case .notConnectedToInternet, .networkConnectionLost:
+            return "网络连接不可用，请检查网络后重试"
+        case .cannotFindHost, .dnsLookupFailed, .cannotConnectToHost:
+            return "无法连接管理服务，请检查地址和服务状态后重试"
+        case .secureConnectionFailed, .serverCertificateHasBadDate, .serverCertificateUntrusted,
+             .serverCertificateHasUnknownRoot, .serverCertificateNotYetValid,
+             .clientCertificateRejected, .clientCertificateRequired:
+            return "安全连接验证失败，请检查管理服务的证书配置"
+        case .cancelled: return "请求已取消，请重新刷新"
+        default: return "网络请求失败，请检查连接配置后重试"
+        }
+    }
+    return "读取失败，请检查连接配置和管理端状态后重试"
+}
+
+// Never follow redirects with a management key or query another origin.
+private final class ManagementSessionDelegate: NSObject, URLSessionTaskDelegate {
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest,
+                    completionHandler: @escaping (URLRequest?) -> Void) {
+        completionHandler(nil)
     }
 }
 
@@ -83,14 +230,17 @@ private final class ManagementClient {
     let managementKey: String
     let session: URLSession
 
-    init(baseURL: URL, managementKey: String) {
+    init(baseURL: URL, managementKey: String, session: URLSession? = nil) {
         self.baseURL = baseURL
         self.managementKey = managementKey
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 25
         configuration.timeoutIntervalForResource = 35
-        session = URLSession(configuration: configuration)
+        self.session = session ?? URLSession(configuration: configuration,
+                                            delegate: ManagementSessionDelegate(), delegateQueue: nil)
     }
+
+    deinit { session.invalidateAndCancel() }
 
     func fetchCredentials() async throws -> [[String: Any]] {
         let response = try await requestJSON(
@@ -107,7 +257,10 @@ private final class ManagementClient {
         let id = string(file["id"]) ?? string(file["name"]) ?? UUID().uuidString
         let provider = (string(file["provider"]) ?? string(file["type"]) ?? "OAuth").lowercased()
         let email = string(file["email"]) ?? string(file["account"]) ?? string(file["label"]) ?? id
-        let authIndex = string(file["auth_index"]) ?? string(file["authIndex"])
+        // WorkBuddy identities are opaque strings: never coerce or trim them.
+        let authIndex = provider == "workbuddy"
+            ? (file["auth_index"] as? String ?? file["authIndex"] as? String)
+            : (string(file["auth_index"]) ?? string(file["authIndex"]))
         let disabled = asBool(file["disabled"])
 
         if disabled {
@@ -116,7 +269,7 @@ private final class ManagementClient {
                                    resetCredits: nil, error: nil)
         }
 
-        guard let authIndex, !authIndex.isEmpty else {
+        guard let authIndex, !authIndex.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return CredentialQuota(id: id, provider: provider, email: email,
                                    plan: nil, disabled: false, windows: [], resetCredits: nil,
                                    error: "认证文件缺少 auth_index")
@@ -129,14 +282,65 @@ private final class ManagementClient {
             if provider == "antigravity" {
                 return try await fetchAntigravity(file: file, id: id, email: email, authIndex: authIndex)
             }
+            if provider == "workbuddy" {
+                return try await fetchWorkBuddy(id: id, email: email, authIndex: authIndex)
+            }
             return CredentialQuota(id: id, provider: provider, email: email,
                                    plan: nil, disabled: false, windows: [], resetCredits: nil,
                                    error: "暂不支持的凭证类型")
         } catch {
             return CredentialQuota(id: id, provider: provider, email: email,
                                   plan: nil, disabled: false, windows: [], resetCredits: nil,
-                                  error: friendly(error))
+                                  error: safeErrorMessage(error))
         }
+    }
+
+    private func fetchWorkBuddy(id: String, email: String, authIndex: String) async throws -> CredentialQuota {
+        func creditsURL(base: URL) throws -> URL {
+            guard var components = URLComponents(url: base.appendingPathComponent("plugins/workbuddy/credits"),
+                                                 resolvingAgainstBaseURL: false) else {
+                throw PanelError.message("管理地址格式不正确，请检查连接配置")
+            }
+            components.queryItems = [URLQueryItem(name: "auth_index", value: authIndex)]
+            // Go's query parser treats an unescaped '+' as a space.
+            components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+            guard let url = components.url else { throw PanelError.message("管理地址格式不正确，请检查连接配置") }
+            return url
+        }
+
+        let response: [String: Any]
+        do {
+            response = try await requestJSON(method: "GET", url: creditsURL(base: baseURL), service: .workBuddy)
+        } catch PanelError.httpStatus(404, .workBuddy) {
+            // Some hosts expose plugin routes only on v0. Retry only an actual
+            // HTTP 404 from v8, retaining the origin, deployment prefix and query.
+            guard baseURL.path.hasSuffix("/v8/management"),
+                  var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+                throw PanelError.httpStatus(404, .workBuddy)
+            }
+            components.percentEncodedPath = String(components.percentEncodedPath.dropLast("/v8/management".count)) + "/v0/management"
+            guard let fallback = components.url else { throw PanelError.httpStatus(404, .workBuddy) }
+            response = try await requestJSON(method: "GET", url: creditsURL(base: fallback), service: .workBuddy)
+        }
+
+        guard let accounts = response["accounts"] as? [[String: Any]] else {
+            throw PanelError.message("WorkBuddy 未返回账号额度，请检查管理端插件状态后重试")
+        }
+        let matches = accounts.filter {
+            guard let index = $0["auth_index"] as? String else { return false }
+            return index.utf8.elementsEqual(authIndex.utf8)
+        }
+        guard matches.count == 1, let account = matches.first else {
+            throw PanelError.message("WorkBuddy 账号未能唯一匹配，请检查管理端凭证后重试")
+        }
+        let failed = hasError(response["error"]) || hasError(account["error"])
+        let credits = failed ? nil : (account["credits"] as? [String: Any]).map(WorkBuddyCredits.init)
+        return CredentialQuota(id: id, provider: "workbuddy",
+                               email: string(account["nickname"]) ?? email,
+                               plan: string(account["plan"]), disabled: false, windows: [], resetCredits: nil,
+                               error: failed ? "WorkBuddy 额度读取失败，请在管理端检查账号授权后重试" : nil,
+                               workBuddyCredits: credits, region: string(account["region"]),
+                               exhausted: !failed && asBool(account["exhausted"]))
     }
 
     private func fetchCodex(file: [String: Any], id: String, email: String, authIndex: String) async throws -> CredentialQuota {
@@ -210,7 +414,7 @@ private final class ManagementClient {
             for bucket in buckets {
                 let label = string(bucket["displayName"]) ?? string(bucket["window"]) ?? "额度"
                 let fraction = asDouble(bucket["remainingFraction"])
-                windows.append(QuotaWindow(label: label, remaining: fraction.map { $0 * 100 },
+                windows.append(QuotaWindow(label: label, remaining: fraction.map { max(0, min(1, $0)) * 100 },
                                            resetAt: date(bucket["resetTime"])))
             }
         }
@@ -232,20 +436,23 @@ private final class ManagementClient {
             body["data"] = String(data: try JSONSerialization.data(withJSONObject: data), encoding: .utf8)
         }
         let response = try await requestJSON(method: "POST", url: endpoint("requests/api-call"), body: body)
-        let status = asInt(response["status_code"]) ?? 0
+        guard let status = asInt(response["status_code"]), (100...599).contains(status) else {
+            throw PanelError.message("额度服务未返回有效状态，请检查管理端状态后重试")
+        }
         guard (200..<300).contains(status) else {
-            throw PanelError.message("上游接口返回 HTTP \(status)")
+            throw PanelError.httpStatus(status, .upstream)
         }
         if let object = response["body"] as? [String: Any] { return object }
         if let text = response["body"] as? String,
            let data = text.data(using: .utf8),
-           let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+           let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
             return object
         }
-        throw PanelError.message("上游接口返回了无效 JSON")
+        throw PanelError.message("额度服务返回的数据格式不正确，请稍后重试或检查管理端状态")
     }
 
-    private func requestJSON(method: String, url: URL, body: [String: Any]? = nil) async throws -> [String: Any] {
+    private func requestJSON(method: String, url: URL, body: [String: Any]? = nil,
+                             service: APIService = .management) async throws -> [String: Any] {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("Bearer \(managementKey)", forHTTPHeaderField: "Authorization")
@@ -256,10 +463,10 @@ private final class ManagementClient {
             throw PanelError.message("管理接口没有返回 HTTP 响应")
         }
         guard (200..<300).contains(http.statusCode) else {
-            throw PanelError.message("管理接口返回 HTTP \(http.statusCode)")
+            throw PanelError.httpStatus(http.statusCode, service)
         }
-        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw PanelError.message("管理接口返回了无效 JSON")
+        guard let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            throw PanelError.message("管理接口返回的数据格式不正确，请检查管理地址和服务状态后重试")
         }
         return object
     }
@@ -278,9 +485,73 @@ private final class ManagementClient {
                            resetAt: date(value["reset_at"] ?? value["resetAt"]))
     }
 
-    private func friendly(_ error: Error) -> String {
-        if let localized = error as? LocalizedError, let description = localized.errorDescription { return description }
-        return error.localizedDescription
+}
+
+private func normalizeManagementURL(_ value: String) throws -> URL {
+    var text = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty else { throw PanelError.message("请输入 CLIProxyAPI 地址") }
+    if !text.contains("://") { text = "https://\(text)" }
+    guard var components = URLComponents(string: text),
+          let host = components.host, !host.isEmpty,
+          host.rangeOfCharacter(from: .whitespacesAndNewlines.union(.controlCharacters)) == nil else {
+        throw PanelError.message("CLIProxyAPI 地址格式不正确，请填写管理服务地址")
+    }
+    guard let scheme = components.scheme?.lowercased(), ["http", "https"].contains(scheme) else {
+        throw PanelError.message("管理地址只支持 HTTP 或 HTTPS")
+    }
+    guard components.user == nil, components.password == nil,
+          components.percentEncodedQuery == nil, components.percentEncodedFragment == nil else {
+        throw PanelError.message("管理地址不能包含用户名、密码、查询参数或片段，请仅填写服务地址")
+    }
+    guard scheme != "http" || isLocalHTTPHost(host) else {
+        throw PanelError.message("远程服务必须使用 HTTPS；HTTP 仅用于本机或局域网 IP")
+    }
+    if let port = components.port, !(1...65535).contains(port) {
+        throw PanelError.message("管理地址的端口不正确")
+    }
+    components.scheme = scheme
+    var path = components.percentEncodedPath.replacingOccurrences(of: "/+$", with: "", options: .regularExpression)
+    if path.hasSuffix("/management.html") {
+        path = String(path.dropLast("/management.html".count))
+    }
+    if !path.hasSuffix("/v8/management") && !path.hasSuffix("/v0/management") {
+        path += "/v8/management"
+    }
+    components.percentEncodedPath = path
+    guard let url = components.url else { throw PanelError.message("CLIProxyAPI 地址格式不正确") }
+    return url
+}
+
+private func isLocalHTTPHost(_ host: String) -> Bool {
+    if host.lowercased() == "localhost" { return true }
+    let literal = host.hasPrefix("[") && host.hasSuffix("]") ? String(host.dropFirst().dropLast()) : host
+    var ipv4 = in_addr()
+    if literal.withCString({ inet_pton(AF_INET, $0, &ipv4) }) == 1 {
+        let address = UInt32(bigEndian: ipv4.s_addr)
+        return address >> 24 == 127 || address >> 24 == 10 ||
+            address & 0xfff00000 == 0xac100000 || address & 0xffff0000 == 0xc0a80000
+    }
+    var ipv6 = in6_addr()
+    guard literal.withCString({ inet_pton(AF_INET6, $0, &ipv6) }) == 1 else { return false }
+    let bytes = withUnsafeBytes(of: ipv6) { Array($0) }
+    let loopback = bytes.dropLast().allSatisfy { $0 == 0 } && bytes.last == 1
+    return loopback || bytes[0] & 0xfe == 0xfc || (bytes[0] == 0xfe && bytes[1] & 0xc0 == 0x80)
+}
+
+private func maskedIdentity(_ value: String, providerLabel: String) -> String {
+    let parts = value.split(separator: "@", omittingEmptySubsequences: false)
+    guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else { return "\(providerLabel) 账号" }
+    let prefix = parts[0].count > 2 ? String(parts[0].prefix(2)) : ""
+    return "\(prefix)***@\(parts[1])"
+}
+
+private func menuSegments(_ quotas: [CredentialQuota]) -> [String] {
+    [("codex", "C"), ("antigravity", "A"), ("workbuddy", "W")].compactMap { provider, mark in
+        let accounts = quotas.filter { $0.provider == provider }
+        guard !accounts.isEmpty else { return nil }
+        let active = accounts.filter { !$0.disabled }
+        let remaining = active.contains { $0.minimumRemaining == nil } ? nil : active.compactMap(\.minimumRemaining).min()
+        return "\(mark) \(percentageText(remaining))"
     }
 }
 
@@ -295,10 +566,17 @@ private final class DashboardModel: ObservableObject {
     @Published var baseURL: String
 
     private(set) var managementKey: String
+    private let storage: ConnectionStorage
 
-    init() {
-        baseURL = UserDefaults.standard.string(forKey: "baseURL") ?? ""
-        managementKey = SecretStore.read("managementKey") ?? ""
+    init(storage: ConnectionStorage = ConnectionStorage()) {
+        self.storage = storage
+        baseURL = ""
+        managementKey = storage.readSecret("managementKey") ?? ""
+        do { baseURL = try storage.loadBaseURL() }
+        catch {
+            baseURL = storage.readSecret("baseURL") ?? storage.readLegacyURL() ?? ""
+            self.error = safeErrorMessage(error)
+        }
     }
 
     var minimumRemaining: Double? {
@@ -306,12 +584,11 @@ private final class DashboardModel: ObservableObject {
     }
 
     func saveConfiguration(baseURL: String, key: String) throws {
-        let normalized = try normalizeURL(baseURL)
+        let normalized = try normalizeManagementURL(baseURL)
         guard !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw PanelError.message("请输入管理密钥")
         }
-        try SecretStore.write(key, account: "managementKey")
-        UserDefaults.standard.set(normalized.absoluteString, forKey: "baseURL")
+        try storage.save(baseURL: normalized.absoluteString, key: key)
         self.baseURL = normalized.absoluteString
         managementKey = key
         error = nil
@@ -323,7 +600,7 @@ private final class DashboardModel: ObservableObject {
         error = nil
         Task {
             do {
-                let url = try normalizeURL(baseURL)
+                let url = try normalizeManagementURL(baseURL)
                 guard !managementKey.isEmpty else { throw PanelError.message("请先配置管理密钥") }
                 let client = ManagementClient(baseURL: url, managementKey: managementKey)
                 let files = try await client.fetchCredentials()
@@ -336,34 +613,13 @@ private final class DashboardModel: ObservableObject {
                 quotas = results
                 lastUpdated = Date()
             } catch {
-                self.error = friendly(error)
+                self.error = safeErrorMessage(error)
+                quotas = []
             }
             isRefreshing = false
         }
     }
 
-    private func normalizeURL(_ value: String) throws -> URL {
-        var text = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { throw PanelError.message("请输入 CLIProxyAPI 地址") }
-        if !text.contains("://") { text = "https://\(text)" }
-        guard var components = URLComponents(string: text), components.host != nil else {
-            throw PanelError.message("CLIProxyAPI 地址格式不正确")
-        }
-        var path = components.path.replacingOccurrences(of: "/+$", with: "", options: .regularExpression)
-        if !path.hasSuffix("/v8/management") && !path.hasSuffix("/v0/management") {
-            path += "/v8/management"
-        }
-        components.path = path
-        components.query = nil
-        components.fragment = nil
-        guard let url = components.url else { throw PanelError.message("CLIProxyAPI 地址格式不正确") }
-        return url
-    }
-
-    private func friendly(_ error: Error) -> String {
-        if let localized = error as? LocalizedError, let description = localized.errorDescription { return description }
-        return error.localizedDescription
-    }
 }
 
 // MARK: - AppKit views
@@ -552,19 +808,20 @@ private final class DashboardViewController: NSViewController {
 
         let heading = NSStackView()
         heading.spacing = 8
-        let icon = NSTextField(labelWithString: quota.provider == "codex" ? "✦" : "◇")
+        let icon = NSTextField(labelWithString: quota.providerSymbol)
         icon.font = .systemFont(ofSize: 17, weight: .semibold)
-        icon.textColor = quota.provider == "codex" ? .systemMint : .systemCyan
+        icon.textColor = quota.providerColor
         heading.addArrangedSubview(icon)
         let info = NSStackView()
         info.orientation = .vertical
         info.spacing = 1
-        let email = NSTextField(labelWithString: quota.email)
+        let email = NSTextField(labelWithString: quota.displayIdentity)
         email.font = .systemFont(ofSize: 12, weight: .semibold)
         email.lineBreakMode = .byTruncatingTail
-        let provider = NSTextField(labelWithString: quota.provider.uppercased() + (quota.plan.map { " · \($0)" } ?? ""))
+        let provider = NSTextField(labelWithString: ([quota.providerLabel, quota.plan, quota.region].compactMap { $0 }).joined(separator: " · "))
         provider.font = .systemFont(ofSize: 10)
         provider.textColor = .secondaryLabelColor
+        provider.lineBreakMode = .byTruncatingTail
         info.addArrangedSubview(email); info.addArrangedSubview(provider)
         heading.addArrangedSubview(info)
         heading.addArrangedSubview(NSView())
@@ -573,10 +830,10 @@ private final class DashboardViewController: NSViewController {
             value.font = .systemFont(ofSize: 11, weight: .semibold)
             value.textColor = .secondaryLabelColor
             heading.addArrangedSubview(value)
-        } else if let minimum = quota.minimumRemaining {
-            let value = NSTextField(labelWithString: "\(Int(minimum.rounded()))%")
+        } else {
+            let value = NSTextField(labelWithString: percentageText(quota.minimumRemaining))
             value.font = .monospacedDigitSystemFont(ofSize: 15, weight: .semibold)
-            value.textColor = color(for: minimum)
+            value.textColor = quota.minimumRemaining.map { color(for: $0, provider: quota.provider) } ?? .secondaryLabelColor
             heading.addArrangedSubview(value)
         }
         stack.addArrangedSubview(heading)
@@ -587,20 +844,20 @@ private final class DashboardViewController: NSViewController {
             stack.addArrangedSubview(disabledLabel)
         } else if let error = quota.error {
             stack.addArrangedSubview(warningLabel(error))
+        } else if quota.provider == "workbuddy" {
+            stack.addArrangedSubview(workBuddyDetails(quota))
         } else {
             for window in quota.windows {
                 let line = NSStackView(); line.orientation = .vertical; line.spacing = 3
                 let labels = NSStackView()
                 labels.addArrangedSubview(NSTextField(labelWithString: window.label))
                 labels.addArrangedSubview(NSView())
-                labels.addArrangedSubview(NSTextField(labelWithString: window.remaining.map { "\(Int($0.rounded()))%" } ?? "--"))
+                labels.addArrangedSubview(NSTextField(labelWithString: percentageText(window.remaining)))
                 for item in labels.arrangedSubviews {
                     (item as? NSTextField)?.font = .systemFont(ofSize: 10)
                 }
-                let progress = NSProgressIndicator(); progress.isIndeterminate = false; progress.controlSize = .small; progress.style = .bar
-                progress.doubleValue = max(0, min(100, window.remaining ?? 0))
-                progress.minValue = 0; progress.maxValue = 100
-                line.addArrangedSubview(labels); line.addArrangedSubview(progress)
+                line.addArrangedSubview(labels)
+                if let remaining = window.remaining { line.addArrangedSubview(progressBar(remaining)) }
                 if let reset = window.resetAt {
                     let resetLabel = NSTextField(labelWithString: "刷新：\(reset.formatted(date: .omitted, time: .shortened))")
                     resetLabel.font = .systemFont(ofSize: 9); resetLabel.textColor = .secondaryLabelColor
@@ -617,7 +874,55 @@ private final class DashboardViewController: NSViewController {
         return box
     }
 
-    private func color(for value: Double) -> NSColor { value < 25 ? .systemRed : value < 60 ? .systemOrange : .systemMint }
+    private func workBuddyDetails(_ quota: CredentialQuota) -> NSView {
+        let details = NSStackView()
+        details.orientation = .vertical
+        details.alignment = .width
+        details.spacing = 5
+        let credits = quota.workBuddyCredits
+        let remaining = NSTextField(labelWithString: "剩余积分：\(creditText(credits?.totalRemain))")
+        remaining.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+        remaining.textColor = credits?.remainingPercentage.map { color(for: $0, provider: "workbuddy") } ?? .secondaryLabelColor
+        details.addArrangedSubview(remaining)
+        let totals = NSTextField(labelWithString: "已用 \(creditText(credits?.totalUsed)) / 总量 \(creditText(credits?.totalSize)) · 积分包 \(credits?.packCount.map(String.init) ?? "--")")
+        totals.font = .systemFont(ofSize: 10)
+        totals.textColor = .secondaryLabelColor
+        details.addArrangedSubview(totals)
+        if let percentage = credits?.remainingPercentage { details.addArrangedSubview(progressBar(percentage)) }
+        if quota.exhausted { details.addArrangedSubview(warningLabel("积分已耗尽")) }
+        for package in credits?.packages ?? [] {
+            let label = NSTextField(wrappingLabelWithString: "\(package.name)：剩余 \(creditText(package.remain)) / \(creditText(package.size)) · 已用 \(creditText(package.used))")
+            label.font = .systemFont(ofSize: 10)
+            details.addArrangedSubview(label)
+            let expiry = NSTextField(labelWithString: "到期：\(package.cycleEnd.map { $0.formatted(date: .abbreviated, time: .shortened) } ?? "--")")
+            expiry.font = .systemFont(ofSize: 9)
+            expiry.textColor = package.cycleEnd.map { $0 <= Date() ? .systemOrange : .secondaryLabelColor } ?? .secondaryLabelColor
+            expiry.toolTip = package.cycleStart.map { "周期开始：\($0.formatted(date: .abbreviated, time: .shortened))" }
+            details.addArrangedSubview(expiry)
+        }
+        if let fetched = credits?.fetchedAt {
+            let label = NSTextField(labelWithString: "额度采集：\(fetched.formatted(date: .abbreviated, time: .shortened))")
+            label.font = .systemFont(ofSize: 9)
+            label.textColor = .secondaryLabelColor
+            details.addArrangedSubview(label)
+        }
+        return details
+    }
+
+    private func progressBar(_ remaining: Double) -> NSProgressIndicator {
+        let progress = NSProgressIndicator()
+        progress.isIndeterminate = false
+        progress.controlSize = .small
+        progress.style = .bar
+        progress.minValue = 0
+        progress.maxValue = 100
+        progress.doubleValue = max(0, min(100, remaining))
+        return progress
+    }
+
+    private func color(for value: Double, provider: String) -> NSColor {
+        value < 25 ? .systemRed : value < 60 ? .systemOrange : provider == "workbuddy" ? .systemPurple : .systemMint
+    }
 
     @objc private func refreshNow() { model.refresh() }
     @objc private func openSettings() {
@@ -658,7 +963,7 @@ private final class SettingsViewController: NSViewController {
         view.addSubview(stack)
         NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 22), stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -22), stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 22), stack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -22)])
         let title = NSTextField(labelWithString: "连接配置"); title.font = .systemFont(ofSize: 17, weight: .semibold); stack.addArrangedSubview(title)
-        let hint = NSTextField(wrappingLabelWithString: "密钥只保存到本机 macOS 钥匙串。地址可以填写服务根地址，应用会自动补全 /v8/management。"); hint.font = .systemFont(ofSize: 11); hint.textColor = .secondaryLabelColor; stack.addArrangedSubview(hint)
+        let hint = NSTextField(wrappingLabelWithString: "地址和密钥只保存到本机 macOS 钥匙串。地址可以填写服务根地址，应用会自动补全 /v8/management。"); hint.font = .systemFont(ofSize: 11); hint.textColor = .secondaryLabelColor; stack.addArrangedSubview(hint)
         address.placeholderString = "CLIProxyAPI 地址"; address.stringValue = model.baseURL; address.controlSize = .large; stack.addArrangedSubview(address)
         key.placeholderString = "管理密钥"; key.stringValue = model.managementKey; key.controlSize = .large; stack.addArrangedSubview(key)
         errorLabel.font = .systemFont(ofSize: 11); errorLabel.textColor = .systemRed; errorLabel.isHidden = true; stack.addArrangedSubview(errorLabel)
@@ -670,7 +975,7 @@ private final class SettingsViewController: NSViewController {
     @objc private func cancelAction() { closeWindow?() }
     @objc private func saveAction() {
         do { try model.saveConfiguration(baseURL: address.stringValue, key: key.stringValue); closeWindow?(); model.refresh() }
-        catch { errorLabel.stringValue = error.localizedDescription; errorLabel.isHidden = false }
+        catch { errorLabel.stringValue = safeErrorMessage(error); errorLabel.isHidden = false }
     }
 }
 
@@ -719,17 +1024,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateStatus() {
         guard let button = statusItem.button else { return }
         if model.isRefreshing { button.title = ""; button.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: "正在刷新"); return }
-        let codex = model.quotas.filter { $0.provider == "codex" }.compactMap(\.minimumRemaining).min()
-        let antigravity = model.quotas.filter { $0.provider == "antigravity" }.compactMap(\.minimumRemaining).min()
-        var segments: [String] = []
-        if let codex { segments.append("C \(Int(codex.rounded()))%") }
-        if let antigravity { segments.append("A \(Int(antigravity.rounded()))%") }
+        let segments = menuSegments(model.quotas)
         button.image = NSImage(systemSymbolName: "gauge.with.dots.needle.67percent", accessibilityDescription: "Quota Dash")
         button.title = segments.isEmpty ? "" : " " + segments.joined(separator: " · ")
-        button.toolTip = segments.isEmpty ? "Quota Dash" : "Codex / Antigravity 剩余额度：" + segments.joined(separator: "，")
+        button.toolTip = model.error ?? (segments.isEmpty ? "Quota Dash" : "Codex / Antigravity / WorkBuddy 剩余额度：" + segments.joined(separator: "，"))
     }
 }
 
+#if !PANEL_TESTS
 @main
 private struct QuotaDashPanelMain {
     static func main() {
@@ -739,23 +1041,32 @@ private struct QuotaDashPanelMain {
         application.run()
     }
 }
+#endif
 
 // MARK: - JSON helpers
 
 private func string(_ value: Any?) -> String? {
-    guard let value else { return nil }
+    guard let value, !(value is NSNull), value is String || value is NSNumber else { return nil }
     let result = String(describing: value).trimmingCharacters(in: .whitespacesAndNewlines)
     return result.isEmpty ? nil : result
 }
 
 private func asInt(_ value: Any?) -> Int? {
-    if let number = value as? NSNumber { return number.intValue }
+    if let number = value as? NSNumber {
+        guard CFGetTypeID(number) != CFBooleanGetTypeID() else { return nil }
+        return Int(exactly: number.doubleValue)
+    }
     return Int(string(value) ?? "")
 }
 
 private func asDouble(_ value: Any?) -> Double? {
-    if let number = value as? NSNumber { return number.doubleValue }
-    return Double(string(value) ?? "")
+    let result: Double?
+    if let number = value as? NSNumber {
+        guard CFGetTypeID(number) != CFBooleanGetTypeID() else { return nil }
+        result = number.doubleValue
+    } else { result = Double(string(value) ?? "") }
+    guard let result, result.isFinite else { return nil }
+    return result
 }
 
 private func asBool(_ value: Any?) -> Bool {
@@ -765,6 +1076,30 @@ private func asBool(_ value: Any?) -> Bool {
 
 private func date(_ value: Any?) -> Date? {
     guard let raw = string(value) else { return nil }
+    if let epoch = asDouble(value) {
+        let seconds = abs(epoch) > 100_000_000_000 ? epoch / 1000 : epoch
+        guard abs(seconds) < 253_402_300_800 else { return nil }
+        return Date(timeIntervalSince1970: seconds)
+    }
     let formatter = ISO8601DateFormatter()
+    if let result = formatter.date(from: raw) { return result }
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     return formatter.date(from: raw)
+}
+
+private func hasError(_ value: Any?) -> Bool {
+    guard let value, !(value is NSNull) else { return false }
+    if let text = value as? String { return !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    if let number = value as? NSNumber { return number.boolValue }
+    return true
+}
+
+private func percentageText(_ value: Double?) -> String {
+    guard let value, value.isFinite else { return "--" }
+    return "\(Int(max(0, min(100, value)).rounded()))%"
+}
+
+private func creditText(_ value: Double?) -> String {
+    guard let value, value.isFinite else { return "--" }
+    return value.formatted(.number.precision(.fractionLength(0...2)))
 }

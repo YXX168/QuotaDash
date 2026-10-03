@@ -3,13 +3,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/opencode_quota.dart';
+import 'private_http.dart';
 
 class OpencodeService {
   /// Optional test hook; production code leaves this null.
   static http.Client? clientOverride;
 
   OpencodeService({required this.apiKey, http.Client? client})
-    : _client = client ?? clientOverride ?? http.Client();
+    : _client = PrivateHttpClient(client ?? clientOverride ?? http.Client());
 
   static const usageUrl = 'https://opencode.ai/zen/go/v1/usage';
 
@@ -49,9 +50,10 @@ class OpencodeService {
   }
 }
 
-class OpencodeException implements Exception {
+class OpencodeException implements PublicError {
   const OpencodeException(this.message);
 
+  @override
   final String message;
 
   @override

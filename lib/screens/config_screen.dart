@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/private_http.dart';
 
 import '../models/app_config.dart';
 import '../services/config_store.dart';
@@ -110,7 +111,7 @@ class _ConfigScreenState extends State<ConfigScreen>
     } catch (error) {
       await HapticFeedback.heavyImpact();
       if (!mounted) return;
-      setState(() => _saveError = error.toString());
+      setState(() => _saveError = safeErrorMessage(error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -296,7 +297,13 @@ String _normalizeUrl(String value) {
 }
 
 String _managementUrl(String value, {String? defaultSuffix}) {
-  final uri = Uri.parse(_normalizeUrl(value));
+  var uri = Uri.parse(_normalizeUrl(value));
+  // Accept the management page link users copy from their browser.
+  if (uri.path.endsWith('/management.html')) {
+    uri = uri.replace(
+      path: uri.path.substring(0, uri.path.length - '/management.html'.length),
+    );
+  }
   // New CLIProxyAPI installations use the v8 management API. Keep an
   // explicitly entered v0/v8 path intact so existing deployments continue to
   // work and only append v8 for an origin-only address.
@@ -337,7 +344,11 @@ String? _validateUrl(String? value) {
   if (uri.scheme != 'https' && uri.scheme != 'http') {
     return '仅支持 HTTP 或 HTTPS';
   }
+  if (uri.userInfo.isNotEmpty) return '地址不能包含账号或密码';
   if (uri.hasQuery || uri.hasFragment) return '地址不能包含参数或片段';
+  if (uri.scheme == 'http' && !isPrivateHttpHost(uri.host)) {
+    return '远程服务必须使用 HTTPS；HTTP 仅用于本机或局域网 IP';
+  }
   return null;
 }
 
@@ -511,8 +522,9 @@ class _ProviderFieldInputState extends State<_ProviderFieldInput> {
       textInputAction: widget.onSubmitted == null
           ? TextInputAction.next
           : TextInputAction.done,
-      autocorrect: true,
-      enableSuggestions: true,
+      autocorrect: false,
+      enableSuggestions: false,
+      enableIMEPersonalizedLearning: false,
       onFieldSubmitted: widget.onSubmitted,
       decoration: InputDecoration(
         labelText: field.label + (field.required ? '' : '（可选）'),

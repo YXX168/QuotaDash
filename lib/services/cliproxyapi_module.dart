@@ -29,7 +29,7 @@ class CliProxyApiModule implements QuotaModule<CodexModuleResult> {
   String get displayName => QuotaProviderId.cliProxyApi.displayName;
 
   @override
-  String get description => 'Codex / Antigravity 账号额度与请求活动';
+  String get description => 'Codex / Antigravity / WorkBuddy 账号额度与请求活动';
 
   @override
   Color get accentColor => AppTheme.cyan;
@@ -66,7 +66,13 @@ class CliProxyApiModule implements QuotaModule<CodexModuleResult> {
         );
     // Errors propagate so the dashboard can show the real failure reason
     // while keeping other provider modules unaffected.
-    final snapshot = await repository.fetchDashboard();
-    return CodexModuleResult(snapshot);
+    try {
+      final snapshot = await repository.fetchDashboard();
+      return CodexModuleResult(snapshot);
+    } finally {
+      if (_repositoryFactory == null && repository is ManagementService) {
+        repository.dispose();
+      }
+    }
   }
 }

@@ -2,7 +2,7 @@ name: Validate Android
 
 on:
   push:
-    branches: [main, codex/runtime-config-signing]
+    branches: [main, codex/runtime-config-signing, codex/workbuddy-security]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -36,12 +36,12 @@ jobs:
         run: flutter analyze --no-fatal-infos
       - name: Test
         run: flutter test --exclude-tags=golden
-      - name: Render Antigravity review images
+      - name: Render provider review images
         env:
           QUOTA_REVIEW_FONT: /tmp/quotadash-review.ttf
         run: |
           curl --fail --location --retry 3 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf' -o "$QUOTA_REVIEW_FONT"
-          flutter test test/antigravity_widget_test.dart --tags=golden --update-goldens
+          flutter test test/antigravity_widget_test.dart test/workbuddy_widget_test.dart --tags=golden --update-goldens
       - name: Upload visual review
         uses: actions/upload-artifact@v7
         with:
@@ -108,3 +108,7 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/app/release.keystore android/key.properties
