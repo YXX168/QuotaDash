@@ -9,7 +9,7 @@ import Security
 private enum SecretStore {
     private static let service = "com.yxx.quotadash.panel"
 
-    static func read(_ account: String) -> String? {
+    static func read(_ account: String) throws -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -18,9 +18,15 @@ private enum SecretStore {
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
         var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        if status == errSecItemNotFound { return nil }
+        guard status == errSecSuccess else {
+            throw PanelError.message("无法读取 macOS 钥匙串，请解锁钥匙串或重新保存连接配置")
+        }
+        guard let data = item as? Data, let value = String(data: data, encoding: .utf8) else {
+            throw PanelError.message("钥匙串中的连接配置已损坏，请重新保存连接配置")
+        }
+        return value
     }
 
     static func write(_ value: String, account: String) throws {
@@ -56,35 +62,55 @@ private enum SecretStore {
     }
 }
 
+private struct PanelConnection: Codable, Equatable {
+    let baseURL: String
+    let managementKey: String
+
+    func validated() throws -> PanelConnection {
+        guard !managementKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw PanelError.message("连接配置缺少管理密钥，请重新保存连接配置")
+        }
+        return PanelConnection(baseURL: try normalizeManagementURL(baseURL).absoluteString, managementKey: managementKey)
+    }
+}
+
 private struct ConnectionStorage {
-    var readSecret: (String) -> String? = SecretStore.read
+    private static let account = "connection_v1"
+    var readSecret: (String) throws -> String? = SecretStore.read
     var writeSecret: (String, String) throws -> Void = { try SecretStore.write($0, account: $1) }
     var removeSecret: (String) throws -> Void = SecretStore.remove
     var readLegacyURL: () -> String? = { UserDefaults.standard.string(forKey: "baseURL") }
     var removeLegacyURL: () -> Void = { UserDefaults.standard.removeObject(forKey: "baseURL") }
 
-    func loadBaseURL() throws -> String {
-        let saved = readSecret("baseURL")
-        guard let legacy = readLegacyURL() else { return saved ?? "" }
-        let value = saved ?? legacy
-        // A failed migration must leave the old value available for retry.
-        try writeSecret(value, "baseURL")
-        removeLegacyURL()
-        return value
+    func load() throws -> PanelConnection? {
+        // Only a genuinely absent atomic record permits legacy migration.
+        // Read failures or corrupt records must never expose a shadow pair.
+        if let encoded = try readSecret(Self.account) {
+            guard let connection = try? JSONDecoder().decode(PanelConnection.self, from: Data(encoded.utf8)) else {
+                throw PanelError.message("钥匙串中的连接配置已损坏，请重新保存连接配置")
+            }
+            return try connection.validated()
+        }
+        let legacyURL = try readSecret("baseURL") ?? readLegacyURL()
+        let legacyKey = try readSecret("managementKey")
+        if legacyURL == nil && legacyKey == nil { return nil }
+        guard let legacyURL, let legacyKey else {
+            throw PanelError.message("旧版连接配置不完整，请重新保存连接配置")
+        }
+        // The model receives a pair only after the atomic migration succeeds.
+        return try save(baseURL: legacyURL, key: legacyKey)
     }
 
-    func save(baseURL: String, key: String) throws {
-        let previousURL = readSecret("baseURL")
-        try writeSecret(baseURL, "baseURL")
-        do {
-            try writeSecret(key, "managementKey")
-        } catch {
-            // Avoid pairing the previous key with a new service address.
-            if let previousURL { try? writeSecret(previousURL, "baseURL") }
-            else { try? removeSecret("baseURL") }
-            throw PanelError.message("连接配置未完整保存到钥匙串，请重新保存后重试")
-        }
+    func save(baseURL: String, key: String) throws -> PanelConnection {
+        let connection = try PanelConnection(baseURL: baseURL, managementKey: key).validated()
+        let encoded = String(decoding: try JSONEncoder().encode(connection), as: UTF8.self)
+        // One Keychain item is one atomic write; no partial pair or rollback.
+        try writeSecret(encoded, Self.account)
+        // Cleanup can fail independently: obsolete records are never preferred.
+        try? removeSecret("baseURL")
+        try? removeSecret("managementKey")
         removeLegacyURL()
+        return connection
     }
 }
 
@@ -567,15 +593,21 @@ private final class DashboardModel: ObservableObject {
 
     private(set) var managementKey: String
     private let storage: ConnectionStorage
+    private var configurationError: String?
 
     init(storage: ConnectionStorage = ConnectionStorage()) {
         self.storage = storage
         baseURL = ""
-        managementKey = storage.readSecret("managementKey") ?? ""
-        do { baseURL = try storage.loadBaseURL() }
+        managementKey = ""
+        do {
+            if let connection = try storage.load() {
+                baseURL = connection.baseURL
+                managementKey = connection.managementKey
+            }
+        }
         catch {
-            baseURL = storage.readSecret("baseURL") ?? storage.readLegacyURL() ?? ""
-            self.error = safeErrorMessage(error)
+            configurationError = safeErrorMessage(error)
+            self.error = configurationError
         }
     }
 
@@ -588,14 +620,16 @@ private final class DashboardModel: ObservableObject {
         guard !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw PanelError.message("请输入管理密钥")
         }
-        try storage.save(baseURL: normalized.absoluteString, key: key)
-        self.baseURL = normalized.absoluteString
-        managementKey = key
+        let connection = try storage.save(baseURL: normalized.absoluteString, key: key)
+        self.baseURL = connection.baseURL
+        managementKey = connection.managementKey
+        configurationError = nil
         error = nil
     }
 
     func refresh() {
         guard !isRefreshing else { return }
+        guard configurationError == nil else { error = configurationError; return }
         isRefreshing = true
         error = nil
         Task {

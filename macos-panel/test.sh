@@ -80,6 +80,55 @@ private func runFixture(_ replies: [FixtureReply], base: String = "https://examp
     return (quota, FixtureProtocol.recordedRequests())
 }
 
+private final class FixtureSecrets {
+    var records: [String: String] = [:]
+    var legacyURL: String?
+    var reads: [String] = []
+    var writes: [String] = []
+    var removals: [String] = []
+    var legacyReads = 0
+    var legacyRemovals = 0
+    var failingRead: String?
+    var failWrites = false
+    var failCleanup = false
+
+    var storage: ConnectionStorage {
+        ConnectionStorage(readSecret: { name in
+            self.reads.append(name)
+            if name == self.failingRead { throw FixtureFailure.failed("simulated keychain read failure") }
+            return self.records[name]
+        }, writeSecret: { value, name in
+            self.writes.append(name)
+            if self.failWrites { throw FixtureFailure.failed("simulated keychain write failure") }
+            self.records[name] = value
+        }, removeSecret: { name in
+            self.removals.append(name)
+            if self.failCleanup { throw FixtureFailure.failed("simulated cleanup failure") }
+            self.records.removeValue(forKey: name)
+        }, readLegacyURL: {
+            self.legacyReads += 1
+            return self.legacyURL
+        }, removeLegacyURL: {
+            self.legacyRemovals += 1
+            if !self.failCleanup { self.legacyURL = nil }
+        })
+    }
+
+    func resetLog() {
+        reads = []; writes = []; removals = []; legacyReads = 0; legacyRemovals = 0
+    }
+}
+
+private func encodedConnection(_ connection: PanelConnection) throws -> String {
+    String(decoding: try JSONEncoder().encode(connection), as: UTF8.self)
+}
+
+private func expectFailure(_ operation: () throws -> Void, _ message: String) throws {
+    do { try operation() }
+    catch { return }
+    throw FixtureFailure.failed(message)
+}
+
 @main
 private enum PanelFixtureTests {
     static func main() async throws {
@@ -94,39 +143,117 @@ private enum PanelFixtureTests {
         print("Native panel fixtures passed: secure storage, credits, identity, unknown quotas, routing, errors and existing providers.")
     }
 
+    @MainActor
     static func testConnectionStorage() throws {
-        var secrets: [String: String] = [:]
-        var legacy: String? = "https://legacy.example.invalid/v8/management"
-        var writes: [String] = []
-        var failingAccount: String? = nil
-        let storage = ConnectionStorage(readSecret: { secrets[$0] }, writeSecret: { value, name in
-            writes.append(name)
-            if name == failingAccount { throw FixtureFailure.failed("simulated keychain write failure") }
-            secrets[name] = value
-        }, removeSecret: { secrets.removeValue(forKey: $0) }, readLegacyURL: { legacy }, removeLegacyURL: { legacy = nil })
-        failingAccount = "baseURL"
-        do { _ = try storage.loadBaseURL(); throw FixtureFailure.failed("failed migration succeeded") }
-        catch is FixtureFailure {
-            try check(legacy != nil && secrets["baseURL"] == nil, "legacy deleted before keychain write")
+        let old = PanelConnection(baseURL: "https://old.example.invalid/v8/management", managementKey: "fictional-old-key")
+        let new = PanelConnection(baseURL: "https://new.example.invalid/v8/management", managementKey: "fictional-new-key")
+        let fixture = FixtureSecrets()
+        try check(try fixture.storage.load() == nil && fixture.writes.isEmpty && fixture.removals.isEmpty, "empty installation wrote secrets")
+
+        // A failed write must not need rollback, even when cleanup is impossible.
+        fixture.records = ["connection_v1": try encodedConnection(old), "baseURL": "https://shadow.example.invalid/v8/management",
+                           "managementKey": "fictional-shadow-key"]
+        fixture.legacyURL = "https://legacy.example.invalid/v8/management"
+        let originals = fixture.records
+        fixture.failWrites = true
+        fixture.failCleanup = true
+        fixture.resetLog()
+        try expectFailure({ _ = try fixture.storage.save(baseURL: new.baseURL, key: new.managementKey) }, "failed atomic save succeeded")
+        try check(fixture.records == originals && fixture.writes == ["connection_v1"] && fixture.reads.isEmpty,
+                  "save changed a partial pair or required rollback")
+        try check(fixture.removals.isEmpty && fixture.legacyRemovals == 0, "failed atomic write cleaned up originals")
+        fixture.resetLog()
+        let restarted = DashboardModel(storage: fixture.storage)
+        try check(restarted.baseURL == old.baseURL && restarted.managementKey == old.managementKey && restarted.error == nil,
+                  "restart paired new URL with old key")
+        try check(fixture.reads == ["connection_v1"] && fixture.legacyReads == 0, "model read shadow records beside atomic pair")
+        try expectFailure({ try restarted.saveConfiguration(baseURL: new.baseURL, key: new.managementKey) }, "model accepted failed save")
+        try check(restarted.baseURL == old.baseURL && restarted.managementKey == old.managementKey, "failed save changed model pair")
+
+        // Cleanup failures leave shadows in place, but the single atomic item wins.
+        fixture.failWrites = false
+        fixture.resetLog()
+        let saved = try fixture.storage.save(baseURL: new.baseURL, key: new.managementKey)
+        try check(saved == new && fixture.writes == ["connection_v1"] && fixture.reads.isEmpty, "save performed multiple writes")
+        try check(fixture.records["baseURL"] == originals["baseURL"] && fixture.records["managementKey"] == originals["managementKey"],
+                  "cleanup fixture did not preserve shadows")
+        fixture.resetLog()
+        try check(try fixture.storage.load() == new && fixture.reads == ["connection_v1"] && fixture.legacyReads == 0,
+                  "legacy shadow preferred over atomic record")
+
+        // Both older URL locations migrate with their key only after one write.
+        for useKeychainURL in [false, true] {
+            let migration = FixtureSecrets()
+            migration.records["managementKey"] = old.managementKey
+            migration.legacyURL = old.baseURL
+            if useKeychainURL {
+                migration.records["baseURL"] = new.baseURL
+            }
+            let legacyRecords = migration.records
+            migration.failWrites = true
+            try expectFailure({ _ = try migration.storage.load() }, "failed migration returned a usable pair")
+            try check(migration.records == legacyRecords && migration.legacyURL == old.baseURL &&
+                      migration.writes == ["connection_v1"] && migration.removals.isEmpty && migration.legacyRemovals == 0,
+                      "migration failure removed or modified originals")
+            migration.resetLog()
+            let blocked = DashboardModel(storage: migration.storage)
+            try check(blocked.baseURL.isEmpty && blocked.managementKey.isEmpty && blocked.error != nil, "model used failed legacy migration")
+            try check(migration.reads == ["connection_v1", "baseURL", "managementKey"], "model loaded connection more than once")
+            migration.failWrites = false
+            migration.resetLog()
+            let expected = PanelConnection(baseURL: useKeychainURL ? new.baseURL : old.baseURL, managementKey: old.managementKey)
+            try check(try migration.storage.load() == expected && migration.writes == ["connection_v1"], "atomic legacy migration")
+            try check(migration.records.count == 1 && migration.records["connection_v1"] != nil && migration.legacyURL == nil,
+                      "successful migration did not clean up legacy records")
         }
-        failingAccount = nil
-        let migrated = try storage.loadBaseURL()
-        try check(migrated == "https://legacy.example.invalid/v8/management" && secrets["baseURL"] == migrated && legacy == nil, "legacy migration")
-        legacy = "https://stale.example.invalid/v8/management"
-        try check(try storage.loadBaseURL() == migrated && secrets["baseURL"] == migrated && legacy == nil, "new keychain address overwritten by legacy")
-        writes = []
-        try check(try storage.loadBaseURL() == migrated && writes.isEmpty, "migration repeated without legacy")
-        try storage.save(baseURL: "https://new.example.invalid/v8/management", key: "fictional-new-key")
-        try check(secrets["baseURL"] == "https://new.example.invalid/v8/management" && secrets["managementKey"] == "fictional-new-key", "connection saved outside keychain")
-        let previous = secrets["baseURL"]
-        failingAccount = "managementKey"
-        do { try storage.save(baseURL: "https://failed.example.invalid/v8/management", key: "fictional-failed-key"); throw FixtureFailure.failed("partial save succeeded") }
-        catch is PanelError {}
-        try check(secrets["baseURL"] == previous && secrets["managementKey"] == "fictional-new-key", "failed key write left mismatched address")
-        secrets = [:]
-        do { try storage.save(baseURL: "https://new.example.invalid/v8/management", key: "fictional-new-key"); throw FixtureFailure.failed("partial initial save succeeded") }
-        catch is PanelError {}
-        try check(secrets.isEmpty, "failed initial save left an address behind")
+
+        // Missing legacy halves cannot become a connection or trigger writes.
+        for partial in [["baseURL": old.baseURL], ["managementKey": old.managementKey]] {
+            let incomplete = FixtureSecrets()
+            incomplete.records = partial
+            try expectFailure({ _ = try incomplete.storage.load() }, "incomplete legacy pair accepted")
+            try check(incomplete.records == partial && incomplete.writes.isEmpty && incomplete.removals.isEmpty, "incomplete legacy records modified")
+        }
+
+        // A present but invalid item never falls back to otherwise valid shadows.
+        for corrupt in ["", "not-json", "{}", "{\"baseURL\":42,\"managementKey\":\"fictional-key\"}",
+                        try encodedConnection(PanelConnection(baseURL: old.baseURL, managementKey: "")),
+                        try encodedConnection(PanelConnection(baseURL: "http://example.invalid", managementKey: old.managementKey))] {
+            let invalid = FixtureSecrets()
+            invalid.records = ["connection_v1": corrupt, "baseURL": old.baseURL, "managementKey": old.managementKey]
+            invalid.legacyURL = old.baseURL
+            try expectFailure({ _ = try invalid.storage.load() }, "corrupt atomic record accepted")
+            try check(invalid.reads == ["connection_v1"] && invalid.writes.isEmpty && invalid.removals.isEmpty && invalid.legacyReads == 0,
+                      "corrupt atomic record fell back to legacy secrets")
+            invalid.resetLog()
+            let blocked = DashboardModel(storage: invalid.storage)
+            try check(blocked.baseURL.isEmpty && blocked.managementKey.isEmpty && blocked.error != nil, "corrupt atomic model used raw records")
+            let error = blocked.error
+            blocked.refresh()
+            try check(!blocked.isRefreshing && blocked.error == error && invalid.reads == ["connection_v1"], "failed-closed model started refresh")
+            invalid.resetLog()
+            try blocked.saveConfiguration(baseURL: new.baseURL, key: new.managementKey)
+            try check(blocked.baseURL == new.baseURL && blocked.managementKey == new.managementKey && blocked.error == nil &&
+                      invalid.writes == ["connection_v1"], "explicit save did not replace corrupt atomic pair")
+        }
+
+        // Locked/failed reads are different from an absent item, including legacy reads.
+        for failedAccount in ["connection_v1", "baseURL", "managementKey"] {
+            let unreadable = FixtureSecrets()
+            unreadable.records = ["baseURL": old.baseURL, "managementKey": old.managementKey]
+            unreadable.legacyURL = old.baseURL
+            unreadable.failingRead = failedAccount
+            let blocked = DashboardModel(storage: unreadable.storage)
+            try check(blocked.baseURL.isEmpty && blocked.managementKey.isEmpty && blocked.error != nil &&
+                      unreadable.writes.isEmpty && unreadable.removals.isEmpty && unreadable.legacyRemovals == 0,
+                      "failed keychain read used an unmatched connection")
+            if failedAccount == "connection_v1" { try check(unreadable.reads == ["connection_v1"] && unreadable.legacyReads == 0, "failed atomic read fell back") }
+        }
+        let empty = FixtureSecrets()
+        empty.failWrites = true
+        empty.failCleanup = true
+        try expectFailure({ _ = try empty.storage.save(baseURL: new.baseURL, key: new.managementKey) }, "failed initial save succeeded")
+        try check(empty.records.isEmpty && empty.writes == ["connection_v1"] && empty.removals.isEmpty, "initial atomic save left partial secrets")
     }
 
     static func testURLsAndErrors() throws {
