@@ -31,6 +31,7 @@ class ProviderQuotaWindow {
     required this.remainingPercent,
     this.resetAt,
     this.displayValue,
+    this.higherIsBetter = true,
   });
 
   final String label;
@@ -39,6 +40,9 @@ class ProviderQuotaWindow {
 
   /// Optional numeric balance text; the bar still uses remainingPercent.
   final String? displayValue;
+
+  /// Usage increases toward exhaustion; remaining quota moves the other way.
+  final bool higherIsBetter;
 }
 
 /// Unified quota snapshot from a single provider module.

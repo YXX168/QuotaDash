@@ -2,7 +2,7 @@ name: Validate Android
 
 on:
   push:
-    branches: [main, codex/runtime-config-signing, codex/workbuddy-security, codex/workbuddy-card-fix]
+    branches: [main, codex/runtime-config-signing, codex/workbuddy-security, codex/workbuddy-card-fix, codex/workbuddy-two-bars]
   pull_request:
     branches: [main]
   workflow_dispatch:

@@ -65,12 +65,22 @@ WorkBuddyAccount fixture({
         ),
 );
 
-String remainingText(
+Finder remainingReading(
   VisualMode mode, {
   String remaining = '375',
   String total = '500',
-}) =>
-    mode == VisualMode.energy ? '$remaining / $total' : '剩余 $remaining credits';
+}) {
+  if (mode == VisualMode.console) return find.text('剩余 $remaining credits');
+  final amount = double.tryParse(remaining);
+  final size = double.tryParse(total);
+  final text = amount == null || size == null || size <= 0
+      ? '--'
+      : '${(amount / size * 100).clamp(0, 100).toStringAsFixed(0)}%';
+  return find.descendant(
+    of: find.byKey(const Key('energy-quota-line-secondary')),
+    matching: find.text(text),
+  );
+}
 
 class _Repository implements QuotaRepository {
   const _Repository(this.accounts, {this.antigravityAccounts = const []});
@@ -161,6 +171,42 @@ Future<void> pumpCard(
 }
 
 void main() {
+  testWidgets('energy shows used above remaining with actual credit ratios', (
+    tester,
+  ) async {
+    await pumpCard(tester, VisualMode.energy, fixture());
+    final used = find.byKey(const Key('energy-quota-track-已用 Credits'));
+    final remaining = find.byKey(const Key('energy-quota-track-剩余 Credits'));
+    expect(
+      tester.getRect(used).bottom,
+      lessThan(tester.getRect(remaining).top),
+    );
+    expect(find.text('25%'), findsOneWidget);
+    expect(remainingReading(VisualMode.energy), findsOneWidget);
+    expect(
+      tester
+          .getSize(find.byKey(const Key('energy-quota-fill-已用 Credits')))
+          .width,
+      closeTo(tester.getSize(used).width * .25, .1),
+    );
+    expect(
+      tester
+          .getSize(find.byKey(const Key('energy-quota-fill-剩余 Credits')))
+          .width,
+      closeTo(tester.getSize(remaining).width * .75, .1),
+    );
+    await pumpCard(tester, VisualMode.energy, fixture(total: null));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('energy-quota-line-primary')),
+        matching: find.text('--'),
+      ),
+      findsOneWidget,
+    );
+    expect(remainingReading(VisualMode.energy, total: '--'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final mode in VisualMode.values) {
     for (final width in [320.0, 800.0]) {
       testWidgets(
@@ -250,7 +296,7 @@ void main() {
           await tester.tap(
             find.descendant(
               of: cnCard,
-              matching: find.text(remainingText(mode, remaining: '125')),
+              matching: remainingReading(mode, remaining: '125'),
             ),
           );
           await tester.pumpAndSettle();
@@ -284,7 +330,7 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.text(remainingText(mode)), findsOneWidget);
+        expect(remainingReading(mode), findsOneWidget);
         expect(find.textContaining('当前账号'), findsOneWidget);
         expect(
           find.text('查看积分包与到期时间'),
@@ -295,7 +341,7 @@ void main() {
         expect(find.textContaining('查询时间：'), findsNothing);
         expect(find.textContaining('到期：'), findsNothing);
         expect(find.textContaining('重置'), findsNothing);
-        await tester.tap(find.text(remainingText(mode)));
+        await tester.tap(remainingReading(mode));
         await tester.pumpAndSettle();
         expect(find.text('WorkBuddy 账号详情'), findsOneWidget);
         expect(find.text('Synthetic credit package'), findsOneWidget);
@@ -310,7 +356,7 @@ void main() {
     ) async {
       await pumpCard(tester, mode, fixture(unknown: true));
       expect(
-        find.text(remainingText(mode, remaining: '--', total: '--')),
+        remainingReading(mode, remaining: '--', total: '--'),
         findsOneWidget,
       );
       expect(find.textContaining('积分余量未知'), findsOneWidget);
@@ -337,7 +383,7 @@ void main() {
             : find.textContaining('同步失败（上次积分）'),
         findsOneWidget,
       );
-      expect(find.text(remainingText(mode)), findsOneWidget);
+      expect(remainingReading(mode), findsOneWidget);
       expect(find.text('private'), findsNothing);
       expect(tester.takeException(), isNull);
     });
@@ -370,7 +416,12 @@ void main() {
         await pumpCard(tester, mode, account, width: 320, textScale: 1.5);
         expect(find.text('已禁用'), findsWidgets);
         expect(find.text('积分包 8'), findsNothing);
-        expect(find.text(remainingText(mode)), findsOneWidget);
+        expect(
+          mode == VisualMode.energy
+              ? remainingReading(mode, remaining: '--', total: '--')
+              : remainingReading(mode),
+          findsOneWidget,
+        );
         expect(
           find.textContaining('Synthetic long credit package'),
           findsNothing,
@@ -379,7 +430,7 @@ void main() {
         if (mode == VisualMode.energy) {
           final orb = tester.getRect(find.byKey(const Key('energy-orb')));
           final bar = tester.getRect(
-            find.byKey(const Key('energy-quota-track-Credits')),
+            find.byKey(const Key('energy-quota-track-剩余 Credits')),
           );
           expect(orb.right, lessThanOrEqualTo(bar.left));
           expect(bar.top, greaterThanOrEqualTo(orb.top));
@@ -431,7 +482,7 @@ void main() {
         find.byType(DashboardScreen),
         matchesGoldenFile('../build/visual-review/workbuddy_${mode.name}.png'),
       );
-      await tester.tap(find.text(remainingText(mode)));
+      await tester.tap(remainingReading(mode));
       await tester.pumpAndSettle();
       await expectLater(
         find.byType(Scaffold),
