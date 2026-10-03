@@ -301,6 +301,8 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                                       label: readings[i].label,
                                       remaining: readings[i].remainingPercent,
                                       displayValue: readings[i].displayValue,
+                                      higherIsBetter:
+                                          readings[i].higherIsBetter,
                                       color: data == null
                                           ? color
                                           : AppTheme.cyan,
@@ -371,6 +373,7 @@ class _QuotaReading extends StatelessWidget {
     required this.remaining,
     required this.color,
     this.displayValue,
+    this.higherIsBetter = true,
     super.key,
   });
 
@@ -378,15 +381,21 @@ class _QuotaReading extends StatelessWidget {
   final double? remaining;
   final Color color;
   final String? displayValue;
+  final bool higherIsBetter;
 
   @override
   Widget build(BuildContext context) {
     final progress = ((remaining ?? 0) / 100).clamp(0.0, 1.0).toDouble();
+    final health = remaining == null
+        ? null
+        : higherIsBetter
+        ? remaining!
+        : 100 - remaining!;
     final valueColor = remaining == null
         ? const Color(0xFF71809A)
-        : remaining! <= 15
+        : health! <= 15
         ? AppTheme.danger
-        : remaining! <= 35
+        : health <= 35
         ? AppTheme.warning
         : color;
     return Container(

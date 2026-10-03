@@ -67,13 +67,24 @@ class WorkBuddyAccountCard extends StatelessWidget {
           ),
           windows: [
             ProviderQuotaWindow(
-              label: 'Credits',
+              label: '已用 Credits',
+              higherIsBetter: false,
+              remainingPercent:
+                  account.disabled ||
+                      credits?.totalUsed == null ||
+                      credits?.totalSize == null ||
+                      credits!.totalSize! <= 0
+                  ? null
+                  : (credits.totalUsed! / credits.totalSize! * 100).clamp(
+                      0.0,
+                      100.0,
+                    ),
+            ),
+            ProviderQuotaWindow(
+              label: '剩余 Credits',
               remainingPercent: account.disabled
                   ? null
                   : credits?.remainingPercent,
-              displayValue:
-                  '${formatWorkBuddyCredits(credits?.totalRemaining)} / '
-                  '${formatWorkBuddyCredits(credits?.totalSize)}',
             ),
           ],
           hasError: account.error != null && !account.disabled,
