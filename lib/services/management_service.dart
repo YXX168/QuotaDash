@@ -7,8 +7,10 @@ import '../models/antigravity_account.dart';
 import '../models/provider_quota.dart';
 import '../models/dashboard_snapshot.dart';
 import '../models/quota_window.dart';
+import '../models/workbuddy_account.dart';
 import 'quota_repository.dart';
 import 'antigravity_quota.dart';
+import 'private_http.dart';
 
 /// Management API service for CLIProxyAPI.
 ///
@@ -19,7 +21,9 @@ class ManagementService implements QuotaRepository {
     required this.baseUri,
     required this.managementKey,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+  }) : _client = PrivateHttpClient(client ?? http.Client()) {
+    validateManagementUri(baseUri);
+  }
 
   static const usageUrl = 'https://chatgpt.com/backend-api/wham/usage';
   static const resetCreditsUrl =
@@ -38,6 +42,8 @@ class ManagementService implements QuotaRepository {
   final String managementKey;
   final http.Client _client;
 
+  void dispose() => _client.close();
+
   bool get usesV8 => baseUri.path.contains('/v8/management');
 
   @override
@@ -50,9 +56,11 @@ class ManagementService implements QuotaRepository {
       throw const ManagementException('管理接口返回缺少 files 列表');
     }
 
-    final enabledFiles = files
+    final credentialFiles = files
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+    final enabledFiles = credentialFiles
         .where((item) => !_isDisabled(item['disabled']))
         .toList();
     final authFiles = enabledFiles
@@ -66,9 +74,13 @@ class ManagementService implements QuotaRepository {
           .where((item) => _provider(item) == 'antigravity')
           .map(_fetchAntigravity),
     );
+    final workBuddyFuture = _fetchWorkBuddyAccounts(
+      credentialFiles.where((item) => _provider(item) == 'workbuddy').toList(),
+    );
     return DashboardSnapshot(
       accounts: await accountsFuture,
       antigravityAccounts: await antigravityFuture,
+      workBuddyAccounts: await workBuddyFuture,
       checkedAt: DateTime.now(),
     );
   }
@@ -78,6 +90,113 @@ class ManagementService implements QuotaRepository {
     return (provider.isEmpty ? item['type']?.toString() ?? '' : provider)
         .trim()
         .toLowerCase();
+  }
+
+  Future<List<WorkBuddyAccount>> _fetchWorkBuddyAccounts(
+    List<Map<String, dynamic>> files,
+  ) async {
+    if (files.isEmpty) return const [];
+    Map<String, dynamic> payload;
+    try {
+      payload = await _getWorkBuddyJson('accounts');
+      if (payload['accounts'] is! List) throw const FormatException();
+    } catch (_) {
+      return [
+        for (final file in files)
+          WorkBuddyAccount.fromJson(
+            auth: AuthFileAccount.fromJson(file),
+            json: const {},
+            disabled: _isDisabled(file['disabled']),
+            error: _isDisabled(file['disabled']) ? null : workBuddyQuotaError,
+          ),
+      ];
+    }
+
+    final accounts = <WorkBuddyAccount>[];
+    // Billing is rate limited. Finish one credential before querying the next.
+    for (final file in files) {
+      final auth = AuthFileAccount.fromJson(file);
+      final metadata = _workBuddyRow(payload, auth.authIndex) ?? const {};
+      final disabled =
+          _isDisabled(file['disabled']) || _isDisabled(metadata['disabled']);
+      if (disabled) {
+        accounts.add(
+          WorkBuddyAccount.fromJson(auth: auth, json: metadata, disabled: true),
+        );
+        continue;
+      }
+      try {
+        if (auth.authIndex.isEmpty) throw const FormatException();
+        final credits = await _getWorkBuddyJson(
+          'credits',
+          authIndex: auth.authIndex,
+        );
+        final row = _workBuddyRow(credits, auth.authIndex);
+        if (row == null) throw const FormatException();
+        accounts.add(
+          WorkBuddyAccount.fromJson(
+            auth: auth,
+            json: {...metadata, 'error': null, ...row},
+          ),
+        );
+      } catch (_) {
+        accounts.add(
+          WorkBuddyAccount.fromJson(
+            auth: auth,
+            json: metadata,
+            error: workBuddyQuotaError,
+          ),
+        );
+      }
+    }
+    return accounts;
+  }
+
+  static Map<String, dynamic>? _workBuddyRow(
+    Map<String, dynamic> payload,
+    String authIndex,
+  ) {
+    if (authIndex.isEmpty || payload['accounts'] is! List) return null;
+    final matches = (payload['accounts'] as List).whereType<Map>().where(
+      (row) => row['auth_index']?.toString().trim() == authIndex,
+    );
+    if (matches.length != 1) return null;
+    return Map<String, dynamic>.from(matches.single);
+  }
+
+  Future<Map<String, dynamic>> _getWorkBuddyJson(
+    String resource, {
+    String? authIndex,
+  }) async {
+    var uri = _endpoint('plugins/workbuddy/$resource');
+    if (authIndex != null) {
+      uri = uri.replace(queryParameters: {'auth_index': authIndex});
+    }
+    var response = await _client
+        .get(uri, headers: _headers)
+        .timeout(const Duration(seconds: 25));
+    final basePath = baseUri.path.replaceFirst(RegExp(r'/+$'), '');
+    // Plugin routes can remain on v0 even when core management uses v8.
+    // Only a missing route permits this same-origin compatibility fallback.
+    if (response.statusCode == 404 && basePath.endsWith('/v8/management')) {
+      final legacyBase = basePath.substring(
+        0,
+        basePath.length - '/v8/management'.length,
+      );
+      uri = uri.replace(
+        path: '$legacyBase/v0/management/plugins/workbuddy/$resource',
+      );
+      response = await _client
+          .get(uri, headers: _headers)
+          .timeout(const Duration(seconds: 25));
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ManagementException(
+        workBuddyQuotaError,
+        statusCode: response.statusCode,
+      );
+    }
+    return _decodeManagementResponse(response);
   }
 
   Future<AntigravityAccount> _fetchAntigravity(
@@ -145,7 +264,7 @@ class ManagementService implements QuotaRepository {
           provider: QuotaProviderId.antigravity,
           windows: const [],
           checkedAt: DateTime.now(),
-          error: _friendlyError(error),
+          error: ManagementException(_friendlyError(error)),
         ),
       );
     }
@@ -301,12 +420,9 @@ class ManagementService implements QuotaRepository {
 
   Map<String, dynamic> _decodeManagementResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final preview = response.body.replaceAll(RegExp(r'\s+'), ' ').trim();
-      final previewText = preview.isEmpty
-          ? ''
-          : '：${preview.substring(0, preview.length.clamp(0, 180).toInt())}';
       throw ManagementException(
-        '管理接口返回 HTTP ${response.statusCode}$previewText',
+        '管理接口返回 HTTP ${response.statusCode}',
+        statusCode: response.statusCode,
       );
     }
     if (response.body.trim().isEmpty) return const {};
@@ -366,14 +482,14 @@ class ManagementService implements QuotaRepository {
   }
 
   static String _friendlyError(Object error) {
-    if (error is ManagementException) return error.message;
-    return error.toString().replaceFirst('Exception: ', '');
+    return safeErrorMessage(error);
   }
 }
 
-class ManagementException implements Exception {
+class ManagementException implements PublicError {
   const ManagementException(this.message, {this.statusCode});
 
+  @override
   final String message;
   final int? statusCode;
 

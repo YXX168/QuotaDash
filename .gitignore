@@ -4,6 +4,16 @@
 *.pyc
 *.swp
 .DS_Store
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+.env
+.env.*
+signing.env
+*.keystore.b64
 .atom/
 .build/
 .buildlog/

@@ -1,41 +1,44 @@
 import 'codex_account.dart';
 import 'antigravity_account.dart';
 import 'request_bucket.dart';
+import 'workbuddy_account.dart';
 
 class DashboardSnapshot {
   const DashboardSnapshot({
     required this.accounts,
     required this.checkedAt,
     this.antigravityAccounts = const [],
+    this.workBuddyAccounts = const [],
   });
 
   final List<CodexAccount> accounts;
   final DateTime checkedAt;
   final List<AntigravityAccount> antigravityAccounts;
+  final List<WorkBuddyAccount> workBuddyAccounts;
 
-  int get totalAccounts => accounts.length;
+  int get totalAccounts =>
+      accounts.length + antigravityAccounts.length + workBuddyAccounts.length;
+
+  Iterable<AuthFileAccount> get _otherAccountAuths => [
+    ...antigravityAccounts.map((account) => account.auth),
+    ...workBuddyAccounts.map((account) => account.auth),
+  ];
 
   int get totalSuccessRequests =>
       accounts.fold(0, (total, account) => total + account.successRequests) +
-      antigravityAccounts.fold(
-        0,
-        (total, account) => total + account.auth.successRequests,
-      );
+      _otherAccountAuths.fold(0, (total, auth) => total + auth.successRequests);
 
   int get totalFailedRequests =>
       accounts.fold(0, (total, account) => total + account.failedRequests) +
-      antigravityAccounts.fold(
-        0,
-        (total, account) => total + account.auth.failedRequests,
-      );
+      _otherAccountAuths.fold(0, (total, auth) => total + auth.failedRequests);
 
   int get recentRequests =>
       accounts.fold(0, (total, account) => total + account.recentTotal) +
-      antigravityAccounts.fold(
+      _otherAccountAuths.fold(
         0,
-        (total, account) =>
+        (total, auth) =>
             total +
-            account.auth.recentRequests.fold(
+            auth.recentRequests.fold(
               0,
               (subtotal, bucket) => subtotal + bucket.total,
             ),
@@ -54,6 +57,16 @@ class DashboardSnapshot {
         ),
   );
 
+  int get workBuddyRecentRequests => workBuddyAccounts.fold(
+    0,
+    (total, account) =>
+        total +
+        account.auth.recentRequests.fold(
+          0,
+          (sum, bucket) => sum + bucket.total,
+        ),
+  );
+
   double? get successRate {
     final total = totalSuccessRequests + totalFailedRequests;
     if (total == 0) return null;
@@ -63,7 +76,7 @@ class DashboardSnapshot {
   List<RequestBucket> get recentRequestBuckets {
     final sources = <List<RequestBucket>>[
       ...accounts.map((account) => account.recentRequests),
-      ...antigravityAccounts.map((account) => account.auth.recentRequests),
+      ..._otherAccountAuths.map((auth) => auth.recentRequests),
     ].where((requests) => requests.isNotEmpty).toList(growable: false);
     final maxLength = sources.fold<int>(
       0,

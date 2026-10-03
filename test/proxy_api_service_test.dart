@@ -150,7 +150,7 @@ void main() {
       await service.replaceApiKeys(['only']);
       await service.addApiKey('new-key');
       await service.updateApiKey(index: 0, value: 'changed');
-      await service.deleteApiKey(value: 'changed');
+      await service.deleteApiKey(index: 0);
 
       expect(requests.map((request) => request.method), [
         'GET',
@@ -165,10 +165,10 @@ void main() {
         'new': 'new-key',
       });
       expect(jsonDecode(requests[3].body), {'index': 0, 'value': 'changed'});
-      expect(requests[4].url.queryParameters, {'value': 'changed'});
+      expect(requests[4].url.queryParameters, {'index': '0'});
     });
 
-    test('includes bounded server error details', () async {
+    test('includes status without server error details', () async {
       final detail = 'failure ' * 80;
       final client = MockClient(
         (request) async => http.Response(jsonEncode({'error': detail}), 503),

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../services/private_http.dart';
 
 import 'package:flutter/material.dart';
 
@@ -238,7 +239,7 @@ class _ProviderEnergyCoreState extends State<ProviderEnergyCore>
                   ),
                 ),
                 child: Text(
-                  quota.error.toString(),
+                  safeErrorMessage(quota.error),
                   style: const TextStyle(
                     color: Color(0xFFFFA1B5),
                     fontSize: 11,

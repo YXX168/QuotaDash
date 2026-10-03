@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/model_info.dart';
+import 'private_http.dart';
 
 /// Extended management API service for CLIProxyAPI.
 ///
@@ -14,7 +15,9 @@ class ProxyApiService {
     required this.baseUri,
     required this.managementKey,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+  }) : _client = PrivateHttpClient(client ?? http.Client()) {
+    validateManagementUri(baseUri);
+  }
 
   final Uri baseUri;
   final String managementKey;
@@ -271,7 +274,7 @@ class ProxyApiService {
     _checkResponse(response);
   }
 
-  /// Deletes a client API key (DELETE /api-keys?value=... or ?index=...).
+  /// Resolves a key to an index before deletion so secrets never enter URLs.
   Future<void> deleteApiKey({String? value, int? index}) async {
     if ((value == null) == (index == null)) {
       throw ArgumentError('provide exactly one of value or index');
@@ -286,7 +289,11 @@ class ProxyApiService {
       await replaceApiKeys(keys);
       return;
     }
-    final query = value != null ? {'value': value} : {'index': '$index'};
+    final position = value == null
+        ? index!
+        : (await fetchApiKeys()).indexOf(value);
+    if (position < 0) throw const ProxyApiException('找不到要删除的 API Key');
+    final query = {'index': '$position'};
     final uri = _endpoint('api-keys').replace(queryParameters: query);
     final response = await _client
         .delete(uri, headers: _headers)
@@ -442,11 +449,7 @@ class ProxyApiService {
 
   void _checkResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final preview = response.body.replaceAll(RegExp(r'\s+'), ' ').trim();
-      final previewText = preview.isEmpty
-          ? ''
-          : '：${preview.substring(0, preview.length.clamp(0, 180).toInt())}';
-      throw ProxyApiException('管理接口返回 HTTP ${response.statusCode}$previewText');
+      throw ProxyApiException('管理接口返回 HTTP ${response.statusCode}');
     }
   }
 
@@ -472,6 +475,9 @@ class ProxyApiService {
         return 'Vertex AI';
       case 'xai':
         return 'xAI';
+      case 'workbuddy':
+      case 'codebuddy':
+        return 'WorkBuddy';
       case 'kimi':
         return 'Kimi';
       default:
@@ -514,9 +520,10 @@ class _ProviderAccumulator {
   }
 }
 
-class ProxyApiException implements Exception {
+class ProxyApiException implements PublicError {
   const ProxyApiException(this.message);
 
+  @override
   final String message;
 
   @override

@@ -133,7 +133,8 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Network unavailable'), findsOneWidget);
+    expect(find.text('Network unavailable'), findsNothing);
+    expect(find.text('操作失败，请检查连接或配置后重试'), findsOneWidget);
     expect(find.text('上次同步的额度 · 数据可能已过期'), findsOneWidget);
     expect(find.text('可用 80%'), findsOneWidget);
     expect(tester.takeException(), isNull);

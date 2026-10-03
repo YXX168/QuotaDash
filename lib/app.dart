@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'services/private_http.dart';
 
 import 'models/app_config.dart';
 import 'models/visual_mode.dart';
@@ -81,9 +82,16 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
     );
   }
 
+  @override
+  void dispose() {
+    if (_repository case final ManagementService service) service.dispose();
+    super.dispose();
+  }
+
   Future<void> _saveConfig(AppConfig config) async {
     await _configStore.save(config);
     if (!mounted) return;
+    if (_repository case final ManagementService service) service.dispose();
     setState(() {
       _config = config;
       _repository = _tryCreateRepository(config);
@@ -120,7 +128,7 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
           ? ConfigScreen(
               configStore: _configStore,
               initialConfig: _config,
-              loadError: _loadError.toString(),
+              loadError: safeErrorMessage(_loadError),
               onSaved: _saveConfig,
             )
           : _config == null || _config!.values.isEmpty

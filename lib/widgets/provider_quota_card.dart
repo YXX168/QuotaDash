@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/provider_quota.dart';
+import '../services/private_http.dart';
 import '../theme/app_theme.dart';
 import 'glass_widgets.dart';
 import 'request_activity.dart';
@@ -157,7 +158,7 @@ class ProviderQuotaCard extends StatelessWidget {
                 ),
               ),
               child: Text(
-                '${quota.error}',
+                safeErrorMessage(quota.error),
                 style: const TextStyle(color: Color(0xFFFFA1B5), fontSize: 12),
               ),
             ),

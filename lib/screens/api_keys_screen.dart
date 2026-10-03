@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../services/private_http.dart';
+import '../services/sensitive_clipboard.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -76,8 +78,10 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          autocorrect: true,
-          enableSuggestions: true,
+          obscureText: true,
+          autocorrect: false,
+          enableSuggestions: false,
+          enableIMEPersonalizedLearning: false,
           decoration: const InputDecoration(labelText: 'API Key'),
           onSubmitted: (value) => Navigator.of(dialogContext).pop(value.trim()),
         ),
@@ -113,9 +117,9 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
       await _refresh();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('添加失败：$error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('添加失败：${safeErrorMessage(error)}')),
+      );
     } finally {
       if (mounted) setState(() => _adding = false);
     }
@@ -153,9 +157,9 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
       await _refresh();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('删除失败：$error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('删除失败：${safeErrorMessage(error)}')),
+      );
     } finally {
       if (mounted) setState(() => _deleting = false);
     }
@@ -163,7 +167,7 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
 
   Future<void> _copyKey(String key) async {
     await HapticFeedback.mediumImpact();
-    await Clipboard.setData(ClipboardData(text: key));
+    await copySensitiveKey(key);
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
@@ -571,7 +575,7 @@ class _KeyErrorView extends StatelessWidget {
               Text('加载失败', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 9),
               Text(
-                error.toString(),
+                safeErrorMessage(error),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
