@@ -75,7 +75,7 @@ class ManagementService implements QuotaRepository {
           .map(_fetchAntigravity),
     );
     final workBuddyFuture = _fetchWorkBuddyAccounts(
-      credentialFiles.where((item) => _provider(item) == 'workbuddy').toList(),
+      credentialFiles.where(_isWorkBuddyCredential).toList(),
     );
     return DashboardSnapshot(
       accounts: await accountsFuture,
@@ -90,6 +90,20 @@ class ManagementService implements QuotaRepository {
     return (provider.isEmpty ? item['type']?.toString() ?? '' : provider)
         .trim()
         .toLowerCase();
+  }
+
+  static bool _isWorkBuddyCredential(Map<String, dynamic> item) {
+    final knownProviders = [item['provider'], item['type']]
+        .map((value) => value?.toString().trim().toLowerCase() ?? '')
+        .where((value) => value.isNotEmpty && value != 'unknown')
+        .toList();
+    if (knownProviders.isNotEmpty) {
+      return knownProviders.every((value) => value == 'workbuddy');
+    }
+    // Older plugin credentials omit type/provider. The plugin itself uses
+    // this filename convention to find both CN and Global accounts.
+    final name = item['name']?.toString().trim().toLowerCase() ?? '';
+    return name.startsWith('workbuddy-') || name == 'workbuddy.json';
   }
 
   Future<List<WorkBuddyAccount>> _fetchWorkBuddyAccounts(

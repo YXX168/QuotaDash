@@ -30,11 +30,15 @@ class ProviderQuotaWindow {
     required this.label,
     required this.remainingPercent,
     this.resetAt,
+    this.displayValue,
   });
 
   final String label;
   final double? remainingPercent;
   final DateTime? resetAt;
+
+  /// Optional numeric balance text; the bar still uses remainingPercent.
+  final String? displayValue;
 }
 
 /// Unified quota snapshot from a single provider module.

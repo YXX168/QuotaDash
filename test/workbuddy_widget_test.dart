@@ -1,72 +1,97 @@
 import 'dart:io';
 
+import 'package:cliproxy_dash/models/antigravity_account.dart';
 import 'package:cliproxy_dash/models/app_config.dart';
 import 'package:cliproxy_dash/models/codex_account.dart';
 import 'package:cliproxy_dash/models/dashboard_snapshot.dart';
+import 'package:cliproxy_dash/models/provider_quota.dart';
 import 'package:cliproxy_dash/models/request_bucket.dart';
 import 'package:cliproxy_dash/models/visual_mode.dart';
 import 'package:cliproxy_dash/models/workbuddy_account.dart';
 import 'package:cliproxy_dash/screens/dashboard_screen.dart';
 import 'package:cliproxy_dash/services/quota_repository.dart';
 import 'package:cliproxy_dash/theme/app_theme.dart';
+import 'package:cliproxy_dash/widgets/antigravity_account_card.dart';
+import 'package:cliproxy_dash/widgets/energy_core.dart';
+import 'package:cliproxy_dash/widgets/glass_widgets.dart';
 import 'package:cliproxy_dash/widgets/workbuddy_account_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-WorkBuddyAccount fixture({bool unknown = false, Object? error}) =>
-    WorkBuddyAccount(
-      auth: const AuthFileAccount(
-        id: 'synthetic-workbuddy',
-        authIndex: 'fixture-index',
-        name: 'Syn***',
-        email: '',
-        successRequests: 12,
-        failedRequests: 1,
-        recentRequests: [
-          RequestBucket(time: '10:00-10:10', success: 3, failed: 0),
-          RequestBucket(time: '10:10-10:20', success: 5, failed: 1),
-        ],
-      ),
-      nickname: 'Syn***',
-      region: 'global',
-      plan: 'pro',
-      selected: true,
-      error: error,
-      credits: unknown
-          ? null
-          : WorkBuddyCredits(
-              totalRemaining: 375,
-              totalUsed: 125,
-              totalSize: 500,
-              packageCount: 1,
-              fetchedAt: DateTime.utc(2026, 10, 3, 1),
-              packages: [
-                WorkBuddyPackage(
-                  name: 'Synthetic credit package',
-                  remaining: 375,
-                  used: 125,
-                  size: 500,
-                  cycleStart: DateTime.utc(2026, 10, 1),
-                  cycleEnd: DateTime.utc(2026, 10, 31),
-                ),
-              ],
+WorkBuddyAccount fixture({
+  bool unknown = false,
+  Object? error,
+  String id = 'fixture-index',
+  String region = 'global',
+  double remaining = 375,
+  double? total = 500,
+}) => WorkBuddyAccount(
+  auth: AuthFileAccount(
+    id: 'synthetic-workbuddy-$id',
+    authIndex: id,
+    name: 'Syn***',
+    email: '',
+    successRequests: 12,
+    failedRequests: 1,
+    recentRequests: const [
+      RequestBucket(time: '10:00-10:10', success: 3, failed: 0),
+      RequestBucket(time: '10:10-10:20', success: 5, failed: 1),
+    ],
+  ),
+  nickname: 'Syn***',
+  region: region,
+  plan: 'pro',
+  selected: true,
+  error: error,
+  credits: unknown
+      ? null
+      : WorkBuddyCredits(
+          totalRemaining: remaining,
+          totalUsed: 125,
+          totalSize: total,
+          packageCount: 1,
+          fetchedAt: DateTime.utc(2026, 10, 3, 1),
+          packages: [
+            WorkBuddyPackage(
+              name: 'Synthetic credit package',
+              remaining: 375,
+              used: 125,
+              size: 500,
+              cycleStart: DateTime.utc(2026, 10, 1),
+              cycleEnd: DateTime.utc(2026, 10, 31),
             ),
-    );
+          ],
+        ),
+);
+
+String remainingText(
+  VisualMode mode, {
+  String remaining = '375',
+  String total = '500',
+}) =>
+    mode == VisualMode.energy ? '$remaining / $total' : '剩余 $remaining credits';
 
 class _Repository implements QuotaRepository {
-  const _Repository(this.account);
-  final WorkBuddyAccount account;
+  const _Repository(this.accounts, {this.antigravityAccounts = const []});
+  final List<WorkBuddyAccount> accounts;
+  final List<AntigravityAccount> antigravityAccounts;
 
   @override
   Future<DashboardSnapshot> fetchDashboard() async => DashboardSnapshot(
     accounts: const [],
-    workBuddyAccounts: [account],
+    workBuddyAccounts: accounts,
+    antigravityAccounts: antigravityAccounts,
     checkedAt: DateTime.utc(2026, 10, 3, 1),
   );
 }
 
-Future<void> pumpDashboard(WidgetTester tester, VisualMode mode) async {
+Future<void> pumpDashboard(
+  WidgetTester tester,
+  VisualMode mode, {
+  List<WorkBuddyAccount>? accounts,
+  List<AntigravityAccount> antigravityAccounts = const [],
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.dark.copyWith(
@@ -81,7 +106,10 @@ Future<void> pumpDashboard(WidgetTester tester, VisualMode mode) async {
               'managementKey': 'fixture-key',
             },
           ),
-          repository: _Repository(fixture()),
+          repository: _Repository(
+            accounts ?? [fixture()],
+            antigravityAccounts: antigravityAccounts,
+          ),
           onEditConfig: () async {},
           visualMode: mode,
           onVisualModeChanged: (_) async {},
@@ -107,7 +135,9 @@ Future<void> pumpCard(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     MaterialApp(
-      theme: AppTheme.dark,
+      theme: AppTheme.dark.copyWith(
+        textTheme: AppTheme.dark.textTheme.apply(fontFamily: 'ReviewFont'),
+      ),
       home: MediaQuery(
         data: MediaQueryData(
           size: Size(width, 900),
@@ -132,6 +162,106 @@ Future<void> pumpCard(
 
 void main() {
   for (final mode in VisualMode.values) {
+    for (final width in [320.0, 800.0]) {
+      testWidgets(
+        '${mode.name} shows one card per WorkBuddy account below all Antigravity accounts at $width',
+        (tester) async {
+          tester.view.physicalSize = Size(width, 1200);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final accounts = [
+            fixture(id: 'global'),
+            fixture(id: 'cn', region: 'cn', remaining: 125),
+          ];
+          final antigravityAccounts = List.generate(
+            2,
+            (index) => AntigravityAccount(
+              auth: AuthFileAccount(
+                id: 'synthetic-antigravity-$index',
+                authIndex: 'antigravity-$index',
+                name: 'Antigravity fixture $index',
+                email: '',
+                successRequests: 0,
+                failedRequests: 0,
+                recentRequests: const [],
+              ),
+              quota: const ProviderQuota(
+                provider: QuotaProviderId.antigravity,
+                windows: [
+                  ProviderQuotaWindow(
+                    label: 'Gemini Models 周额度',
+                    remainingPercent: 80,
+                  ),
+                ],
+              ),
+            ),
+          );
+          await pumpDashboard(
+            tester,
+            mode,
+            accounts: accounts,
+            antigravityAccounts: antigravityAccounts,
+          );
+          expect(find.byType(WorkBuddyAccountCard), findsNWidgets(2));
+          expect(find.byType(AntigravityAccountCard), findsNWidgets(2));
+          final antigravityTitle = tester.getRect(
+            find.byKey(const Key('antigravity-section-title')),
+          );
+          final workBuddyTitle = tester.getRect(
+            find.byKey(const Key('workbuddy-section-title')),
+          );
+          for (final account in antigravityAccounts) {
+            final rect = tester.getRect(
+              find.byKey(ValueKey('antigravity-${account.auth.id}')),
+            );
+            expect(rect.top, greaterThan(antigravityTitle.bottom));
+            expect(rect.bottom, lessThan(workBuddyTitle.top));
+          }
+          for (final account in accounts) {
+            final card = find.descendant(
+              of: find.byKey(ValueKey('workbuddy-${account.auth.authIndex}')),
+              matching: find.byType(WorkBuddyAccountCard),
+            );
+            expect(card, findsOneWidget);
+            expect(
+              tester.getRect(card).top,
+              greaterThan(workBuddyTitle.bottom),
+            );
+            expect(
+              find.descendant(of: card, matching: find.byType(InkWell)),
+              findsOneWidget,
+            );
+            expect(
+              find.descendant(of: card, matching: find.byType(GlassCard)),
+              mode == VisualMode.console ? findsOneWidget : findsNothing,
+            );
+            expect(
+              find.descendant(
+                of: card,
+                matching: find.byType(EnergyAccountCore),
+              ),
+              mode == VisualMode.energy ? findsOneWidget : findsNothing,
+            );
+          }
+          final cnCard = find.byKey(const ValueKey('workbuddy-cn'));
+          await tester.ensureVisible(cnCard);
+          await tester.pump(const Duration(milliseconds: 600));
+          await tester.tap(
+            find.descendant(
+              of: cnCard,
+              matching: find.text(remainingText(mode, remaining: '125')),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.text('WorkBuddy 账号详情'), findsOneWidget);
+          expect(find.text('国内版'), findsOneWidget);
+          expect(find.text('剩余 125 credits'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
     testWidgets(
       '${mode.name} WorkBuddy-only dashboard and detail retain credit semantics',
       (tester) async {
@@ -146,12 +276,26 @@ void main() {
         );
         expect(find.byKey(const Key('codex-section-title')), findsNothing);
         expect(find.byKey(const Key('request-pulse-card')), findsOneWidget);
-        expect(find.text('剩余 375 credits'), findsOneWidget);
-        expect(find.text('当前账号'), findsOneWidget);
-        expect(find.text('查看积分包与到期时间'), findsOneWidget);
+        expect(find.byType(WorkBuddyAccountCard), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(WorkBuddyAccountCard),
+            matching: find.byType(InkWell),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(remainingText(mode)), findsOneWidget);
+        expect(find.textContaining('当前账号'), findsOneWidget);
+        expect(
+          find.text('查看积分包与到期时间'),
+          mode == VisualMode.console ? findsOneWidget : findsNothing,
+        );
+        expect(find.text('已用 125 credits'), findsNothing);
+        expect(find.textContaining('积分包 1'), findsNothing);
+        expect(find.textContaining('查询时间：'), findsNothing);
         expect(find.textContaining('到期：'), findsNothing);
         expect(find.textContaining('重置'), findsNothing);
-        await tester.tap(find.text('剩余 375 credits'));
+        await tester.tap(find.text(remainingText(mode)));
         await tester.pumpAndSettle();
         expect(find.text('WorkBuddy 账号详情'), findsOneWidget);
         expect(find.text('Synthetic credit package'), findsOneWidget);
@@ -165,8 +309,11 @@ void main() {
       tester,
     ) async {
       await pumpCard(tester, mode, fixture(unknown: true));
-      expect(find.text('剩余 -- credits'), findsOneWidget);
-      expect(find.text('积分余量未知'), findsOneWidget);
+      expect(
+        find.text(remainingText(mode, remaining: '--', total: '--')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('积分余量未知'), findsOneWidget);
       expect(find.text('剩余 0 credits'), findsNothing);
       await pumpCard(
         tester,
@@ -177,7 +324,21 @@ void main() {
         ),
       );
       expect(find.textContaining('synthetic-private-diagnostic'), findsNothing);
-      expect(find.text('操作失败，请检查连接或配置后重试'), findsOneWidget);
+      expect(
+        mode == VisualMode.console
+            ? find.text('操作失败，请检查连接或配置后重试')
+            : find.textContaining('同步失败'),
+        findsOneWidget,
+      );
+      await pumpCard(tester, mode, fixture(error: Exception('private')));
+      expect(
+        mode == VisualMode.console
+            ? find.text('上次查询的积分 · 数据可能已过期')
+            : find.textContaining('同步失败（上次积分）'),
+        findsOneWidget,
+      );
+      expect(find.text(remainingText(mode)), findsOneWidget);
+      expect(find.text('private'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -208,12 +369,28 @@ void main() {
         );
         await pumpCard(tester, mode, account, width: 320, textScale: 1.5);
         expect(find.text('已禁用'), findsWidgets);
-        expect(find.text('积分包 8'), findsOneWidget);
+        expect(find.text('积分包 8'), findsNothing);
+        expect(find.text(remainingText(mode)), findsOneWidget);
         expect(
           find.textContaining('Synthetic long credit package'),
           findsNothing,
         );
         expect(tester.takeException(), isNull);
+        if (mode == VisualMode.energy) {
+          final orb = tester.getRect(find.byKey(const Key('energy-orb')));
+          final bar = tester.getRect(
+            find.byKey(const Key('energy-quota-track-Credits')),
+          );
+          expect(orb.right, lessThanOrEqualTo(bar.left));
+          expect(bar.top, greaterThanOrEqualTo(orb.top));
+          expect(bar.bottom, lessThanOrEqualTo(orb.bottom));
+          expect(find.byType(GlassCard), findsNothing);
+          expect(find.byType(EnergyAccountCore), findsOneWidget);
+          expect(
+            tester.getSize(find.byKey(const Key('energy-core-card'))).height,
+            218,
+          );
+        }
       },
     );
 
@@ -254,7 +431,7 @@ void main() {
         find.byType(DashboardScreen),
         matchesGoldenFile('../build/visual-review/workbuddy_${mode.name}.png'),
       );
-      await tester.tap(find.text('剩余 375 credits'));
+      await tester.tap(find.text(remainingText(mode)));
       await tester.pumpAndSettle();
       await expectLater(
         find.byType(Scaffold),
