@@ -50,6 +50,151 @@ ManagementService service(MockClient client, {String version = 'v8'}) =>
 
 void main() {
   test(
+    'explicit type wins over unknown provider and filename inference',
+    () async {
+      final queries = <String>[];
+      final result = await service(
+        MockClient((request) async {
+          if (request.url.path.endsWith('/credentials')) {
+            return jsonResponse({
+              'files': [
+                {
+                  ...credential('typed'),
+                  'provider': 'unknown',
+                  'type': ' WorkBuddy ',
+                  'name': 'renamed.json',
+                },
+                {
+                  ...credential('unrelated'),
+                  'provider': 'unknown',
+                  'type': 'other-provider',
+                  'name': 'workbuddy-backup.json',
+                },
+                {
+                  ...credential('conflicting'),
+                  'provider': 'workbuddy',
+                  'type': 'other-provider',
+                },
+              ],
+            });
+          }
+          if (request.url.path.endsWith('/accounts')) {
+            return jsonResponse({
+              'accounts': [
+                {'auth_index': 'typed'},
+              ],
+            });
+          }
+          final index = request.url.queryParameters['auth_index']!;
+          queries.add(index);
+          return jsonResponse({
+            'accounts': [creditRow(index)],
+          });
+        }),
+      ).fetchDashboard();
+      expect(queries, ['typed']);
+      expect(result.workBuddyAccounts.single.auth.authIndex, 'typed');
+    },
+  );
+
+  for (final legacyOnly in [false, true]) {
+    test(
+      'legacy CN and Global credentials survive unknown provider ($legacyOnly)',
+      () async {
+        final queries = <String>[];
+        final cn = {
+          ...credential('cn-account'),
+          'provider': 'unknown',
+          'type': 'unknown',
+          'name': 'workbuddy-cn-fixture.json',
+        };
+        final global = {
+          ...credential('global-account'),
+          'name': 'workbuddy-global-fixture.json',
+          if (legacyOnly) 'provider': 'unknown',
+        };
+        final result = await service(
+          MockClient((request) async {
+            if (request.url.path.endsWith('/credentials')) {
+              return jsonResponse({
+                'files': [
+                  cn,
+                  global,
+                  {
+                    'provider': 'unknown',
+                    'name': 'other-fixture.json',
+                    'auth_index': 'other',
+                  },
+                ],
+              });
+            }
+            if (request.url.path.endsWith('/accounts')) {
+              return jsonResponse({
+                'accounts': [
+                  {'auth_index': 'global-account', 'region': 'global'},
+                  {'auth_index': 'cn-account', 'region': 'cn'},
+                ],
+              });
+            }
+            final index = request.url.queryParameters['auth_index']!;
+            queries.add(index);
+            return jsonResponse({
+              'accounts': [
+                {
+                  ...creditRow(index),
+                  'region': index == 'cn-account' ? 'cn' : 'global',
+                },
+              ],
+            });
+          }),
+        ).fetchDashboard();
+        expect(queries, ['cn-account', 'global-account']);
+        expect(result.workBuddyAccounts.map((a) => a.regionLabel), [
+          '国内版',
+          '国际版',
+        ]);
+        expect(result.workBuddyAccounts.every((a) => a.error == null), isTrue);
+        expect(result.totalSuccessRequests, 4);
+      },
+    );
+  }
+
+  test(
+    'unloaded plugin keeps legacy accounts visible with unknown credits',
+    () async {
+      final result = await service(
+        MockClient((request) async {
+          if (request.url.path.endsWith('/credentials')) {
+            return jsonResponse({
+              'files': [
+                {
+                  ...credential('cn'),
+                  'provider': 'unknown',
+                  'name': 'workbuddy-cn-fixture.json',
+                },
+                {
+                  ...credential('global'),
+                  'provider': '',
+                  'name': 'WORKBUDDY-global-fixture.json',
+                },
+              ],
+            });
+          }
+          expect(request.url.path.endsWith('/accounts'), isTrue);
+          return jsonResponse({}, status: 404);
+        }),
+      ).fetchDashboard();
+      expect(result.workBuddyAccounts, hasLength(2));
+      expect(
+        result.workBuddyAccounts.every(
+          (a) => a.credits == null && a.error != null,
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  test(
     'reads real credits sequentially and joins only by auth_index',
     () async {
       var active = 0;

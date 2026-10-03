@@ -300,6 +300,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                                       ),
                                       label: readings[i].label,
                                       remaining: readings[i].remainingPercent,
+                                      displayValue: readings[i].displayValue,
                                       color: data == null
                                           ? color
                                           : AppTheme.cyan,
@@ -369,12 +370,14 @@ class _QuotaReading extends StatelessWidget {
     required this.label,
     required this.remaining,
     required this.color,
+    this.displayValue,
     super.key,
   });
 
   final String label;
   final double? remaining;
   final Color color;
+  final String? displayValue;
 
   @override
   Widget build(BuildContext context) {
@@ -398,29 +401,52 @@ class _QuotaReading extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontSize: 8.5),
-                ),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                remaining == null ? '--' : '${remaining!.toStringAsFixed(0)}%',
+          if (displayValue != null) ...[
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontSize: 10),
+            ),
+            const SizedBox(height: 5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                displayValue!,
                 style: TextStyle(
                   color: valueColor,
-                  fontSize: 12,
+                  fontSize: 16,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-            ],
-          ),
+            ),
+          ] else
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(fontSize: 8.5),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  remaining == null
+                      ? '--'
+                      : '${remaining!.toStringAsFixed(0)}%',
+                  style: TextStyle(
+                    color: valueColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
           const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(99),

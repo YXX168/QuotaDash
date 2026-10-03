@@ -452,6 +452,36 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     ],
                                     ..._providerSections(),
                                     if (_snapshot
+                                            ?.antigravityAccounts
+                                            .isNotEmpty ??
+                                        false) ...[
+                                      const SizedBox(height: 18),
+                                      const SectionTitle(
+                                        key: Key('antigravity-section-title'),
+                                        title: 'Antigravity',
+                                      ),
+                                      const SizedBox(height: 10),
+                                      for (final account
+                                          in _snapshot!.antigravityAccounts)
+                                        Padding(
+                                          key: ValueKey(
+                                            'antigravity-${account.auth.id}',
+                                          ),
+                                          padding: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
+                                          child: AntigravityAccountCard(
+                                            account: account,
+                                            visualMode: widget.visualMode,
+                                            refreshing: _refreshing,
+                                            onTap: () =>
+                                                _openAntigravityAccount(
+                                                  account,
+                                                ),
+                                          ),
+                                        ),
+                                    ],
+                                    if (_snapshot
                                             ?.workBuddyAccounts
                                             .isNotEmpty ??
                                         false) ...[
@@ -474,33 +504,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                                             account: account,
                                             visualMode: widget.visualMode,
                                             refreshing: _refreshing,
-                                          ),
-                                        ),
-                                    ],
-                                    if (_snapshot
-                                            ?.antigravityAccounts
-                                            .isNotEmpty ??
-                                        false) ...[
-                                      const SizedBox(height: 18),
-                                      const SectionTitle(title: 'Antigravity'),
-                                      const SizedBox(height: 10),
-                                      for (final account
-                                          in _snapshot!.antigravityAccounts)
-                                        Padding(
-                                          key: ValueKey(
-                                            'antigravity-${account.auth.id}',
-                                          ),
-                                          padding: const EdgeInsets.only(
-                                            bottom: 12,
-                                          ),
-                                          child: AntigravityAccountCard(
-                                            account: account,
-                                            visualMode: widget.visualMode,
-                                            refreshing: _refreshing,
-                                            onTap: () =>
-                                                _openAntigravityAccount(
-                                                  account,
-                                                ),
                                           ),
                                         ),
                                     ],
