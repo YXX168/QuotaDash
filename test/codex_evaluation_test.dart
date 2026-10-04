@@ -104,6 +104,8 @@ void main() {
       );
       expect(credential.records[EvaluationKind.candy]![2].verdict, '请求失败');
       expect(credential.records[EvaluationKind.candy]![3].verdict, '已跳过');
+      expect(evaluationInt(double.infinity), isNull);
+      expect(EvaluationRecord(EvaluationKind.candy, {}).isGraded, isFalse);
       expect(
         () => EvaluationState.fromJson({
           'auths': [

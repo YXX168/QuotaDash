@@ -40,8 +40,11 @@ String evaluationText(Object? value) => (value?.toString() ?? '')
 Map<String, dynamic> evaluationMap(Object? value) =>
     value is Map ? Map<String, dynamic>.from(value) : const {};
 
-int? evaluationInt(Object? value) =>
-    value is num ? value.toInt() : int.tryParse(value?.toString() ?? '');
+int? evaluationInt(Object? value) => value is num
+    ? value.isFinite
+          ? value.toInt()
+          : null
+    : int.tryParse(value?.toString() ?? '');
 
 class EvaluationProgress {
   EvaluationProgress(Map<String, dynamic> json)
@@ -77,11 +80,16 @@ class EvaluationRecord {
   bool get correct => data['ok'] == true;
   String get status => data['status']?.toString() ?? '';
   Map<String, dynamic> get attribution => evaluationMap(data['attribution']);
-  bool get isGraded => kind == EvaluationKind.candy && !hasError && !skipped;
+  bool get isGraded =>
+      kind == EvaluationKind.candy &&
+      data['ok'] is bool &&
+      !hasError &&
+      !skipped;
 
   String get verdict {
     if (skipped) return '已跳过';
     if (kind == EvaluationKind.candy) {
+      if (!hasError && data['ok'] is! bool) return '暂无判断结果';
       return hasError
           ? '请求失败'
           : correct

@@ -112,11 +112,8 @@ class _CodexEvaluationScreenState extends State<CodexEvaluationScreen>
       setState(() {
         _state = state;
         _error = null;
-        _selected.removeWhere(
-          (id) => !state.credentials.any(
-            (a) => a.id == id && !a.disabled && !a.unavailable,
-          ),
-        );
+        // Keep explicit selection if an account disappears or is disabled:
+        // polling must never turn one selected account into an all-account run.
       });
       if (catalog) {
         try {
