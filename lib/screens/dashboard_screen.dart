@@ -27,6 +27,7 @@ import '../widgets/sync_flow_loader.dart';
 import '../widgets/workbuddy_account_card.dart';
 import 'account_detail_screen.dart';
 import 'antigravity_detail_screen.dart';
+import 'codex_evaluation_screen.dart';
 import 'tools_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -449,6 +450,66 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           snapshot: _snapshot!,
                                           onTap: _openAccount,
                                         ),
+                                      const SizedBox(height: 8),
+                                      GlassCard(
+                                        key: const Key(
+                                          'codex-evaluation-entry',
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 12,
+                                        ),
+                                        borderColor: AppTheme.violet.withValues(
+                                          alpha: 0.3,
+                                        ),
+                                        onTap: () => Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) =>
+                                                CodexEvaluationScreen(
+                                                  config: widget.config,
+                                                ),
+                                          ),
+                                        ),
+                                        child: const Row(
+                                          children: [
+                                            Icon(
+                                              Icons.psychology_alt_rounded,
+                                              color: AppTheme.violet,
+                                              size: 22,
+                                            ),
+                                            SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Codex 降智测试',
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 3),
+                                                  Text(
+                                                    '糖果题 · 指纹测试 · ModelTrace',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: Color(0xFF8F9BB1),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Icon(
+                                              Icons.chevron_right_rounded,
+                                              color: Color(0xFF8F9BB1),
+                                              size: 20,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ],
                                     ..._providerSections(),
                                     if (_snapshot

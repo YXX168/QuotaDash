@@ -11,6 +11,7 @@ import '../widgets/quantum_emblem.dart';
 import 'api_keys_screen.dart';
 import 'models_screen.dart';
 import 'runtime_settings_screen.dart';
+import 'codex_evaluation_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({required this.config, super.key});
@@ -138,6 +139,16 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         subtitle: '查看和管理已接入的实例',
                       ),
                       const SizedBox(height: 14),
+                      _ToolCard(
+                        icon: Icons.psychology_alt_rounded,
+                        iconColor: AppTheme.violet,
+                        title: 'Codex 降智测试',
+                        subtitle: '糖果题、模型指纹与 ModelTrace 归因',
+                        onTap: () => _navigate(
+                          CodexEvaluationScreen(config: widget.config),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       _ToolCard(
                         icon: Icons.model_training_rounded,
                         iconColor: AppTheme.cyan,
