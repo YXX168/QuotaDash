@@ -11,11 +11,16 @@ import 'codex_evaluation_test.dart' show evaluationFixture;
 
 class FakeEvaluationRepository implements CodexEvaluationRepository {
   bool running = false;
+  bool removeSelected = false;
   int runsStarted = 0;
   List<String> lastIDs = [];
   @override
-  Future<EvaluationState> fetchState() async =>
-      EvaluationState.fromJson(evaluationFixture(running: running));
+  Future<EvaluationState> fetchState() async {
+    final fixture = evaluationFixture(running: running);
+    if (removeSelected) (fixture['auths'] as List).removeAt(0);
+    return EvaluationState.fromJson(fixture);
+  }
+
   @override
   Future<List<String>> fetchModels(
     List<EvaluationCredential> credentials,
@@ -143,6 +148,36 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
+  testWidgets('polling cannot expand an explicit selection to other accounts', (
+    tester,
+  ) async {
+    final repository = FakeEvaluationRepository();
+    await pumpPage(tester, repository);
+    await tester.ensureVisible(find.text('全部'));
+    await tester.tap(find.text('全部'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(Checkbox).first);
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
+    repository.removeSelected = true;
+    await tester.drag(
+      find.byKey(const Key('evaluation-scroll')),
+      const Offset(0, 1000),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('evaluation-refresh')));
+    await tester.tap(find.byKey(const Key('evaluation-refresh')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('evaluation-run')));
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('evaluation-run')))
+          .onPressed,
+      isNull,
+    );
+    expect(repository.runsStarted, 0);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   testWidgets('render evaluation native review', (tester) async {
     final font = Platform.environment['QUOTA_REVIEW_FONT'];
     if (font != null) {
