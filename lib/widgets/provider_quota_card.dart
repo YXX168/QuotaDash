@@ -49,7 +49,7 @@ class ProviderQuotaCard extends StatelessWidget {
     final monthly = _monthlyRemaining;
     return GlassCard(
       onTap: onTap,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      padding: const EdgeInsets.all(12),
       borderColor: accent.withValues(alpha: 0.22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,8 +57,8 @@ class ProviderQuotaCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(11),
@@ -71,31 +71,33 @@ class ProviderQuotaCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(icon, size: 20, color: accent),
+                child: Icon(icon, size: 16, color: accent),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       displayName,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 14.5,
+                        fontSize: 13,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      description,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(fontSize: 10.5),
-                    ),
+                    if (quota.provider != QuotaProviderId.antigravity) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(fontSize: 10.5),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -174,9 +176,9 @@ class ProviderQuotaCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text('暂未获取到套餐额度', style: Theme.of(context).textTheme.bodySmall),
           ] else if (quota.windows.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             for (var index = 0; index < quota.windows.length; index++) ...[
-              if (index > 0) const SizedBox(height: 14),
+              if (index > 0) const SizedBox(height: 10),
               _WindowRow(
                 entry: quota.windows[index],
                 accent: accentColor,
@@ -269,15 +271,12 @@ class _WindowRow extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 7),
+        const SizedBox(height: 5),
         ClipRRect(
           borderRadius: BorderRadius.circular(99),
           child: Stack(
             children: [
-              Container(
-                height: isMonthly ? 9 : 7,
-                color: const Color(0x1E1B2947),
-              ),
+              Container(height: 4, color: const Color(0x1E1B2947)),
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: progress, end: progress),
                 duration: MediaQuery.disableAnimationsOf(context)
@@ -287,7 +286,7 @@ class _WindowRow extends StatelessWidget {
                 builder: (context, value, child) =>
                     FractionallySizedBox(widthFactor: value, child: child),
                 child: Container(
-                  height: isMonthly ? 9 : 7,
+                  height: 4,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [_tailColor.withValues(alpha: 0.70), _color],
@@ -298,8 +297,10 @@ class _WindowRow extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
-        ResetCountdown(target: entry.resetAt, prefix: '距重置'),
+        if (entry.resetAt != null) ...[
+          const SizedBox(height: 4),
+          ResetCountdown(target: entry.resetAt, prefix: '距重置'),
+        ],
       ],
     );
   }
