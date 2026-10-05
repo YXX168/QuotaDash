@@ -116,6 +116,10 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
         ? '--'
         : '${remaining.toStringAsFixed(0)}%';
     final label = hasError ? '检查失败' : data?.headline.label ?? '周额度';
+    final textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1).clamp(1.0, 1.45).toDouble();
+    final cardHeight = 150 + (textScale - 1) * 44;
 
     return UnconstrainedBox(
       alignment: Alignment.topCenter,
@@ -123,21 +127,21 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
       child: SizedBox(
         key: const Key('energy-core-card'),
         width: double.infinity,
-        height: 218,
+        height: cardHeight,
         child: Semantics(
           button: widget.onTap != null,
           label: '$name，$label $value',
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: widget.onTap,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               child: Ink(
-                padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+                padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(20),
                   gradient: const LinearGradient(
                     colors: [Color(0xF0182235), Color(0xF00A1020)],
                     begin: Alignment.topLeft,
@@ -152,197 +156,189 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                     ),
                   ],
                 ),
-                child: Column(
+                child: Row(
                   key: const Key('energy-foreground'),
                   children: [
                     SizedBox(
-                      key: const Key('energy-header'),
-                      height: 30,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.13),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: color.withValues(alpha: 0.28),
+                      key: const Key('energy-orb'),
+                      width: 88,
+                      height: double.infinity,
+                      child: ClipRect(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.hardEdge,
+                          children: [
+                            Positioned.fill(
+                              child: RepaintBoundary(
+                                child: CustomPaint(
+                                  painter: _EnergyPainter(
+                                    animation: _controller,
+                                    color: color,
+                                    progress:
+                                        (remaining ?? 0).clamp(0, 100) / 100,
+                                    hasError: hasError,
+                                    refreshing: widget.refreshing,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: Icon(
-                              Icons.bolt_rounded,
-                              color: color,
-                              size: 17,
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  value,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        height: 1,
+                                        shadows: [
+                                          Shadow(color: color, blurRadius: 13),
+                                        ],
+                                      ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: color.withValues(alpha: 0.95),
+                                    fontSize: 7,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              name.isEmpty ? '未命名账号' : name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            constraints: BoxConstraints(
-                              maxWidth: data == null ? 82 : 112,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              badge,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 8.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(width: 9),
                     Expanded(
                       child: Row(
                         children: [
-                          SizedBox(
-                            key: const Key('energy-orb'),
-                            width: 116,
-                            height: double.infinity,
-                            child: ClipRect(
-                              child: Stack(
-                                alignment: Alignment.center,
-                                clipBehavior: Clip.hardEdge,
-                                children: [
-                                  Positioned.fill(
-                                    child: RepaintBoundary(
-                                      child: CustomPaint(
-                                        painter: _EnergyPainter(
-                                          animation: _controller,
-                                          color: color,
-                                          progress:
-                                              (remaining ?? 0).clamp(0, 100) /
-                                              100,
-                                          hasError: hasError,
-                                          refreshing: widget.refreshing,
+                          Expanded(
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  key: const Key('energy-header'),
+                                  height: 27,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          name.isEmpty ? '未命名账号' : name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w800,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        value,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headlineMedium
-                                            ?.copyWith(
-                                              color: Colors.white,
-                                              fontSize: 25,
-                                              height: 1,
-                                              shadows: [
-                                                Shadow(
-                                                  color: color,
-                                                  blurRadius: 15,
-                                                ),
-                                              ],
-                                            ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        label,
-                                        style: TextStyle(
-                                          color: color.withValues(alpha: 0.95),
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.8,
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        constraints: BoxConstraints(
+                                          maxWidth: data == null ? 72 : 96,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 7,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: color.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          badge,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: color,
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.3,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              key: const Key('energy-quota-row'),
-                              children: [
-                                for (
-                                  var i = 0;
-                                  i < readings.length && i < 2;
-                                  i++
-                                ) ...[
-                                  if (i > 0) const SizedBox(height: 7),
-                                  Expanded(
-                                    child: _QuotaReading(
-                                      key: Key(
-                                        i == 0
-                                            ? 'energy-quota-line-primary'
-                                            : 'energy-quota-line-secondary',
-                                      ),
-                                      label: readings[i].label,
-                                      remaining: readings[i].remainingPercent,
-                                      displayValue: readings[i].displayValue,
-                                      higherIsBetter:
-                                          readings[i].higherIsBetter,
-                                      color: data == null
-                                          ? color
-                                          : AppTheme.cyan,
-                                    ),
+                                ),
+                                const SizedBox(height: 5),
+                                Expanded(
+                                  child: Column(
+                                    key: const Key('energy-quota-row'),
+                                    children: [
+                                      for (
+                                        var i = 0;
+                                        i < readings.length && i < 2;
+                                        i++
+                                      ) ...[
+                                        if (i > 0) const SizedBox(height: 5),
+                                        Expanded(
+                                          child: _QuotaReading(
+                                            key: Key(
+                                              i == 0
+                                                  ? 'energy-quota-line-primary'
+                                                  : 'energy-quota-line-secondary',
+                                            ),
+                                            label: readings[i].label,
+                                            remaining:
+                                                readings[i].remainingPercent,
+                                            displayValue:
+                                                readings[i].displayValue,
+                                            higherIsBetter:
+                                                readings[i].higherIsBetter,
+                                            color: data == null
+                                                ? color
+                                                : AppTheme.cyan,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                ],
+                                ),
+                                const SizedBox(height: 5),
+                                SizedBox(
+                                  key: const Key('energy-account-email'),
+                                  height: 16,
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.info_outline_rounded,
+                                        size: 11,
+                                        color: Color(0xFF71809A),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Expanded(
+                                        child: Text(
+                                          caption,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(fontSize: 8.5),
+                                        ),
+                                      ),
+                                      if (widget.onTap != null)
+                                        const Icon(
+                                          Icons.chevron_right_rounded,
+                                          size: 14,
+                                          color: Color(0xFF71809A),
+                                        ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 9),
-                    SizedBox(
-                      key: const Key('energy-account-email'),
-                      height: 18,
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.info_outline_rounded,
-                            size: 12,
-                            color: Color(0xFF71809A),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              caption,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(fontSize: 9.5),
-                            ),
-                          ),
-                          if (widget.onTap != null)
-                            const Icon(
-                              Icons.chevron_right_rounded,
-                              size: 15,
-                              color: Color(0xFF71809A),
-                            ),
                         ],
                       ),
                     ),
@@ -400,10 +396,10 @@ class _QuotaReading extends StatelessWidget {
         : color;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: const Color(0x64131D30),
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(11),
         border: Border.all(color: valueColor.withValues(alpha: 0.18)),
       ),
       child: Column(
@@ -415,9 +411,9 @@ class _QuotaReading extends StatelessWidget {
               label,
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(fontSize: 10),
+              ).textTheme.bodySmall?.copyWith(fontSize: 9),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 3),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -425,7 +421,7 @@ class _QuotaReading extends StatelessWidget {
                 displayValue!,
                 style: TextStyle(
                   color: valueColor,
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -440,7 +436,7 @@ class _QuotaReading extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(
                       context,
-                    ).textTheme.bodySmall?.copyWith(fontSize: 8.5),
+                    ).textTheme.bodySmall?.copyWith(fontSize: 8),
                   ),
                 ),
                 const SizedBox(width: 5),
@@ -450,20 +446,20 @@ class _QuotaReading extends StatelessWidget {
                       : '${remaining!.toStringAsFixed(0)}%',
                   style: TextStyle(
                     color: valueColor,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
             ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LayoutBuilder(
               builder: (context, constraints) => SizedBox(
                 key: Key('energy-quota-track-$label'),
                 width: double.infinity,
-                height: 5,
+                height: 3,
                 child: Stack(
                   children: [
                     const Positioned.fill(

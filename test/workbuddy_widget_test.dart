@@ -439,7 +439,7 @@ void main() {
           expect(find.byType(EnergyAccountCore), findsOneWidget);
           expect(
             tester.getSize(find.byKey(const Key('energy-core-card'))).height,
-            218,
+            lessThan(180),
           );
         }
       },
