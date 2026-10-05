@@ -10,7 +10,6 @@ import '../theme/app_theme.dart';
 class EnergyCoreData {
   const EnergyCoreData({
     required this.name,
-    required this.caption,
     required this.badge,
     required this.headline,
     required this.windows,
@@ -18,7 +17,6 @@ class EnergyCoreData {
   });
 
   final String name;
-  final String caption;
   final String badge;
   final ProviderQuotaWindow headline;
   final List<ProviderQuotaWindow> windows;
@@ -88,7 +86,6 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
         : account!.weeklyRemainingPercent;
     final hasError = data?.hasError ?? account!.hasError;
     final name = data?.name ?? account!.name;
-    final caption = data?.caption ?? 'Codex';
     final badge =
         data?.badge ??
         (account!.plan.isEmpty ? 'CODEX' : account.plan.toUpperCase());
@@ -119,7 +116,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
     final textScale = MediaQuery.textScalerOf(
       context,
     ).scale(1).clamp(1.0, 1.45).toDouble();
-    final cardHeight = 150 + (textScale - 1) * 44;
+    final cardHeight = 130 + (textScale - 1) * 44;
 
     return UnconstrainedBox(
       alignment: Alignment.topCenter,
@@ -301,38 +298,6 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                                           ),
                                         ),
                                       ],
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                SizedBox(
-                                  key: const Key('energy-account-email'),
-                                  height: 16,
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.info_outline_rounded,
-                                        size: 11,
-                                        color: Color(0xFF71809A),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Expanded(
-                                        child: Text(
-                                          caption,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(fontSize: 8.5),
-                                        ),
-                                      ),
-                                      if (widget.onTap != null)
-                                        const Icon(
-                                          Icons.chevron_right_rounded,
-                                          size: 14,
-                                          color: Color(0xFF71809A),
-                                        ),
                                     ],
                                   ),
                                 ),
