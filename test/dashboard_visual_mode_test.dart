@@ -245,14 +245,14 @@ void main() {
       final emailRect = tester.getRect(
         find.byKey(const Key('energy-account-email')),
       );
-      expect(headerRect.bottom, lessThanOrEqualTo(orbRect.top));
-      expect((orbRect.top - quotaRect.top).abs(), lessThanOrEqualTo(0.1));
+      expect((headerRect.top - orbRect.top).abs(), lessThanOrEqualTo(0.1));
+      expect(quotaRect.top, greaterThanOrEqualTo(headerRect.bottom));
       expect(orbRect.right, lessThanOrEqualTo(quotaRect.left));
-      expect(orbRect.bottom, lessThanOrEqualTo(emailRect.top));
       expect(quotaRect.bottom, lessThanOrEqualTo(emailRect.top));
+      expect(emailRect.top, lessThanOrEqualTo(orbRect.bottom));
       expect(
         tester.getSize(find.byKey(const Key('energy-core-card'))).height,
-        closeTo(218, 0.1),
+        closeTo(150, 0.1),
       );
       expect(find.byKey(const Key('energy-orb')), findsOneWidget);
       expect(
