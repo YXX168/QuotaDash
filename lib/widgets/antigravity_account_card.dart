@@ -50,7 +50,6 @@ class AntigravityAccountCard extends StatelessWidget {
         key: const Key('antigravity-details'),
         data: EnergyCoreData(
           name: name,
-          caption: description,
           badge: 'PRO',
           headline: ProviderQuotaWindow(
             label: '周额度',

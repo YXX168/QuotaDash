@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
 import '../models/antigravity_account.dart';
 import '../models/app_config.dart';
@@ -27,7 +26,6 @@ import '../widgets/sync_flow_loader.dart';
 import '../widgets/workbuddy_account_card.dart';
 import 'account_detail_screen.dart';
 import 'antigravity_detail_screen.dart';
-import 'codex_evaluation_screen.dart';
 import 'tools_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -61,7 +59,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   final Map<QuotaProviderId, QuotaModule> _providerModules = {};
   int _requestVersion = 0;
   bool _foreground = true;
-  bool _cliProxyEnabled = false;
   Object? _error;
   bool _loading = true;
   bool _refreshing = false;
@@ -161,11 +158,6 @@ class _DashboardScreenState extends State<DashboardScreen>
         _providerModules
           ..clear()
           ..addEntries(modules.map((module) => MapEntry(module.id, module)));
-        _cliProxyEnabled = modules.any(
-          (module) =>
-              module.id == QuotaProviderId.cliProxyApi &&
-              module.isEnabled(widget.config),
-        );
         _providerQuotas.clear();
         for (final result in results) {
           if (result is CodexModuleResult) {
@@ -395,16 +387,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   key: const ValueKey('dashboard-content'),
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (_cliProxyEnabled || _snapshot != null)
-                                      _ServicePanel(
-                                        snapshot:
-                                            _snapshot ??
-                                            DashboardSnapshot(
-                                              accounts: const [],
-                                              checkedAt: DateTime.now(),
-                                            ),
-                                        error: _error,
-                                      ),
                                     if (_error != null) ...[
                                       const SizedBox(height: 10),
                                       _StaleDataBanner(
@@ -450,66 +432,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           snapshot: _snapshot!,
                                           onTap: _openAccount,
                                         ),
-                                      const SizedBox(height: 8),
-                                      GlassCard(
-                                        key: const Key(
-                                          'codex-evaluation-entry',
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 12,
-                                        ),
-                                        borderColor: AppTheme.violet.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        onTap: () => Navigator.of(context).push(
-                                          MaterialPageRoute<void>(
-                                            builder: (_) =>
-                                                CodexEvaluationScreen(
-                                                  config: widget.config,
-                                                ),
-                                          ),
-                                        ),
-                                        child: const Row(
-                                          children: [
-                                            Icon(
-                                              Icons.psychology_alt_rounded,
-                                              color: AppTheme.violet,
-                                              size: 22,
-                                            ),
-                                            SizedBox(width: 10),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    'Codex 降智测试',
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                    ),
-                                                  ),
-                                                  SizedBox(height: 3),
-                                                  Text(
-                                                    '糖果题 · 指纹测试 · ModelTrace',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color: Color(0xFF8F9BB1),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Icon(
-                                              Icons.chevron_right_rounded,
-                                              color: Color(0xFF8F9BB1),
-                                              size: 20,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
                                     ],
                                     ..._providerSections(),
                                     if (_snapshot
@@ -1114,100 +1036,6 @@ class _ThemeChoice extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ServicePanel extends StatelessWidget {
-  const _ServicePanel({required this.snapshot, required this.error});
-
-  final DashboardSnapshot snapshot;
-  final Object? error;
-
-  @override
-  Widget build(BuildContext context) {
-    final online = error == null;
-    final color = online ? AppTheme.success : AppTheme.warning;
-    return Container(
-      height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: const Color(0x8A111827),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        children: [
-          _PulsingStatusDot(color: color),
-          const SizedBox(width: 8),
-          Text(
-            online ? 'API 在线' : '缓存数据',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(width: 8),
-          const Spacer(),
-          Text(
-            DateFormat('HH:mm').format(snapshot.checkedAt.toLocal()),
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontSize: 11),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PulsingStatusDot extends StatefulWidget {
-  const _PulsingStatusDot({required this.color});
-
-  final Color color;
-
-  @override
-  State<_PulsingStatusDot> createState() => _PulsingStatusDotState();
-}
-
-class _PulsingStatusDotState extends State<_PulsingStatusDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final pulse = Curves.easeInOut.transform(_controller.value);
-        return Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: widget.color,
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withValues(alpha: 0.22 + pulse * 0.34),
-                blurRadius: 5 + pulse * 5,
-                spreadRadius: pulse * 1.5,
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

@@ -56,7 +56,7 @@ WorkBuddy 的活动。客户端刷新只读取额度，不触发签到、试用�
 
 ## Codex 降智测试
 
-Android 可从 ChatGPT 分组下的「Codex 降智测试」或工具箱进入原生测试页。服务端需安装并启用
+Android 可从工具箱中的「Codex 降智测试」进入原生测试页。服务端需安装并启用
 [cpa-codex-candy-eval](https://github.com/haowang02/cpa-plugin-codex-candy-eval)（本次核验版本 0.3.8）。
 支持糖果题、指纹测试和 ModelTrace，默认筛选 Codex，也可查看其他服务端凭证；读取服务端保留的
 测试历史，提供批量启动、进度、指纹/ModelTrace 停止及记录详情。模型目录按凭证读取，

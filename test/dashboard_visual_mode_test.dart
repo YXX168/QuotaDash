@@ -120,6 +120,9 @@ void main() {
     await _pumpDashboard(tester, VisualMode.console);
 
     expect(find.byKey(const Key('summary-stats-grid')), findsNothing);
+    expect(find.text('API 在线'), findsNothing);
+    expect(find.text('缓存数据'), findsNothing);
+    expect(find.text('Codex 降智测试'), findsNothing);
     expect(find.byKey(const Key('account-card-0')), findsOneWidget);
     expect(find.byKey(const Key('energy-account-0')), findsNothing);
     expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
@@ -137,6 +140,9 @@ void main() {
     await _pumpDashboard(tester, VisualMode.energy);
 
     expect(find.byKey(const Key('summary-stats-grid')), findsNothing);
+    expect(find.text('API 在线'), findsNothing);
+    expect(find.text('缓存数据'), findsNothing);
+    expect(find.text('Codex 降智测试'), findsNothing);
     expect(find.byKey(const Key('account-card-0')), findsNothing);
     expect(find.byKey(const Key('energy-account-0')), findsOneWidget);
     expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
@@ -242,17 +248,12 @@ void main() {
       final quotaRect = tester.getRect(
         find.byKey(const Key('energy-quota-row')),
       );
-      final emailRect = tester.getRect(
-        find.byKey(const Key('energy-account-email')),
-      );
       expect((headerRect.top - orbRect.top).abs(), lessThanOrEqualTo(0.1));
       expect(quotaRect.top, greaterThanOrEqualTo(headerRect.bottom));
       expect(orbRect.right, lessThanOrEqualTo(quotaRect.left));
-      expect(quotaRect.bottom, lessThanOrEqualTo(emailRect.top));
-      expect(emailRect.top, lessThanOrEqualTo(orbRect.bottom));
       expect(
         tester.getSize(find.byKey(const Key('energy-core-card'))).height,
-        closeTo(150, 0.1),
+        closeTo(130, 0.1),
       );
       expect(find.byKey(const Key('energy-orb')), findsOneWidget);
       expect(
@@ -298,13 +299,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(
-        find.descendant(
-          of: find.byKey(const Key('energy-account-email')),
-          matching: find.text('Codex'),
-        ),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('energy-account-email')), findsNothing);
     },
   );
 
@@ -331,5 +326,13 @@ void main() {
     expect(find.text('能量核心'), findsOneWidget);
     expect(find.text('自动刷新'), findsOneWidget);
     expect(find.text('连接配置'), findsOneWidget);
+    await tester.ensureVisible(find.text('工具箱'));
+    await tester.tap(find.text('工具箱'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('PROXY MANAGEMENT TOOLS'), findsOneWidget);
+    expect(find.text('Codex 降智测试'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

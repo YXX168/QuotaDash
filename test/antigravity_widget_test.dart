@@ -182,7 +182,7 @@ void main() {
           expect(find.byType(EnergyAccountCore), findsOneWidget);
           expect(
             tester.getSize(find.byKey(const Key('energy-core-card'))).height,
-            closeTo(150, 0.1),
+            closeTo(130, 0.1),
           );
           expect(find.text('周额度'), findsOneWidget);
           expect(find.text('综合可用'), findsNothing);

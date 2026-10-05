@@ -44,23 +44,9 @@ class WorkBuddyAccountCard extends StatelessWidget {
         key: ValueKey('workbuddy-energy-${account.auth.authIndex}'),
         data: EnergyCoreData(
           name: account.displayName,
-          caption: [
-            account.regionLabel,
-            if (account.error != null && !account.disabled)
-              credits == null ? '同步失败' : '同步失败（上次积分）'
-            else if (credits == null)
-              '积分余量未知'
-            else if (!account.disabled && account.exhausted == true)
-              '积分耗尽',
-            if (account.selected) '当前账号',
-          ].join(' · '),
-          badge: account.disabled
-              ? '已禁用'
-              : account.plan.isEmpty
-              ? 'WORKBUDDY'
-              : account.plan.toUpperCase(),
+          badge: account.regionLabel,
           headline: ProviderQuotaWindow(
-            label: '积分余量',
+            label: account.disabled ? '已禁用' : '积分余量',
             remainingPercent: account.disabled
                 ? null
                 : credits?.remainingPercent,
