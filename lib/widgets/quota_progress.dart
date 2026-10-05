@@ -4,10 +4,16 @@ import '../theme/app_theme.dart';
 import 'request_activity.dart';
 
 class QuotaProgress extends StatelessWidget {
-  const QuotaProgress({required this.label, required this.window, super.key});
+  const QuotaProgress({
+    required this.label,
+    required this.window,
+    this.compact = false,
+    super.key,
+  });
 
   final String label;
   final QuotaWindow? window;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -32,12 +38,21 @@ class QuotaProgress extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  maxLines: compact ? 1 : null,
+                  overflow: compact ? TextOverflow.ellipsis : null,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: compact ? 11 : null,
+                  ),
                 ),
               ),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 300),
-                style: TextStyle(color: color, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: compact ? 12 : null,
+                ),
                 child: Text(
                   remaining == null
                       ? '--'
@@ -46,9 +61,9 @@ class QuotaProgress extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 9),
+          SizedBox(height: compact ? 5 : 9),
           Container(
-            height: 8,
+            height: compact ? 4 : 8,
             decoration: BoxDecoration(
               color: const Color(0x221B2947),
               borderRadius: BorderRadius.circular(99),
@@ -72,8 +87,10 @@ class QuotaProgress extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 7),
-          ResetCountdown(target: window?.resetAt),
+          if (!compact || window?.resetAt != null) ...[
+            SizedBox(height: compact ? 4 : 7),
+            ResetCountdown(target: window?.resetAt),
+          ],
         ],
       ),
     );

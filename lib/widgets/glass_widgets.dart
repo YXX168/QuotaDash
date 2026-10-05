@@ -216,16 +216,21 @@ class StatusPill extends StatelessWidget {
     required this.color,
     super.key,
     this.icon,
+    this.compact = false,
   });
 
   final String label;
   final Color color;
   final IconData? icon;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 7 : 12,
+        vertical: compact ? 4 : 7,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
@@ -234,13 +239,13 @@ class StatusPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon ?? Icons.circle, size: 10, color: color),
-          const SizedBox(width: 7),
+          Icon(icon ?? Icons.circle, size: compact ? 7 : 10, color: color),
+          SizedBox(width: compact ? 4 : 7),
           Text(
             label,
             style: TextStyle(
               color: color,
-              fontSize: 12,
+              fontSize: compact ? 9 : 12,
               fontWeight: FontWeight.w700,
             ),
           ),
