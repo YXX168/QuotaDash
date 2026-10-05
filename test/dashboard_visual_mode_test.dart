@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cliproxy_dash/models/app_config.dart';
 import 'package:cliproxy_dash/models/codex_account.dart';
 import 'package:cliproxy_dash/models/dashboard_snapshot.dart';
@@ -9,8 +11,10 @@ import 'package:cliproxy_dash/services/provider_field.dart';
 import 'package:cliproxy_dash/services/provider_registry.dart';
 import 'package:cliproxy_dash/services/quota_module.dart';
 import 'package:cliproxy_dash/services/quota_repository.dart';
+import 'package:cliproxy_dash/theme/app_theme.dart';
 import 'package:cliproxy_dash/widgets/energy_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FixedRepository implements QuotaRepository {
@@ -93,6 +97,7 @@ final _testRegistry = ProviderRegistry(
 Future<void> _pumpDashboard(WidgetTester tester, VisualMode mode) async {
   await tester.pumpWidget(
     MaterialApp(
+      theme: AppTheme.dark,
       home: DashboardScreen(
         config: const AppConfig(
           values: {
@@ -114,6 +119,44 @@ Future<void> _pumpDashboard(WidgetTester tester, VisualMode mode) async {
 }
 
 void main() {
+  for (final mode in VisualMode.values) {
+    testWidgets('review compact ChatGPT ${mode.name}', (tester) async {
+      final font = Platform.environment['QUOTA_REVIEW_FONT'];
+      if (font != null) {
+        final loader = FontLoader('sans-serif')
+          ..addFont(
+            Future.value(ByteData.sublistView(File(font).readAsBytesSync())),
+          );
+        await loader.load();
+      }
+      final root = Platform.environment['FLUTTER_ROOT'];
+      if (root != null) {
+        final loader = FontLoader('MaterialIcons')
+          ..addFont(
+            Future.value(
+              ByteData.sublistView(
+                File(
+                  '$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+                ).readAsBytesSync(),
+              ),
+            ),
+          );
+        await loader.load();
+      }
+      tester.view.physicalSize = const Size(390, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await _pumpDashboard(tester, mode);
+      await tester.pump(const Duration(seconds: 1));
+      await expectLater(
+        find.byType(DashboardScreen),
+        matchesGoldenFile('../build/visual-review/chatgpt-${mode.name}.png'),
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }, tags: ['golden']);
+  }
   testWidgets('console mode renders account cards without redundant summary', (
     tester,
   ) async {
@@ -251,6 +294,16 @@ void main() {
       expect((headerRect.top - orbRect.top).abs(), lessThanOrEqualTo(0.1));
       expect(quotaRect.top, greaterThanOrEqualTo(headerRect.bottom));
       expect(orbRect.right, lessThanOrEqualTo(quotaRect.left));
+      final cardRect = tester.getRect(
+        find.byKey(const Key('energy-core-card')),
+      );
+      final lastTrack = tester.getRect(
+        find.byKey(const Key('energy-quota-track-月度额度')),
+      );
+      expect(
+        headerRect.top - cardRect.top,
+        closeTo(cardRect.bottom - lastTrack.bottom, 0.1),
+      );
       expect(
         tester.getSize(find.byKey(const Key('energy-core-card'))).height,
         closeTo(130, 0.1),
@@ -331,6 +384,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('PROXY MANAGEMENT TOOLS'), findsOneWidget);
+    expect(find.text('账号管理'), findsOneWidget);
     expect(find.text('Codex 降智测试'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());

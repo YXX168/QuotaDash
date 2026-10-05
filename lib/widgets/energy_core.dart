@@ -136,7 +136,10 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
               onTap: widget.onTap,
               borderRadius: BorderRadius.circular(20),
               child: Ink(
-                padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   gradient: const LinearGradient(
@@ -223,7 +226,7 @@ class _EnergyAccountCoreState extends State<EnergyAccountCore>
                               children: [
                                 SizedBox(
                                   key: const Key('energy-header'),
-                                  height: 27,
+                                  height: 20,
                                   child: Row(
                                     children: [
                                       Expanded(
@@ -359,16 +362,10 @@ class _QuotaReading extends StatelessWidget {
         : health <= 35
         ? AppTheme.warning
         : color;
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: const Color(0x64131D30),
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: valueColor.withValues(alpha: 0.18)),
-      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (displayValue != null) ...[
@@ -417,14 +414,14 @@ class _QuotaReading extends StatelessWidget {
                 ),
               ],
             ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LayoutBuilder(
               builder: (context, constraints) => SizedBox(
                 key: Key('energy-quota-track-$label'),
                 width: double.infinity,
-                height: 3,
+                height: 4,
                 child: Stack(
                   children: [
                     const Positioned.fill(

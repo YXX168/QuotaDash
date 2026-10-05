@@ -12,6 +12,7 @@ import 'api_keys_screen.dart';
 import 'models_screen.dart';
 import 'runtime_settings_screen.dart';
 import 'codex_evaluation_screen.dart';
+import 'account_management_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({required this.config, super.key});
@@ -139,6 +140,16 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         subtitle: '查看和管理已接入的实例',
                       ),
                       const SizedBox(height: 14),
+                      _ToolCard(
+                        icon: Icons.manage_accounts_rounded,
+                        iconColor: AppTheme.success,
+                        title: '账号管理',
+                        subtitle: '启用或禁用账号，查看已停用账号',
+                        onTap: () => _navigate(
+                          AccountManagementScreen(config: widget.config),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       _ToolCard(
                         icon: Icons.psychology_alt_rounded,
                         iconColor: AppTheme.violet,

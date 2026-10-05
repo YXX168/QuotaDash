@@ -327,36 +327,43 @@ class _DashboardScreenState extends State<DashboardScreen>
                           onVisualModeChanged: widget.onVisualModeChanged,
                           onOpenTools: () {
                             unawaited(HapticFeedback.lightImpact());
-                            Navigator.of(context).push(
-                              PageRouteBuilder<void>(
-                                transitionDuration: const Duration(
-                                  milliseconds: 160,
-                                ),
-                                reverseTransitionDuration: const Duration(
-                                  milliseconds: 140,
-                                ),
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        ToolsScreen(config: widget.config),
-                                transitionsBuilder:
-                                    (
-                                      context,
-                                      animation,
-                                      secondaryAnimation,
-                                      child,
-                                    ) {
-                                      final curved = CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOutCubic,
-                                        reverseCurve: Curves.easeInCubic,
-                                      );
-                                      return FadeTransition(
-                                        opacity: curved,
-                                        child: child,
-                                      );
-                                    },
-                              ),
-                            );
+                            Navigator.of(context)
+                                .push(
+                                  PageRouteBuilder<void>(
+                                    transitionDuration: const Duration(
+                                      milliseconds: 160,
+                                    ),
+                                    reverseTransitionDuration: const Duration(
+                                      milliseconds: 140,
+                                    ),
+                                    pageBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                        ) => ToolsScreen(config: widget.config),
+                                    transitionsBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                          child,
+                                        ) {
+                                          final curved = CurvedAnimation(
+                                            parent: animation,
+                                            curve: Curves.easeOutCubic,
+                                            reverseCurve: Curves.easeInCubic,
+                                          );
+                                          return FadeTransition(
+                                            opacity: curved,
+                                            child: child,
+                                          );
+                                        },
+                                  ),
+                                )
+                                .then((_) {
+                                  if (mounted) _refresh(silent: true);
+                                });
                           },
                         ),
                         const SizedBox(height: 10),
