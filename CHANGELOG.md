@@ -2,6 +2,13 @@
 
 此文件从首个正式版本开始记录发布变化。
 
+## [2.4.4] - 2026-10-16
+
+- 更新 Antigravity User-Agent 为 antigravity/hub/2.23.0 darwin/arm64，对齐 CLIProxyAPI 最新客户端接口规范。
+- 修复因上游 Google Cloud Code 客户端版本策略导致 Gemini Models 额度组缺失、仅显示 Claude/GPT 额度的问题。
+- 优化 Antigravity 能量卡片额度标签展示，当仅含非 Gemini 额度时动态回落并准确标识。
+- 版本号提升至 2.4.4，版本码增加至 33。
+
 ## [2.4.3] - 2026-10-06
 
 - 工具箱新增账号管理，显示已启用和已禁用账号，支持开关及服务端状态回读确认；返回首页后刷新额度。
