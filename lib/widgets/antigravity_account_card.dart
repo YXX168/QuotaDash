@@ -45,12 +45,23 @@ class AntigravityAccountCard extends StatelessWidget {
     if (visualMode == VisualMode.energy) {
       final geminiWeekly = account.geminiWeeklyWindow;
       final gemini5H = account.gemini5HWindow;
+      final h5Label =
+          gemini5H != null &&
+              (gemini5H.label.contains('Claude') ||
+                  gemini5H.label.contains('GPT'))
+          ? 'Claude & GPT · 5H'
+          : 'Gemini Models · 5H';
+      final h168Label =
+          geminiWeekly != null &&
+              (geminiWeekly.label.contains('Claude') ||
+                  geminiWeekly.label.contains('GPT'))
+          ? 'Claude & GPT · 168H'
+          : 'Gemini Models · 168H';
 
       return EnergyAccountCore.forProvider(
         key: const Key('antigravity-details'),
         data: EnergyCoreData(
           name: name,
-          caption: description,
           badge: 'PRO',
           headline: ProviderQuotaWindow(
             label: '周额度',
@@ -59,12 +70,12 @@ class AntigravityAccountCard extends StatelessWidget {
           ),
           windows: [
             ProviderQuotaWindow(
-              label: 'Gemini Models · 5H',
+              label: h5Label,
               remainingPercent: gemini5H?.remainingPercent,
               resetAt: gemini5H?.resetAt,
             ),
             ProviderQuotaWindow(
-              label: 'Gemini Models · 168H',
+              label: h168Label,
               remainingPercent: geminiWeekly?.remainingPercent,
               resetAt: geminiWeekly?.resetAt,
             ),

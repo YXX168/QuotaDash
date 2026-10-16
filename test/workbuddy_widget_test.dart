@@ -182,6 +182,9 @@ void main() {
       lessThan(tester.getRect(remaining).top),
     );
     expect(find.text('25%'), findsOneWidget);
+    expect(find.text('国际版'), findsOneWidget);
+    expect(find.text('TRIAL'), findsNothing);
+    expect(find.byKey(const Key('energy-account-email')), findsNothing);
     expect(remainingReading(VisualMode.energy), findsOneWidget);
     expect(
       tester
@@ -204,6 +207,9 @@ void main() {
       findsOneWidget,
     );
     expect(remainingReading(VisualMode.energy, total: '--'), findsOneWidget);
+    await pumpCard(tester, VisualMode.energy, fixture(region: 'cn'));
+    expect(find.text('国内版'), findsOneWidget);
+    expect(find.text('国际版'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -331,7 +337,10 @@ void main() {
           findsOneWidget,
         );
         expect(remainingReading(mode), findsOneWidget);
-        expect(find.textContaining('当前账号'), findsOneWidget);
+        expect(
+          find.textContaining('当前账号'),
+          mode == VisualMode.console ? findsOneWidget : findsNothing,
+        );
         expect(
           find.text('查看积分包与到期时间'),
           mode == VisualMode.console ? findsOneWidget : findsNothing,
@@ -344,6 +353,7 @@ void main() {
         await tester.tap(remainingReading(mode));
         await tester.pumpAndSettle();
         expect(find.text('WorkBuddy 账号详情'), findsOneWidget);
+        expect(find.text('当前账号'), findsOneWidget);
         expect(find.text('Synthetic credit package'), findsOneWidget);
         expect(find.textContaining('到期：'), findsOneWidget);
         expect(find.text('成功 12 · 失败 1'), findsOneWidget);
@@ -359,7 +369,10 @@ void main() {
         remainingReading(mode, remaining: '--', total: '--'),
         findsOneWidget,
       );
-      expect(find.textContaining('积分余量未知'), findsOneWidget);
+      expect(
+        find.textContaining('积分余量未知'),
+        mode == VisualMode.console ? findsOneWidget : findsNothing,
+      );
       expect(find.text('剩余 0 credits'), findsNothing);
       await pumpCard(
         tester,
@@ -373,14 +386,14 @@ void main() {
       expect(
         mode == VisualMode.console
             ? find.text('操作失败，请检查连接或配置后重试')
-            : find.textContaining('同步失败'),
+            : find.text('检查失败'),
         findsOneWidget,
       );
       await pumpCard(tester, mode, fixture(error: Exception('private')));
       expect(
         mode == VisualMode.console
             ? find.text('上次查询的积分 · 数据可能已过期')
-            : find.textContaining('同步失败（上次积分）'),
+            : find.text('检查失败'),
         findsOneWidget,
       );
       expect(remainingReading(mode), findsOneWidget);
@@ -439,7 +452,7 @@ void main() {
           expect(find.byType(EnergyAccountCore), findsOneWidget);
           expect(
             tester.getSize(find.byKey(const Key('energy-core-card'))).height,
-            218,
+            lessThan(180),
           );
         }
       },

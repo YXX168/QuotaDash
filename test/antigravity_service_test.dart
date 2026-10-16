@@ -141,6 +141,10 @@ void main() {
             expect(call['url'], ManagementService.antigravityQuotaUrls.first);
             expect(jsonDecode(call['data']), {'project': 'project-test'});
             expect(call['header']['Authorization'], r'Bearer $TOKEN$');
+            expect(
+              call['header']['User-Agent'],
+              ManagementService.antigravityUserAgent,
+            );
             return _upstream(jsonEncode(_summary()));
           }
           return _upstream(
@@ -273,5 +277,12 @@ void main() {
     expect(window.displayLabel, '2H额度');
     expect(window.resetAt, isNull);
     expect(QuotaWindow.parseResetTime(9e30), isNull);
+  });
+
+  test('antigravity user agent matches hub 2.23.0 specification', () {
+    expect(
+      ManagementService.antigravityUserAgent,
+      'antigravity/hub/2.23.0 darwin/arm64',
+    );
   });
 }
