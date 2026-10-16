@@ -35,8 +35,7 @@ class ManagementService implements QuotaRepository {
     'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary',
     'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels',
   ];
-  static const antigravityUserAgent =
-      'antigravity/cli/1.0.13 (aidev_client; os_type=darwin; arch=arm64)';
+  static const antigravityUserAgent = 'antigravity/hub/2.23.0 darwin/arm64';
 
   final Uri baseUri;
   final String managementKey;

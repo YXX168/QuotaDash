@@ -429,7 +429,7 @@ private final class ManagementClient {
             headers: [
                 "Authorization": "Bearer $TOKEN$",
                 "Content-Type": "application/json",
-                "User-Agent": "antigravity/cli/1.0.13 (aidev_client; os_type=darwin; arch=arm64)",
+                "User-Agent": "antigravity/hub/2.23.0 darwin/arm64",
             ],
             data: ["project": project]
         )
