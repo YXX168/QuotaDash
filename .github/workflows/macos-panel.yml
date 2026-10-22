@@ -1,0 +1,34 @@
+name: Validate macOS panel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos-panel/**'
+      - '.github/workflows/macos-panel.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'macos-panel/**'
+      - '.github/workflows/macos-panel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-panel-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test native panel with in-memory fixtures
+        run: ./macos-panel/test.sh
+      - name: Build native app bundle
+        run: ./macos-panel/build.sh
+      - name: Verify app bundle signature
+        run: codesign --verify --deep --strict macos-panel/dist/QuotaDash.app
