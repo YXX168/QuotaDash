@@ -149,7 +149,7 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
 
     setState(() => _deleting = true);
     try {
-      await widget.service.deleteApiKey(index: index);
+      await widget.service.deleteApiKey(value: key);
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

@@ -480,6 +480,10 @@ class ProxyApiService {
         return 'WorkBuddy';
       case 'kimi':
         return 'Kimi';
+      case 'meta':
+        return 'Meta';
+      case 'devin':
+        return 'Devin';
       default:
         final trimmed = provider.trim();
         return trimmed.isEmpty ? 'OAuth' : trimmed;

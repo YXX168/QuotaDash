@@ -84,7 +84,7 @@ class CodexEvaluationService implements CodexEvaluationRepository {
     }
     try {
       final data = jsonDecode(response.body);
-      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
     } on FormatException {
       // Raw server bodies can include keys, URLs or provider diagnostics.
     }

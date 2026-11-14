@@ -29,7 +29,7 @@ class AccountManagementService implements AccountManagementRepository {
 
   Uri _endpoint({bool status = false}) {
     final base = baseUri.path.replaceFirst(RegExp(r'/+$'), '');
-    final resource = base.endsWith('/v8/management')
+    final resource = base.contains('/v8/management')
         ? 'credentials'
         : 'auth-files';
     return baseUri.replace(path: '$base/$resource${status ? '/status' : ''}');

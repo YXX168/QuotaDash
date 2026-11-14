@@ -485,7 +485,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           in _snapshot!.workBuddyAccounts)
                                         Padding(
                                           key: ValueKey(
-                                            'workbuddy-${account.auth.authIndex}',
+                                            account.auth.authIndex.isNotEmpty
+                                                ? 'workbuddy-${account.auth.authIndex}'
+                                                : 'workbuddy-${account.auth.id}',
                                           ),
                                           padding: const EdgeInsets.only(
                                             bottom: 12,

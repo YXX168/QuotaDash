@@ -199,6 +199,7 @@ class _RuntimeSettingsScreenState extends State<RuntimeSettingsScreen> {
   }
 
   Future<void> _toggle(RuntimeToggleDefinition definition, bool value) async {
+    if (_savingPath != null) return;
     final previous = _values[definition.path] ?? false;
     setState(() {
       _values[definition.path] = value;

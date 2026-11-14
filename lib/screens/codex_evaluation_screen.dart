@@ -975,9 +975,9 @@ class _EvaluationRecordScreenState extends State<_EvaluationRecordScreen> {
                 const SizedBox(height: 16),
                 const SectionTitle(title: '基准比对'),
                 const SizedBox(height: 10),
-                for (final raw in attr['comparisons'] as List? ?? const [])
+                for (final raw in evaluationList(attr['comparisons']))
                   _comparison(evaluationMap(raw)),
-                if ((attr['comparisons'] as List? ?? const []).isEmpty)
+                if (evaluationList(attr['comparisons']).isEmpty)
                   const GlassCard(child: Text('暂无可比数据')),
               ] else ...[
                 const SizedBox(height: 16),
@@ -1009,11 +1009,11 @@ class _EvaluationRecordScreenState extends State<_EvaluationRecordScreen> {
                   subtitle: '概率来自插件归因模型，作为比对参考',
                 ),
                 const SizedBox(height: 10),
-                for (final raw in attr['results'] as List? ?? const [])
+                for (final raw in evaluationList(attr['results']))
                   _candidate(evaluationMap(raw)),
-                if ((attr['results'] as List? ?? const []).isEmpty)
+                if (evaluationList(attr['results']).isEmpty)
                   const GlassCard(child: Text('暂无候选模型')),
-                for (final raw in data['samples'] as List? ?? const [])
+                for (final raw in evaluationList(data['samples']))
                   _sample(evaluationMap(raw)),
               ],
             ],
@@ -1039,7 +1039,7 @@ class _EvaluationRecordScreenState extends State<_EvaluationRecordScreen> {
         style: const TextStyle(fontSize: 11),
       ),
       children: [
-        for (final raw in c['cells'] as List? ?? const [])
+        for (final raw in evaluationList(c['cells']))
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(

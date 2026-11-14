@@ -45,6 +45,8 @@ class ManagedAccount {
     'workbuddy' => 'WorkBuddy',
     'claude' => 'Claude',
     'gemini' => 'Gemini',
+    'meta' => 'Meta',
+    'devin' => 'Devin',
     _ => fileName.toLowerCase().startsWith('workbuddy-') ? 'WorkBuddy' : '其他账号',
   };
 

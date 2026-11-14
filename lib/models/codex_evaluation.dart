@@ -40,6 +40,8 @@ String evaluationText(Object? value) => (value?.toString() ?? '')
 Map<String, dynamic> evaluationMap(Object? value) =>
     value is Map ? Map<String, dynamic>.from(value) : const {};
 
+List<dynamic> evaluationList(Object? value) => value is List ? value : const [];
+
 int? evaluationInt(Object? value) => value is num
     ? value.isFinite
           ? value.toInt()
