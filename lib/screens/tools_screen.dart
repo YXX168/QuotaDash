@@ -29,13 +29,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
   bool _checkingVersion = false;
 
   /// CLIProxyAPI tools need a base URL and a management key; when either
-  /// is missing (OpenCode-only users) the section renders as guidance
-  /// instead of firing requests at an empty URI.
+  /// is missing the section renders as guidance instead of firing requests
+  /// at an empty URI.
   bool get _cliProxyConfigured =>
       widget.config.isConfigured('baseUrl') &&
       widget.config.isConfigured('managementKey');
-
-  bool get _openCodeConfigured => widget.config.isConfigured('openCodeApiKey');
 
   @override
   void initState() {
@@ -271,61 +269,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 20),
-                    const SectionTitle(
-                      title: 'OpenCode',
-                      subtitle: '额度数据通过 API Key 同步',
-                    ),
-                    const SizedBox(height: 14),
-                    if (_openCodeConfigured)
-                      GlassCard(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                        borderColor: AppTheme.magenta.withValues(alpha: 0.22),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: AppTheme.magenta.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(13),
-                                border: Border.all(
-                                  color: AppTheme.magenta.withValues(
-                                    alpha: 0.16,
-                                  ),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.bolt_rounded,
-                                size: 20,
-                                color: AppTheme.magenta,
-                              ),
-                            ),
-                            const SizedBox(width: 13),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    '已连接',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    '滚动 / 周 / 月度额度实时同步中',
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      const _NotConnectedCard(providerName: 'OpenCode'),
+
                     if (_cliProxyConfigured) ...[
                       const SizedBox(height: 20),
                       Center(

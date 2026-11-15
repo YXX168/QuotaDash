@@ -1,6 +1,5 @@
 import '../models/app_config.dart';
 import 'cliproxyapi_module.dart';
-import 'opencode_module.dart';
 import 'quota_module.dart';
 import 'quota_repository.dart';
 
@@ -21,10 +20,7 @@ class ProviderRegistry {
   /// The standard registry with every built-in provider module.
   static const ProviderRegistry defaultRegistry = ProviderRegistry();
 
-  static const List<ModuleFactory> defaultFactories = [
-    _createCliProxyModule,
-    _createOpenCodeModule,
-  ];
+  static const List<ModuleFactory> defaultFactories = [_createCliProxyModule];
 
   final List<ModuleFactory> factories;
 
@@ -48,9 +44,4 @@ class ProviderRegistry {
         ? null
         : () => cliProxyRepository,
   );
-
-  static QuotaModule _createOpenCodeModule(
-    AppConfig config, {
-    QuotaRepository? cliProxyRepository,
-  }) => const OpenCodeModule();
 }

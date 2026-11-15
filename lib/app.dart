@@ -99,8 +99,7 @@ class _CliProxyDashAppState extends State<CliProxyDashApp> {
     });
   }
 
-  /// Returns null when the CLIProxyAPI module is not configured yet so
-  /// OpenCode-only users can still use the dashboard.
+  /// Returns null when the CLIProxyAPI module is not configured yet.
   QuotaRepository? _tryCreateRepository(AppConfig config) {
     try {
       return _createRepository(config);

@@ -42,12 +42,11 @@ class ManagedAccount {
   String get providerLabel => switch (provider) {
     'codex' => 'ChatGPT',
     'antigravity' => 'Antigravity',
-    'workbuddy' => 'WorkBuddy',
     'claude' => 'Claude',
     'gemini' => 'Gemini',
     'meta' => 'Meta',
     'devin' => 'Devin',
-    _ => fileName.toLowerCase().startsWith('workbuddy-') ? 'WorkBuddy' : '其他账号',
+    _ => '其他账号',
   };
 
   String get statusLabel => switch (disabled) {

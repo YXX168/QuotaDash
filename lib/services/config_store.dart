@@ -13,8 +13,8 @@ abstract interface class ConfigStore {
 
 /// Secure key/value store for every provider module's settings.
 ///
-/// Legacy single-provider keys (management_base_url, management_key,
-/// opencode_api_key) are migrated transparently on first load.
+/// Legacy single-provider keys (management_base_url, management_key)
+/// are migrated transparently on first load.
 class PluginConfigStore implements ConfigStore {
   PluginConfigStore({
     FlutterSecureStorage? secureStorage,
@@ -51,7 +51,7 @@ class PluginConfigStore implements ConfigStore {
       }
     }
     final legacyKey = await _secureStorage.read(key: _legacyManagementKey);
-    final legacyOpencode = await _secureStorage.read(key: _legacyOpencodeKey);
+    await _secureStorage.delete(key: _legacyOpencodeKey);
 
     // The blob keeps the store extensible when a new provider adds fields.
     final values = <String, String>{};
@@ -88,11 +88,6 @@ class PluginConfigStore implements ConfigStore {
         legacyKey != null &&
         legacyKey.trim().isNotEmpty) {
       values['managementKey'] = legacyKey.trim();
-    }
-    if (values['openCodeApiKey'] == null &&
-        legacyOpencode != null &&
-        legacyOpencode.trim().isNotEmpty) {
-      values['openCodeApiKey'] = legacyOpencode.trim();
     }
 
     if (values.isEmpty) return null;

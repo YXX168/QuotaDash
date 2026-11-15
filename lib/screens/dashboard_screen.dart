@@ -17,13 +17,11 @@ import '../widgets/account_card.dart';
 import '../widgets/antigravity_account_card.dart';
 import '../widgets/energy_core.dart';
 import '../widgets/glass_widgets.dart';
-import '../widgets/opencode_compact_card.dart';
 import '../widgets/provider_energy_core.dart';
 import '../widgets/provider_quota_card.dart';
 import '../widgets/quantum_emblem.dart';
 import '../widgets/request_activity.dart';
 import '../widgets/sync_flow_loader.dart';
-import '../widgets/workbuddy_account_card.dart';
 import 'account_detail_screen.dart';
 import 'antigravity_detail_screen.dart';
 import 'tools_screen.dart';
@@ -68,14 +66,12 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool get _showCodexSection =>
       _snapshot != null &&
       (_snapshot!.accounts.isNotEmpty ||
-          (_snapshot!.antigravityAccounts.isEmpty &&
-              _snapshot!.workBuddyAccounts.isEmpty));
+          _snapshot!.antigravityAccounts.isEmpty);
 
   bool get _showRequestSection =>
       _snapshot != null &&
       (_snapshot!.accounts.isNotEmpty ||
-          _snapshot!.antigravityAccounts.isNotEmpty ||
-          _snapshot!.workBuddyAccounts.isNotEmpty);
+          _snapshot!.antigravityAccounts.isNotEmpty);
 
   @override
   void initState() {
@@ -237,30 +233,28 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   List<Widget> _providerSections() => [
     for (final entry in _providerQuotas.entries) ...[
-      if (entry.key != QuotaProviderId.openCode) ...[
-        if (_providerModules[entry.key] case final module?) ...[
-          const SizedBox(height: 18),
-          SectionTitle(title: module.displayName, subtitle: module.description),
-          const SizedBox(height: 10),
-          if (widget.visualMode == VisualMode.energy)
-            ProviderEnergyCore(
-              key: Key('provider-energy-${entry.key.name}'),
-              quota: entry.value,
-              displayName: module.displayName,
-              description: module.description,
-              accentColor: module.accentColor,
-              refreshing: _refreshing,
-            )
-          else
-            ProviderQuotaCard(
-              key: Key('quota-card-${entry.key.name}'),
-              quota: entry.value,
-              displayName: module.displayName,
-              description: module.description,
-              accentColor: module.accentColor,
-              icon: module.icon,
-            ),
-        ],
+      if (_providerModules[entry.key] case final module?) ...[
+        const SizedBox(height: 18),
+        SectionTitle(title: module.displayName, subtitle: module.description),
+        const SizedBox(height: 10),
+        if (widget.visualMode == VisualMode.energy)
+          ProviderEnergyCore(
+            key: Key('provider-energy-${entry.key.name}'),
+            quota: entry.value,
+            displayName: module.displayName,
+            description: module.description,
+            accentColor: module.accentColor,
+            refreshing: _refreshing,
+          )
+        else
+          ProviderQuotaCard(
+            key: Key('quota-card-${entry.key.name}'),
+            quota: entry.value,
+            displayName: module.displayName,
+            description: module.description,
+            accentColor: module.accentColor,
+            icon: module.icon,
+          ),
       ],
     ],
   ];
@@ -405,17 +399,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       const SizedBox(height: 10),
                                       _TrafficPulsePanel(snapshot: _snapshot!),
                                     ],
-                                    if (_providerQuotas[QuotaProviderId
-                                            .openCode]
-                                        case final openCodeQuota?) ...[
-                                      const SizedBox(height: 18),
-                                      const SectionTitle(
-                                        key: Key('opencode-section-title'),
-                                        title: 'OpenCode',
-                                      ),
-                                      const SizedBox(height: 10),
-                                      OpenCodeCompactCard(quota: openCodeQuota),
-                                    ],
                                     if (_showCodexSection) ...[
                                       const SizedBox(height: 18),
                                       const SectionTitle(
@@ -468,34 +451,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                                                 _openAntigravityAccount(
                                                   account,
                                                 ),
-                                          ),
-                                        ),
-                                    ],
-                                    if (_snapshot
-                                            ?.workBuddyAccounts
-                                            .isNotEmpty ??
-                                        false) ...[
-                                      const SizedBox(height: 18),
-                                      const SectionTitle(
-                                        key: Key('workbuddy-section-title'),
-                                        title: 'WorkBuddy',
-                                      ),
-                                      const SizedBox(height: 10),
-                                      for (final account
-                                          in _snapshot!.workBuddyAccounts)
-                                        Padding(
-                                          key: ValueKey(
-                                            account.auth.authIndex.isNotEmpty
-                                                ? 'workbuddy-${account.auth.authIndex}'
-                                                : 'workbuddy-${account.auth.id}',
-                                          ),
-                                          padding: const EdgeInsets.only(
-                                            bottom: 12,
-                                          ),
-                                          child: WorkBuddyAccountCard(
-                                            account: account,
-                                            visualMode: widget.visualMode,
-                                            refreshing: _refreshing,
                                           ),
                                         ),
                                     ],

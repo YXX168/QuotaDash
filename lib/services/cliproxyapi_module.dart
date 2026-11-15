@@ -29,7 +29,7 @@ class CliProxyApiModule implements QuotaModule<CodexModuleResult> {
   String get displayName => QuotaProviderId.cliProxyApi.displayName;
 
   @override
-  String get description => 'Codex / Antigravity / WorkBuddy 账号额度与请求活动';
+  String get description => 'Codex / Antigravity 账号额度与请求活动';
 
   @override
   Color get accentColor => AppTheme.cyan;

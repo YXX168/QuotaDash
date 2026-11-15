@@ -31,7 +31,7 @@ void main() {
         values: {
           'baseUrl': 'https://proxy.example/v0/management',
           'managementKey': 'proxy-secret',
-          'openCodeApiKey': 'opencode-secret',
+          'customApiKey': 'custom-secret',
         },
       ),
     );
@@ -39,7 +39,7 @@ void main() {
     final loaded = await store.load();
     expect(loaded?.value('baseUrl'), 'https://proxy.example/v0/management');
     expect(loaded?.value('managementKey'), 'proxy-secret');
-    expect(loaded?.value('openCodeApiKey'), 'opencode-secret');
+    expect(loaded?.value('customApiKey'), 'custom-secret');
   });
 
   test('returns null when nothing is configured', () async {

@@ -1,28 +1,22 @@
 import 'codex_account.dart';
 import 'antigravity_account.dart';
 import 'request_bucket.dart';
-import 'workbuddy_account.dart';
 
 class DashboardSnapshot {
   const DashboardSnapshot({
     required this.accounts,
     required this.checkedAt,
     this.antigravityAccounts = const [],
-    this.workBuddyAccounts = const [],
   });
 
   final List<CodexAccount> accounts;
   final DateTime checkedAt;
   final List<AntigravityAccount> antigravityAccounts;
-  final List<WorkBuddyAccount> workBuddyAccounts;
 
-  int get totalAccounts =>
-      accounts.length + antigravityAccounts.length + workBuddyAccounts.length;
+  int get totalAccounts => accounts.length + antigravityAccounts.length;
 
-  Iterable<AuthFileAccount> get _otherAccountAuths => [
-    ...antigravityAccounts.map((account) => account.auth),
-    ...workBuddyAccounts.map((account) => account.auth),
-  ];
+  Iterable<AuthFileAccount> get _otherAccountAuths =>
+      antigravityAccounts.map((account) => account.auth);
 
   int get totalSuccessRequests =>
       accounts.fold(0, (total, account) => total + account.successRequests) +
@@ -54,16 +48,6 @@ class DashboardSnapshot {
         account.auth.recentRequests.fold(
           0,
           (subtotal, bucket) => subtotal + bucket.total,
-        ),
-  );
-
-  int get workBuddyRecentRequests => workBuddyAccounts.fold(
-    0,
-    (total, account) =>
-        total +
-        account.auth.recentRequests.fold(
-          0,
-          (sum, bucket) => sum + bucket.total,
         ),
   );
 

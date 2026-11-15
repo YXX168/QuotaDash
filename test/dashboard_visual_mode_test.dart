@@ -3,13 +3,10 @@ import 'dart:io';
 import 'package:cliproxy_dash/models/app_config.dart';
 import 'package:cliproxy_dash/models/codex_account.dart';
 import 'package:cliproxy_dash/models/dashboard_snapshot.dart';
-import 'package:cliproxy_dash/models/provider_quota.dart';
 import 'package:cliproxy_dash/models/quota_window.dart';
 import 'package:cliproxy_dash/models/visual_mode.dart';
 import 'package:cliproxy_dash/screens/dashboard_screen.dart';
-import 'package:cliproxy_dash/services/provider_field.dart';
 import 'package:cliproxy_dash/services/provider_registry.dart';
-import 'package:cliproxy_dash/services/quota_module.dart';
 import 'package:cliproxy_dash/services/quota_repository.dart';
 import 'package:cliproxy_dash/theme/app_theme.dart';
 import 'package:cliproxy_dash/widgets/energy_core.dart';
@@ -46,53 +43,7 @@ class _FixedRepository implements QuotaRepository {
   );
 }
 
-QuotaModule _createFixedOpenCode(
-  AppConfig config, {
-  QuotaRepository? cliProxyRepository,
-}) => const _FixedOpenCodeModule();
-
-class _FixedOpenCodeModule implements QuotaModule<ProviderModuleResult> {
-  const _FixedOpenCodeModule();
-
-  @override
-  Color get accentColor => Colors.pinkAccent;
-
-  @override
-  String get description => '';
-
-  @override
-  String get displayName => 'OpenCode';
-
-  @override
-  List<ProviderField> get fields => const [];
-
-  @override
-  IconData get icon => Icons.bolt_rounded;
-
-  @override
-  QuotaProviderId get id => QuotaProviderId.openCode;
-
-  @override
-  bool isEnabled(AppConfig config) => true;
-
-  @override
-  Future<ProviderModuleResult> fetch(AppConfig config) async {
-    return const ProviderModuleResult(
-      ProviderQuota(
-        provider: QuotaProviderId.openCode,
-        windows: [
-          ProviderQuotaWindow(label: '5 小时额度', remainingPercent: 80),
-          ProviderQuotaWindow(label: '周限额度', remainingPercent: 60),
-          ProviderQuotaWindow(label: '月限额度', remainingPercent: 40),
-        ],
-      ),
-    );
-  }
-}
-
-final _testRegistry = ProviderRegistry(
-  factories: [ProviderRegistry.defaultFactories.first, _createFixedOpenCode],
-);
+const _testRegistry = ProviderRegistry();
 
 Future<void> _pumpDashboard(WidgetTester tester, VisualMode mode) async {
   await tester.pumpWidget(
@@ -168,13 +119,9 @@ void main() {
     expect(find.text('Codex 降智测试'), findsNothing);
     expect(find.byKey(const Key('account-card-0')), findsOneWidget);
     expect(find.byKey(const Key('energy-account-0')), findsNothing);
-    expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
-    expect(find.text('OpenCode'), findsOneWidget);
     expect(find.text('1 个账号'), findsNothing);
     expect(find.text('周均额度'), findsNothing);
     expect(find.text('平均剩余'), findsNothing);
-    expect(find.byKey(const Key('quota-card-openCode')), findsNothing);
-    expect(find.byKey(const Key('provider-energy-openCode')), findsNothing);
   });
 
   testWidgets('energy mode renders one energy core per account', (
@@ -188,22 +135,11 @@ void main() {
     expect(find.text('Codex 降智测试'), findsNothing);
     expect(find.byKey(const Key('account-card-0')), findsNothing);
     expect(find.byKey(const Key('energy-account-0')), findsOneWidget);
-    expect(find.byKey(const Key('opencode-compact-card')), findsOneWidget);
-    expect(find.byKey(const Key('quota-card-openCode')), findsNothing);
-    expect(find.byKey(const Key('provider-energy-openCode')), findsNothing);
     final pulse = tester.getRect(find.byKey(const Key('request-pulse-card')));
-    final openCodeTitle = tester.getRect(
-      find.byKey(const Key('opencode-section-title')),
-    );
-    final openCodeCard = tester.getRect(
-      find.byKey(const Key('opencode-compact-card')),
-    );
     final codexTitle = tester.getRect(
       find.byKey(const Key('codex-section-title')),
     );
-    expect(pulse.bottom, lessThan(openCodeTitle.top));
-    expect(openCodeTitle.bottom, lessThan(openCodeCard.top));
-    expect(openCodeCard.bottom, lessThan(codexTitle.top));
+    expect(pulse.bottom, lessThan(codexTitle.top));
     expect(
       find.descendant(
         of: find.byKey(const Key('energy-account-0')),

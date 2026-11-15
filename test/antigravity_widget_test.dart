@@ -119,13 +119,13 @@ void main() {
         home: Scaffold(
           body: ProviderQuotaCard(
             quota: const ProviderQuota(
-              provider: QuotaProviderId.openCode,
+              provider: QuotaProviderId.antigravity,
               error: 'Network unavailable',
               windows: [
                 ProviderQuotaWindow(label: 'Weekly', remainingPercent: 80),
               ],
             ),
-            displayName: 'OpenCode',
+            displayName: 'Antigravity',
             description: 'Quota',
             accentColor: AppTheme.cyan,
             icon: Icons.bolt,

@@ -24,8 +24,8 @@ class ProviderModuleResult extends ModuleResult {
   final ProviderQuota? quota;
 }
 
-/// A pluggable quota data source. Each provider (CLIProxyAPI, OpenCode,
-/// and future additions) implements this to feed its dashboard section.
+/// A pluggable quota data source. Each provider implements this to feed its
+/// dashboard section.
 abstract interface class QuotaModule<T extends ModuleResult> {
   /// Stable identifier persisted with the module's settings.
   QuotaProviderId get id;

@@ -475,9 +475,6 @@ class ProxyApiService {
         return 'Vertex AI';
       case 'xai':
         return 'xAI';
-      case 'workbuddy':
-      case 'codebuddy':
-        return 'WorkBuddy';
       case 'kimi':
         return 'Kimi';
       case 'meta':

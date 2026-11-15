@@ -7,7 +7,6 @@ import '../models/antigravity_account.dart';
 import '../models/provider_quota.dart';
 import '../models/dashboard_snapshot.dart';
 import '../models/quota_window.dart';
-import '../models/workbuddy_account.dart';
 import 'quota_repository.dart';
 import 'antigravity_quota.dart';
 import 'private_http.dart';
@@ -73,13 +72,9 @@ class ManagementService implements QuotaRepository {
           .where((item) => _provider(item) == 'antigravity')
           .map(_fetchAntigravity),
     );
-    final workBuddyFuture = _fetchWorkBuddyAccounts(
-      credentialFiles.where(_isWorkBuddyCredential).toList(),
-    );
     return DashboardSnapshot(
       accounts: await accountsFuture,
       antigravityAccounts: await antigravityFuture,
-      workBuddyAccounts: await workBuddyFuture,
       checkedAt: DateTime.now(),
     );
   }
@@ -89,127 +84,6 @@ class ManagementService implements QuotaRepository {
     return (provider.isEmpty ? item['type']?.toString() ?? '' : provider)
         .trim()
         .toLowerCase();
-  }
-
-  static bool _isWorkBuddyCredential(Map<String, dynamic> item) {
-    final knownProviders = [item['provider'], item['type']]
-        .map((value) => value?.toString().trim().toLowerCase() ?? '')
-        .where((value) => value.isNotEmpty && value != 'unknown')
-        .toList();
-    if (knownProviders.isNotEmpty) {
-      return knownProviders.every((value) => value == 'workbuddy');
-    }
-    // Older plugin credentials omit type/provider. The plugin itself uses
-    // this filename convention to find both CN and Global accounts.
-    final name = item['name']?.toString().trim().toLowerCase() ?? '';
-    return name.startsWith('workbuddy-') || name == 'workbuddy.json';
-  }
-
-  Future<List<WorkBuddyAccount>> _fetchWorkBuddyAccounts(
-    List<Map<String, dynamic>> files,
-  ) async {
-    if (files.isEmpty) return const [];
-    Map<String, dynamic> payload;
-    try {
-      payload = await _getWorkBuddyJson('accounts');
-      if (payload['accounts'] is! List) throw const FormatException();
-    } catch (_) {
-      return [
-        for (final file in files)
-          WorkBuddyAccount.fromJson(
-            auth: AuthFileAccount.fromJson(file),
-            json: const {},
-            disabled: _isDisabled(file['disabled']),
-            error: _isDisabled(file['disabled']) ? null : workBuddyQuotaError,
-          ),
-      ];
-    }
-
-    final accounts = <WorkBuddyAccount>[];
-    // Billing is rate limited. Finish one credential before querying the next.
-    for (final file in files) {
-      final auth = AuthFileAccount.fromJson(file);
-      final metadata = _workBuddyRow(payload, auth.authIndex) ?? const {};
-      final disabled =
-          _isDisabled(file['disabled']) || _isDisabled(metadata['disabled']);
-      if (disabled) {
-        accounts.add(
-          WorkBuddyAccount.fromJson(auth: auth, json: metadata, disabled: true),
-        );
-        continue;
-      }
-      try {
-        if (auth.authIndex.isEmpty) throw const FormatException();
-        final credits = await _getWorkBuddyJson(
-          'credits',
-          authIndex: auth.authIndex,
-        );
-        final row = _workBuddyRow(credits, auth.authIndex);
-        if (row == null) throw const FormatException();
-        accounts.add(
-          WorkBuddyAccount.fromJson(
-            auth: auth,
-            json: {...metadata, 'error': null, ...row},
-          ),
-        );
-      } catch (_) {
-        accounts.add(
-          WorkBuddyAccount.fromJson(
-            auth: auth,
-            json: metadata,
-            error: workBuddyQuotaError,
-          ),
-        );
-      }
-    }
-    return accounts;
-  }
-
-  static Map<String, dynamic>? _workBuddyRow(
-    Map<String, dynamic> payload,
-    String authIndex,
-  ) {
-    if (authIndex.isEmpty || payload['accounts'] is! List) return null;
-    final matches = (payload['accounts'] as List).whereType<Map>().where(
-      (row) => row['auth_index']?.toString().trim() == authIndex,
-    );
-    if (matches.length != 1) return null;
-    return Map<String, dynamic>.from(matches.single);
-  }
-
-  Future<Map<String, dynamic>> _getWorkBuddyJson(
-    String resource, {
-    String? authIndex,
-  }) async {
-    var uri = _endpoint('plugins/workbuddy/$resource');
-    if (authIndex != null) {
-      uri = uri.replace(queryParameters: {'auth_index': authIndex});
-    }
-    var response = await _client
-        .get(uri, headers: _headers)
-        .timeout(const Duration(seconds: 25));
-    final basePath = baseUri.path.replaceFirst(RegExp(r'/+$'), '');
-    // Plugin routes can remain on v0 even when core management uses v8.
-    // Only a missing route permits this same-origin compatibility fallback.
-    if (response.statusCode == 404 && basePath.endsWith('/v8/management')) {
-      final legacyBase = basePath.substring(
-        0,
-        basePath.length - '/v8/management'.length,
-      );
-      uri = uri.replace(
-        path: '$legacyBase/v0/management/plugins/workbuddy/$resource',
-      );
-      response = await _client
-          .get(uri, headers: _headers)
-          .timeout(const Duration(seconds: 25));
-    }
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ManagementException(
-        workBuddyQuotaError,
-        statusCode: response.statusCode,
-      );
-    }
-    return _decodeManagementResponse(response);
   }
 
   Future<AntigravityAccount> _fetchAntigravity(

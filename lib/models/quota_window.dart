@@ -21,7 +21,6 @@ class QuotaWindow {
     final used = _asDouble(
       json['used_percent'] ??
           json['usedPercent'] ??
-          // OpenCode usage endpoint reports plain "percent".
           json['percent'] ??
           json['percentage'],
     );
