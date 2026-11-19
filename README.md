@@ -10,6 +10,8 @@
 
 </div>
 
+> **维护状态：已结束常规更新。** 2.4.7 为最终版，源码和历史安装包继续保留。
+
 Quota Dash 是一个模块化的大模型额度仪表盘。Android 版提供完整的移动端界面，
 macOS 版提供菜单栏面板；每个供应商以独立模块接入，
 互不干扰；应用内置两种显示模式（卡片模式与能量球模式），并统一展示各供应商的
@@ -21,8 +23,7 @@ macOS 版提供菜单栏面板；每个供应商以独立模块接入，
 
 - **CLIProxyAPI** - Codex OAuth 账号状态、额度窗口、重置时间与近期请求活动。
 - **Antigravity（通过 CLIProxyAPI）** - 自动发现已启用账号，逐个展示额度组、剩余百分比与恢复时间；兼容旧版模型额度响应。
-- **OpenCode** - 滚动、周与月度额度窗口。
-- **WorkBuddy / CodeBuddy（通过 CLIProxyAPI 插件）** - 多账号剩余积分、积分套餐与到期时间、账号状态和近期请求活动。
+- **WorkBuddy / CodeBuddy** - 仅原生 macOS 菜单栏面板保留支持，通过 CLIProxyAPI 插件读取积分。
 
 ## Antigravity 使用说明
 
@@ -35,7 +36,7 @@ macOS 版提供菜单栏面板；每个供应商以独立模块接入，
 每个额度组分别展示，能量模式主值为该账号已知额度中的「最低余量」，不代表总余额。
 未返回的百分比显示 `--`；查询失败显示账号错误，不影响其他账号。
 额度接口的剩余量不保证模型请求一定成功，模型可用性仍取决于上游限制。
-请求趋势卡会合并 Codex、Antigravity 与 WorkBuddy 账号的近期请求时间桶，并在存在失败请求的时间段标出红点。
+请求趋势卡会合并 Android 上的 Codex 与 Antigravity 账号的近期请求时间桶，并在存在失败请求的时间段标出红点。
 
 当服务地址使用新版 CLIProxyAPI 的 `/v8/management` 接口时，工具箱会显示“运行开关”，
 可直接热更新局域网发现、远程管理、会话粘滞、日志、用量统计、插件等开关，也可以查看和编辑
@@ -43,16 +44,9 @@ macOS 版提供菜单栏面板；每个供应商以独立模块接入，
 
 接口兼容性参考：[上游 Antigravity 数据层](https://github.com/router-for-me/Cli-Proxy-API-Management-Center/blob/main/src/features/quota/providers/antigravity/data.ts)。
 
-## WorkBuddy 使用说明
+## WorkBuddy（仅 macOS 原生面板）
 
-在 CLIProxyAPI 中启用 WorkBuddy 插件并登录账号后，使用原有服务地址与管理密码即可自动发现。
-客户端通过插件的 `accounts` 与按账号查询的 `credits` 接口读取积分，不下载认证文件或保存
-WorkBuddy Token。v8 管理端搭配旧插件时，仅在插件路由返回 404 后回退到同一服务的
-`/v0/management/plugins/workbuddy`，其他管理操作仍使用原来配置的 API 版本。
-
-积分未知时显示 `--`，不会当成已耗尽；套餐的到期时间不等同于额度重置时间。
-某个账号查询失败不会隐藏其他账号。卡片与能量球模式均可查看积分详情，请求趋势也会计入
-WorkBuddy 的活动。客户端刷新只读取额度，不触发签到、试用领取或路由账号切换。
+在 CLIProxyAPI 中启用 WorkBuddy 插件并登录账号后，macOS 面板可查询该账号的积分。Android 自 2.4.6 起只显示 Codex 和 Antigravity。
 
 ## 账号管理
 
