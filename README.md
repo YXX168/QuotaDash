@@ -10,7 +10,8 @@
 
 </div>
 
-> **维护状态：已结束常规更新。** 2.4.7 为最终版，源码和历史安装包继续保留。
+> **维护状态：已结束常规更新。** [2.4.7 最终版](https://github.com/YXX168/QuotaDash/releases/tag/v2.4.7)仍可下载，源码和历史版本继续保留。
+> 后续的 Android 额度面板在独立项目 [Lucent 明烛](https://github.com/YXX168/lucent) 开发。
 
 Quota Dash 是一个模块化的大模型额度仪表盘。Android 版提供完整的移动端界面，
 macOS 版提供菜单栏面板；每个供应商以独立模块接入，
